@@ -101,6 +101,33 @@ function turnsOf(aid) {
 const toolsOf = (t) => t.items.filter((i) => i.role === 'tool')
 const turnTitle = (t) => t.head ? (t.head.role === 'user' ? t.head.text : (t.kind === 'mail' && t.head.mail ? '处理邮件：' + t.head.mail.subject : agentOf(t.agent).name + t.head.text)) : '对话'
 
+// ---------- motion: what is new slides in; a plain refresh replays nothing ----------
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
+const known = new Set()
+const hashText = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36) }
+// Mark every element matching sel under root as seen; the ones not seen before get cls (staggered by --d).
+// quiet: just remember them (first paint of a view that animates as a whole).
+function reveal(root, sel, keyOf, { cls = 'in', quiet = false, step = 45, max = 10 } = {}) {
+  const moved = []
+  for (const el of root.querySelectorAll(sel)) {
+    const k = keyOf(el); if (!k) continue
+    const fresh = !known.has(k); known.add(k)
+    if (!fresh || quiet || REDUCED || moved.some((m) => m.contains(el))) continue
+    el.style.setProperty('--d', Math.min(moved.length, max) * step + 'ms'); el.classList.add(cls); moved.push(el)
+  }
+  return moved.length
+}
+// One-shot classes come off when they finish, so hover and later transitions work on the element again.
+const ONESHOT = ['rise', 'in', 'upd', 'pop', 'draw', 'swap', 'fade', 'bump']
+document.addEventListener('animationend', (e) => { if (e.target === e.currentTarget) return; const el = e.target; if (el.classList) for (const c of ONESHOT) if (el.classList.contains(c) && !el.closest?.('.toast.out')) el.classList.remove(c) }, true)
+// Restart a one-shot animation class on an element.
+function replay(el, cls) { if (!el || REDUCED) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls) }
+function setCount(el, n) {
+  const was = el.hidden ? 0 : +el.textContent || 0
+  el.hidden = !n; el.textContent = n
+  if (n && n !== was) replay(el, 'bump')
+}
+
 // ---------- rail ----------
 function renderRail() {
   $('#agentList').innerHTML = agents().map((a) => {
@@ -114,12 +141,12 @@ function renderRail() {
       ${asks ? '<span class="badge">!</span>' : unread ? `<span class="badge" style="background:#3a3a40;color:#ddd">${unread}</span>` : ''}</button>`
   }).join('')
   const open = S.brief && S.brief.date === todayStr() ? (S.brief.items || []).filter((i) => i.kind === 'decide' && i.status === 'open').length : 0
-  const nb = $('#nBrief'); nb.hidden = !open; nb.textContent = open
-  const m = $('#nMem'); m.hidden = !S.memories.length; m.textContent = S.memories.length
+  setCount($('#nBrief'), open)
+  setCount($('#nMem'), S.memories.length)
   const r0 = S.reflections[0]; const nr = r0 ? [...r0.proposals, ...r0.lessons].filter((p) => p.status === 'open').length : 0
-  const rf = $('#nRef'); rf.hidden = !nr; rf.textContent = nr
+  setCount($('#nRef'), nr)
   const q = S.later.filter((j) => j.status === 'queued' || j.status === 'running').length
-  const l = $('#nLater'); l.hidden = !q; l.textContent = q
+  setCount($('#nLater'), q)
   document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', view === b.dataset.go))
   $('.rail .foot button').classList.toggle('on', view === 'settings')
   if (S.device) $('#devName').textContent = S.device
@@ -145,6 +172,7 @@ function procChip(t) {
   const tools = toolsOf(t)
   const sel = procSel && procSel.turn === t.id && $('#app').classList.contains('procon')
   if (t.running) {
+    if (!tools.length) return ''   // still thinking: the typing dots say it
     const now = [...tools].reverse().find((x) => x.state === 'running') || tools[tools.length - 1]
     return `<button class="pchip sel" data-act="proc-open" data-agent="${t.agent}" data-turn="${t.id}"><span class="spin"></span><span class="t">${now ? `正在${esc(toolLabel(now.name))}${toolDetail(now.args) ? ' · ' + esc(toolDetail(now.args)) : ''}` : '正在想'}</span><span class="ar">第 ${Math.max(1, tools.length)} 步 ›</span></button>`
   }
@@ -164,23 +192,29 @@ function renderMsgs(keepScroll) {
   }
   for (const t of turns) {
     const d = dayOf(t.at); if (d !== day) { day = d; h += `<div class="day"><span>${dayLabel(t.at)}</span></div>` }
-    if (t.head?.role === 'user') h += `<div class="mrow me" id="m_${t.head.id}"><div class="body"><div class="bub">${esc(t.head.text)}</div><span class="tm2">${hhmm(t.at)}</span></div></div>`
+    if (t.head?.role === 'user') h += `<div class="mrow me" id="m_${t.head.id}" data-k="${t.head.id}"><div class="body"><div class="bub">${esc(t.head.text)}</div><span class="tm2">${hhmm(t.at)}</span></div></div>`
     let body = ''
     if (t.kind === 'mail' && t.head.mail) {
       const m = t.head.mail
-      body += `<div class="mailcard"><div class="h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>收到 ${esc(m.fromName || m.from)} 的邮件 · ${hhmm(t.at)}</div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`
+      body += `<div class="mailcard" data-k="mail${t.id}"><div class="h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>收到 ${esc(m.fromName || m.from)} 的邮件 · ${hhmm(t.at)}</div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`
     }
     const chip = procChip(t); if (chip) body += chip
     for (const it of t.items) {
-      if (it.role === 'assistant' && it.text) body += `<div class="bub ${it.live ? 'live' : ''}" id="m_${it.id}">${md(it.text)}</div>`
-      else if (it.role === 'ui') body += renderUI(it)
-      else if (it.role === 'error') body += `<div class="bub err">${esc(it.text)}</div>`
+      if (it.role === 'assistant' && it.text) body += `<div class="bub ${it.live ? 'live' : ''}" id="m_${it.id}" data-k="${it.id}">${md(it.text)}</div>`
+      else if (it.role === 'ui') body += `<div class="uiw" data-k="${it.id}">${renderUI(it)}</div>`
+      else if (it.role === 'error') body += `<div class="bub err" data-k="${it.id}">${esc(it.text)}</div>`
     }
-    if (t.running && !t.items.some((i) => i.role === 'assistant' && i.text) && !toolsOf(t).length) body += '<div class="bub live"></div>'
-    if (body) h += `<div class="mrow"><div class="side">${avatar(a, 34)}</div><div class="body">${body}${t.endAt ? '' : ''}</div></div>`
+    if (t.running && !t.items.some((i) => i.role === 'assistant' && i.text) && !toolsOf(t).length) body += '<div class="bub typing"><i></i><i></i><i></i></div>'
+    if (body) h += `<div class="mrow" data-k="a${t.id}"><div class="side">${avatar(a, 34)}</div><div class="body">${body}</div></div>`
   }
-  for (const x of S.approvals.filter((y) => y.agent === cur)) h += `<div class="mrow"><div class="side">${avatar(a, 34)}</div><div class="body">${askCard(x)}</div></div>`
-  $('#msgs').innerHTML = h
+  for (const x of S.approvals.filter((y) => y.agent === cur)) h += `<div class="mrow" data-k="ask${x.id}"><div class="side">${avatar(a, 34)}</div><div class="body">${askCard(x)}</div></div>`
+  const M = $('#msgs')
+  M.innerHTML = h
+  // Switching to another agent fades the whole conversation in; afterwards only new messages move.
+  const switched = M.dataset.agent !== cur
+  M.dataset.agent = cur
+  reveal(M, '[data-k]', (el) => cur + ':' + el.dataset.k, { quiet: switched, step: 60 })
+  if (switched) replay(M, 'swap')
   if (!keepScroll || atBottom) feed.scrollTop = feed.scrollHeight
   if (view === 'chat') { seen[cur] = new Date().toISOString(); store.set('seen', seen) }
 }
@@ -199,10 +233,13 @@ function askCard(x) {
 
 function renderChips() {
   const a = agentOf(cur)
+  const sig = a.id
+  if ($('#chips').dataset.agent === sig) return
+  $('#chips').dataset.agent = sig
   const chips = a.main
     ? [['看看我今天的安排', '我今天有哪些日程和待办？'], ['整理下载文件夹', '帮我整理一下下载文件夹，按类型归档'], ['记住一件事', null], ['帮我排个行程', null], ['看看收件箱', '看看你的收件箱有没有新邮件']]
     : [['你能帮我做什么？', '简单说说你能帮我做什么。'], ['看看收件箱', '看看你的收件箱有没有新邮件'], [`和${agentOf(S.mainId).name}配合一下`, null]]
-  $('#chips').innerHTML = chips.map(([l, s]) => `<button class="chip" data-act="chip" data-say="${esc(s || '')}" data-label="${esc(l)}">${esc(l)}</button>`).join('')
+  $('#chips').innerHTML = chips.map(([l, s], i) => `<button class="chip ${REDUCED ? '' : 'in'}" style="--d:${120 + i * 40}ms" data-act="chip" data-say="${esc(s || '')}" data-label="${esc(l)}">${esc(l)}</button>`).join('')
 }
 
 // ---------- generative UI ----------
@@ -299,7 +336,7 @@ function renderProc() {
     if (it.role === 'tool') {
       const ic = it.state === 'running' ? '<span class="spin"></span>' : it.state === 'error' ? '<span class="xdot">!</span>' : `<span class="okdot">${CHECK}</span>`
       const d = toolDetail(it.args)
-      h += `<div class="step"><span class="ic">${ic}</span><div class="m"><div class="l">${esc(toolLabel(it.name))}</div>${d ? `<div class="d">${esc(d)}</div>` : ''}${it.args?.reason ? `<div class="d">为什么：${esc(it.args.reason)}</div>` : ''}${it.error ? `<div class="e">${esc(it.error)}</div>` : ''}</div></div>`
+      h += `<div class="step" data-k="${it.id}"><span class="ic">${ic}</span><div class="m"><div class="l">${esc(toolLabel(it.name))}</div>${d ? `<div class="d">${esc(d)}</div>` : ''}${it.args?.reason ? `<div class="d">为什么：${esc(it.args.reason)}</div>` : ''}${it.error ? `<div class="e">${esc(it.error)}</div>` : ''}</div></div>`
     } else if (it.role === 'assistant' && it.text) h += `<div class="step say"><span class="ic"></span><div class="m"><div class="l">${esc(it.text.replace(/\s+/g, ' ').slice(0, 160))}</div></div></div>`
     else if (it.role === 'ui') h += `<div class="step"><span class="ic"><span class="okdot">${CHECK}</span></span><div class="m"><div class="l">生成了卡片</div><div class="d">${esc(it.ui?.title || '')}</div></div></div>`
     else if (it.role === 'error') h += `<div class="step"><span class="ic"><span class="xdot">!</span></span><div class="m"><div class="e">${esc(it.text)}</div></div></div>`
@@ -316,10 +353,16 @@ function renderProc() {
   const others = [...all].reverse().filter((x) => toolsOf(x).length && x.id !== t.id).slice(0, 12)
   if (others.length) h += `<div class="psec">${esc(a.name)}做过的其他事</div><div class="turns">${others.map((x) => `<button data-act="proc-open" data-agent="${x.agent}" data-turn="${x.id}"><span>${esc(String(turnTitle(x)).slice(0, 50))}</span><small>${when(x.at)}</small></button>`).join('')}</div>`
   B.innerHTML = h
+  const switched = B.dataset.turn !== t.id
+  B.dataset.turn = t.id
+  reveal(B, '.step[data-k], .chg', (el) => 'p:' + (el.dataset.k || hashText(el.textContent)), { quiet: switched, step: 50 })
+  if (switched) replay(B, 'swap')
 }
 
 // ---------- pages ----------
+let entering = true
 function setView(v, arg) {
+  if (v !== view || (arg ?? null) !== viewArg) entering = true
   view = v; viewArg = arg ?? null
   $('#vChat').hidden = v !== 'chat'; $('#vPage').hidden = v === 'chat'
   // the process bar belongs to the chat; on a page it only opens when asked for there
@@ -335,7 +378,19 @@ function renderPage() {
   const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, settings: pageSettings, agent: pageAgent }[view]
   if (fn) P.innerHTML = fn()
   if (view === 'settings') { renderModelForm($('#modelForm'), false); renderEval($('#evalBox')); renderUpdate($('#updBox')) }
-  $('#vPage').scrollTop = keep
+  const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap), #pg .bgrid > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent'
+  const keyOf = (el) => view + ':' + (el.dataset.k || el.className.split(' ')[0] + ':' + hashText(el.textContent.slice(0, 600)))
+  if (entering) {
+    entering = false
+    $('#vPage').scrollTop = 0
+    if (!REDUCED) reveal(P, CARDS, keyOf, { cls: 'rise', step: 35, max: 14 })
+    else reveal(P, CARDS, keyOf, { quiet: true })
+    if (view === 'memory' && !REDUCED) P.querySelectorAll('.map .mnode').forEach((n, i) => { n.style.setProperty('--d', 200 + Math.min(i, 30) * 22 + 'ms'); n.classList.add('pop') })
+    if (view === 'memory' && !REDUCED) P.querySelectorAll('.map .medge').forEach((n) => n.classList.add('draw'))
+  } else {
+    reveal(P, CARDS, keyOf, { cls: 'upd', step: 30 })
+    $('#vPage').scrollTop = keep
+  }
 }
 
 // 每日简报: its own page, generated cards laid out by importance
@@ -361,7 +416,7 @@ function pageBrief() {
   h += '<div class="bgrid">'
   for (const it of items) {
     const kind = K[it.kind] ? it.kind : 'info'
-    let c = `<div class="bcard ${kind} ${it.size === 'l' ? 'l' : it.size === 's' ? 's' : ''}"><div class="k"><i></i>${K[kind]}</div><div class="t">${esc(it.title)}</div>${it.detail ? `<div class="d">${esc(it.detail)}</div>` : ''}`
+    let c = `<div class="bcard ${kind} ${it.size === 'l' ? 'l' : it.size === 's' ? 's' : ''} ${it.status === 'working' ? 'working' : ''}" data-k="${it.id}:${it.status || ''}"><div class="k"><i></i>${K[kind]}</div><div class="t">${esc(it.title)}</div>${it.detail ? `<div class="d">${esc(it.detail)}</div>` : ''}`
     for (const bl of it.blocks || []) c += `<div class="blk">${block(bl, 'brief', 0)}</div>`
     if (it.status === 'resolved') c += `<div class="res">✓ ${esc(it.result || it.choice || '已处理')}</div>`
     else if (it.status === 'working') c += `<div class="wk"><span class="spin"></span>正在按“${esc(it.choice || '')}”去做</div>`
@@ -663,7 +718,7 @@ function updateToast(st) {
   const el = document.createElement('div'); el.className = 'toast'; el.id = 'updToast'
   el.innerHTML = `<span>天禧新版本 ${esc(st.pending.version)} 已经下好${st.pending.notes ? '：' + esc(st.pending.notes) : ''}</span><button class="btn sm">现在重启</button><button class="btn sm">稍后</button>`
   const [go, later] = el.querySelectorAll('button')
-  go.onclick = () => APP.restart(); later.onclick = () => el.remove()
+  go.onclick = () => APP.restart(); later.onclick = () => dismiss(el)
   $('#toasts').appendChild(el)
 }
 if (APP && APP.onUpdate) {
@@ -672,16 +727,17 @@ if (APP && APP.onUpdate) {
 }
 
 // ---------- toasts: every action can be taken back right away ----------
+function dismiss(el) { if (!el.isConnected) return; if (REDUCED) return el.remove(); el.classList.add('out'); setTimeout(() => el.remove(), 220) }
 function toast(entry) {
   const el = document.createElement('div'); el.className = 'toast'
   el.innerHTML = `<span>${esc(entry.title)}</span>${entry.undo ? `<button class="btn sm">${esc(entry.undo.label || '撤回')}</button>` : ''}`
-  const b = el.querySelector('button'); if (b) b.onclick = async () => { b.disabled = true; await api('undo', { id: entry.id }); el.remove() }
-  $('#toasts').appendChild(el); setTimeout(() => el.remove(), 7000)
+  const b = el.querySelector('button'); if (b) b.onclick = async () => { b.disabled = true; await api('undo', { id: entry.id }); dismiss(el) }
+  $('#toasts').appendChild(el); setTimeout(() => dismiss(el), 7000)
 }
 function toastText(t, act) {
   const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = `<span>${esc(t)}</span>${act ? `<button class="btn sm">${esc(act[0])}</button>` : ''}`
-  if (act) el.querySelector('button').onclick = () => { act[1](); el.remove() }
-  $('#toasts').appendChild(el); setTimeout(() => el.remove(), 5000)
+  if (act) el.querySelector('button').onclick = () => { act[1](); dismiss(el) }
+  $('#toasts').appendChild(el); setTimeout(() => dismiss(el), 5000)
 }
 function notify(title, body) {
   try { if (document.hidden && 'Notification' in window && Notification.permission !== 'denied') new Notification(title, { body, silent: false }).onclick = () => APP?.show() } catch {}
@@ -704,6 +760,8 @@ async function refresh() {
 const soon = () => { clearTimeout(refreshT); refreshT = setTimeout(refresh, 150) }
 function renderAll(keep) {
   renderRail()
+  const vis = view === 'chat' ? $('#vChat') : $('#vPage')
+  if (vis.dataset.shown !== view) { vis.dataset.shown = view; (view === 'chat' ? $('#vPage') : $('#vChat')).dataset.shown = ''; replay(vis, 'fade') }
   if (view === 'chat') { renderHead(); renderMsgs(keep); renderChips() } else renderPage()
   renderProc()
 }

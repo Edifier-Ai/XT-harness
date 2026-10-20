@@ -1,8 +1,8 @@
 {
- "version": "0.4.0",
- "notes": "支持从 GitHub 差分更新",
+ "version": "0.4.1",
+ "notes": "页面切换和交互动效更细腻：新内容滑入、卡片依次出现、星图逐个点亮、悬停和按压反馈",
  "minBase": "0.4.0",
- "at": "2026-10-20T10:51:10.335Z",
+ "at": "2026-10-20T11:10:25.095Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -421,8 +421,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "d773d1dbd0523e53739aa5396a504f4482278912748f7c839062372a97118fe2",
-   "size": 78575
+   "sha256": "9711b122a963cc3f09f593046ad12a249488ae686053a0286ec659b6ebede3ce",
+   "size": 82500
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
@@ -436,8 +436,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "7322dca779105df57652299815eefa636fc3abeb1d2693c430bc6f9def04d353",
-   "size": 31288
+   "sha256": "013a91f106d1370a659d0c81d3f62bffb3e837f6cd98e1aa3068012bcb2a8fa0",
+   "size": 36356
   }
  }
 }
