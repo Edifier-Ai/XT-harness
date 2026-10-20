@@ -1,18 +1,19 @@
 {
- "version": "0.4.1",
- "notes": "页面切换和交互动效更细腻：新内容滑入、卡片依次出现、星图逐个点亮、悬停和按压反馈",
+ "version": "0.4.2",
+ "tag": "v0.4.2",
+ "notes": "更新改走系统代理，并加了 GitHub Raw 和 jsDelivr 两条备用线路",
  "minBase": "0.4.0",
- "at": "2026-10-20T11:10:25.095Z",
+ "at": "2026-10-20T11:19:03.090Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "bfa23f845e8600c72cda4b6dc5be1a38109783d89e1e087d4a2ea09873535f94",
-   "size": 20535
+   "sha256": "f760716a7c7c4cd8c76bd2d33faf105c6b2b3bf520d275bd048872ff59810265",
+   "size": 20690
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
-   "sha256": "0f98057c4f582ba9185d88bb230a01ec2525c782c6a0987497ecf8272f7202ab",
-   "size": 6261
+   "sha256": "1eb7fed6799fad50b7f8c0a907af6a58943a3fe30ac2e8199d991acf14a2494a",
+   "size": 7282
   },
   "app/preload.js": {
    "path": "desktop/preload.js",

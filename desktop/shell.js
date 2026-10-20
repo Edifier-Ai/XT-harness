@@ -2,7 +2,7 @@
 // Runs the DeepSeek Harness runtime (with the dsh-tianxi plugins) as a hidden child process,
 // shows the 天禧 window, the 天禧之光 status pill, a tray icon, and reports idle time for background work.
 'use strict'
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, safeStorage, powerMonitor, shell, screen, globalShortcut, dialog } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, safeStorage, powerMonitor, shell, screen, globalShortcut, dialog, net: enet } = require('electron')
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -282,6 +282,8 @@ const getSource = () => ({
 })
 const updater = createUpdater({
   userDir: USER, boot: BOOT, runtimeDir: RUNTIME, shippedApp: path.join(process.resourcesPath || '', 'app'), shippedBundle: SHIPPED_BUNDLE, getSource,
+  // Chromium's network stack: follows the system proxy and certificates, like the browser does.
+  fetch: (url, opts) => enet.fetch(url, opts),
   log: (m) => { try { fs.appendFileSync(path.join(LOGS, 'update.log'), `${new Date().toISOString()} ${m}\n`) } catch {} },
 })
 async function runCheck(manual) {

@@ -15,20 +15,37 @@ const vnum = (v) => String(v || '0').split('.').map((x) => parseInt(x, 10) || 0)
 const newer = (a, b) => { const x = vnum(a), y = vnum(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); return false }
 const readJSON = (f, d = null) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')) } catch { return d } }
 
-function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, getSource, log }) {
+function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, getSource, log, fetch: fetchFn = fetch }) {
   const UPD = path.join(userDir, 'update')
   fs.mkdirSync(UPD, { recursive: true })
   let state = { checking: false, latest: null, pending: null, error: '', checkedAt: 0, downloaded: 0 }
 
-  async function gh(src, repoPath, raw) {
-    const url = `${process.env.TIANXI_UPDATE_API || 'https://api.github.com'}/repos/${src.repo}/contents/${repoPath.split('/').map(encodeURIComponent).join('/')}?ref=${encodeURIComponent(src.branch || 'main')}`
-    const headers = { accept: raw ? 'application/vnd.github.raw' : 'application/vnd.github+json', 'user-agent': 'TianxiAI-Concept', 'x-github-api-version': '2022-11-28' }
-    if (src.token) headers.authorization = 'Bearer ' + src.token
-    const r = await fetch(url, { headers, signal: AbortSignal.timeout(30000) })
-    if (r.status === 404) throw new Error(src.token ? '找不到更新仓库，检查仓库名和令牌' : '找不到更新仓库；私有仓库要在设置里填只读令牌')
-    if (r.status === 401 || r.status === 403) throw new Error(`GitHub 拒绝了（HTTP ${r.status}），令牌可能过期或没给 Contents 读权限`)
-    if (!r.ok) throw new Error('GitHub HTTP ' + r.status)
-    return Buffer.from(await r.arrayBuffer())
+  // Three ways to the same files: the GitHub API, raw.githubusercontent.com and the jsDelivr CDN.
+  // Some networks reach only one of them, so try each and remember the one that worked.
+  // ref is "main" for the manifest; files are read at the release tag, so they always match it.
+  const MIRRORS = [
+    { name: 'GitHub API', url: (src, p, ref) => `${process.env.TIANXI_UPDATE_API || 'https://api.github.com'}/repos/${src.repo}/contents/${enc(p)}?ref=${encodeURIComponent(ref)}`, api: true },
+    { name: 'GitHub Raw', url: (src, p, ref) => `https://raw.githubusercontent.com/${src.repo}/${encodeURIComponent(ref)}/${enc(p)}` },
+    // jsDelivr caches branches for hours, so it serves the manifest only as a last resort and files by tag.
+    { name: 'jsDelivr', url: (src, p, ref) => `https://cdn.jsdelivr.net/gh/${src.repo}@${encodeURIComponent(ref)}/${enc(p)}` },
+  ]
+  const enc = (p) => p.split('/').map(encodeURIComponent).join('/')
+  let preferred = 0
+  async function gh(src, repoPath, ref) {
+    const tried = []
+    for (let n = 0; n < MIRRORS.length; n++) {
+      const i = (preferred + n) % MIRRORS.length, m = MIRRORS[i]
+      if (src.token && m.name === 'jsDelivr') continue   // a private repo is not on the CDN
+      const headers = { 'user-agent': 'TianxiAI-Concept' }
+      if (m.api) { headers.accept = 'application/vnd.github.raw'; headers['x-github-api-version'] = '2022-11-28' }
+      if (src.token && m.name !== 'jsDelivr') headers.authorization = (m.api ? 'Bearer ' : 'token ') + src.token
+      try {
+        const r = await fetchFn(m.url(src, repoPath, ref), { headers, signal: AbortSignal.timeout(20000) })
+        if (r.ok) { preferred = i; return Buffer.from(await r.arrayBuffer()) }
+        tried.push(`${m.name} HTTP ${r.status}`)
+      } catch (e) { tried.push(`${m.name} ${String(e.cause?.code || e.message || e).slice(0, 60)}`) }
+    }
+    throw new Error(`连不上更新仓库 ${src.repo}（${tried.join('；')}）`)
   }
 
   // Where a file of the given logical path already sits on this machine (running version, then shipped copy).
@@ -43,7 +60,7 @@ function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, g
     if (!src.repo) { state.error = '还没设置更新仓库'; return status() }
     state.checking = true; state.error = ''
     try {
-      const man = JSON.parse((await gh(src, 'release/manifest.json', true)).toString('utf8'))
+      const man = JSON.parse((await gh(src, 'release/manifest.json', src.branch || 'main')).toString('utf8'))
       state.latest = { version: man.version, notes: man.notes || '', minBase: man.minBase || '' }
       state.checkedAt = Date.now()
       const have = state.pending ? state.pending.version : boot.version
@@ -66,7 +83,7 @@ function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, g
       let buf = null
       for (const p of localCopy(rel)) { try { const b = fs.readFileSync(p); if (sha256(b) === f.sha256) { buf = b; break } } catch {} }
       if (!buf) {
-        buf = await gh(src, f.path, true)
+        buf = await gh(src, f.path, man.tag || src.branch || 'main')
         if (sha256(buf) !== f.sha256) throw new Error('下载的文件校验不对：' + rel)
         state.downloaded++
       }
