@@ -19,8 +19,8 @@
 - **底座**：Electron 和 DSH 运行时，几百 MB，很少变。变了才需要重新下载完整包。
 - **天禧层**：`desktop/` 里的客户端代码和 `tianxi/` 整个目录，大约 1MB。
 
-客户端启动 20 秒后检查一次，之后每两小时检查一次，读的是本仓库 `main` 分支上的 `release/manifest.json`，文件按版本标签 `v<版本>` 读取。
-依次尝试 GitHub API、raw.githubusercontent.com 和 jsDelivr，走系统代理。
+客户端启动 20 秒后检查一次，之后每两小时检查一次，读的是本仓库 `main` 分支上的 `release/manifest.json`。
+依次尝试 GitHub API、raw.githubusercontent.com 和 jsDelivr，走系统代理；每个文件都按清单里的 sha256 校验，对不上就换一条线路。
 如果版本号比本机的新，就逐个比对文件的 sha256，只下载改过的文件，校验通过后装进
 `%APPDATA%\TianxiAI-Concept\update\<版本>`。下次启动时用新版本。
 
@@ -31,7 +31,7 @@
 
 ```bash
 node build/release.mjs 0.4.1 "这次改了什么"
-git add -A && git commit -m "0.4.1: 这次改了什么" && git tag v0.4.1 && git push origin main v0.4.1
+git add -A && git commit -m "0.4.1: 这次改了什么" && git push origin main
 ```
 
 底座变了的时候，要把 `build/release.mjs` 里的 `MIN_BASE` 改成新底座的版本号，再用

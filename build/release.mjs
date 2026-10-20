@@ -1,6 +1,6 @@
 // Writes release/manifest.json: the sha256 of every file of the 天禧 layer, which clients compare to
 // download only what changed. Usage: node build/release.mjs <version> "<what changed>"
-// Commit, tag v<version>, and push both; clients read files at that tag on their next check.
+// Commit and push the result to main; clients pick it up on their next check.
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
@@ -25,6 +25,6 @@ const walk = (dir) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true
 for (const f of walk('tianxi')) add('bundle/' + f.slice('tianxi/'.length), f)
 
 fs.mkdirSync(path.join(ROOT, 'release'), { recursive: true })
-const man = { version, tag: 'v' + version, notes, minBase: MIN_BASE, at: new Date().toISOString(), files }
+const man = { version, notes, minBase: MIN_BASE, at: new Date().toISOString(), files }
 fs.writeFileSync(path.join(ROOT, 'release', 'manifest.json'), JSON.stringify(man, null, 1) + '\n')
 console.log(`release/manifest.json ${version}: ${Object.keys(files).length} files`)

@@ -22,16 +22,16 @@ function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, g
 
   // Three ways to the same files: the GitHub API, raw.githubusercontent.com and the jsDelivr CDN.
   // Some networks reach only one of them, so try each and remember the one that worked.
-  // ref is "main" for the manifest; files are read at the release tag, so they always match it.
   const MIRRORS = [
     { name: 'GitHub API', url: (src, p, ref) => `${process.env.TIANXI_UPDATE_API || 'https://api.github.com'}/repos/${src.repo}/contents/${enc(p)}?ref=${encodeURIComponent(ref)}`, api: true },
     { name: 'GitHub Raw', url: (src, p, ref) => `https://raw.githubusercontent.com/${src.repo}/${encodeURIComponent(ref)}/${enc(p)}` },
-    // jsDelivr caches branches for hours, so it serves the manifest only as a last resort and files by tag.
+    // jsDelivr caches branches for hours: last, and only used when what it serves checks out.
     { name: 'jsDelivr', url: (src, p, ref) => `https://cdn.jsdelivr.net/gh/${src.repo}@${encodeURIComponent(ref)}/${enc(p)}` },
   ]
   const enc = (p) => p.split('/').map(encodeURIComponent).join('/')
   let preferred = 0
-  async function gh(src, repoPath, ref) {
+  // check(buf) can reject a stale copy (jsDelivr caches branches), and then the next way is tried.
+  async function gh(src, repoPath, ref, check = () => true) {
     const tried = []
     for (let n = 0; n < MIRRORS.length; n++) {
       const i = (preferred + n) % MIRRORS.length, m = MIRRORS[i]
@@ -41,7 +41,11 @@ function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, g
       if (src.token && m.name !== 'jsDelivr') headers.authorization = (m.api ? 'Bearer ' : 'token ') + src.token
       try {
         const r = await fetchFn(m.url(src, repoPath, ref), { headers, signal: AbortSignal.timeout(20000) })
-        if (r.ok) { preferred = i; return Buffer.from(await r.arrayBuffer()) }
+        if (r.ok) {
+          const buf = Buffer.from(await r.arrayBuffer())
+          if (check(buf)) { preferred = i; return buf }
+          tried.push(`${m.name} 内容对不上`); continue
+        }
         tried.push(`${m.name} HTTP ${r.status}`)
       } catch (e) { tried.push(`${m.name} ${String(e.cause?.code || e.message || e).slice(0, 60)}`) }
     }
@@ -83,8 +87,7 @@ function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, g
       let buf = null
       for (const p of localCopy(rel)) { try { const b = fs.readFileSync(p); if (sha256(b) === f.sha256) { buf = b; break } } catch {} }
       if (!buf) {
-        buf = await gh(src, f.path, man.tag || src.branch || 'main')
-        if (sha256(buf) !== f.sha256) throw new Error('下载的文件校验不对：' + rel)
+        buf = await gh(src, f.path, src.branch || 'main', (b) => sha256(b) === f.sha256)
         state.downloaded++
       }
       fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true })

@@ -1,9 +1,8 @@
 {
  "version": "0.4.2",
- "tag": "v0.4.2",
  "notes": "更新改走系统代理，并加了 GitHub Raw 和 jsDelivr 两条备用线路",
  "minBase": "0.4.0",
- "at": "2026-10-20T11:19:03.090Z",
+ "at": "2026-10-20T11:20:40.958Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -12,8 +11,8 @@
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
-   "sha256": "1eb7fed6799fad50b7f8c0a907af6a58943a3fe30ac2e8199d991acf14a2494a",
-   "size": 7282
+   "sha256": "851fc96a6118d440f011c1edb6cff14d4641c61842e77e91dab314489fb33bb5",
+   "size": 7341
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
