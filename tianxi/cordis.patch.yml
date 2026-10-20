@@ -1,0 +1,56 @@
+- insert:
+    - id: tianxi-ledger
+      name: dsh-tianxi/plugins/ledger.js
+    - id: tianxi-memory
+      name: dsh-tianxi/plugins/memory.js
+    - id: tianxi-actions
+      name: dsh-tianxi/plugins/actions.js
+    - id: tianxi-ambient
+      name: dsh-tianxi/plugins/ambient.js
+    - id: tianxi-host
+      name: dsh-tianxi/plugins/host.js
+    - id: tianxi-eval
+      name: dsh-tianxi/plugins/eval.js
+# 天禧's agent preset, following Pi Agent's stance: few tools, short prompt, no plan mode,
+# no built-in todos, no subagents. The 天禧 domain tools (memory, calendar, mail, files, show_ui,
+# brief, later queue) are registered globally by the plugins above and join every 天禧 agent.
+- insert:
+    - id: preset-tianxi
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: tianxi
+        order: 9
+        plugins:
+          - id: tool-bash
+            name: '@deepseek-ai/dsh-tool-bash'
+            disabled: !!js process.platform === 'win32'
+          - id: tool-pwsh
+            name: '@deepseek-ai/dsh-tool-pwsh'
+            disabled: !!js process.platform !== 'win32'
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+          - id: tool-web
+            name: '@deepseek-ai/dsh-tool-web'
+            config:
+              fetch: true
+              searchTimeoutMs: 60000
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+              toolResultPruner: true
+            config:
+              - id: compaction-basic
+                name: '@deepseek-ai/dsh-compaction-basic'
+              - id: tool-result-pruner
+                name: '@deepseek-ai/dsh-compaction-tool-result-pruner'
+                config:
+                  thresholdChars: 8192
+                  headChars: 4096
+                  tailChars: 1024
+# Keep the prompt short: drop guidance written for DSH's own Web GUI, which 天禧 does not use.
+- id: harness-dev-context
+  disabled: true
+- id: ui-deliverables
+  disabled: true

@@ -1,0 +1,347 @@
+// 天禧AI 概念版 · Windows client.
+// Runs the DeepSeek Harness runtime (with the dsh-tianxi plugins) as a hidden child process,
+// shows the 天禧 window, the 天禧之光 status pill, a tray icon, and reports idle time for background work.
+'use strict'
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, safeStorage, powerMonitor, shell, screen, globalShortcut, dialog } = require('electron')
+const { spawn } = require('node:child_process')
+const fs = require('node:fs')
+const path = require('node:path')
+const os = require('node:os')
+const net = require('node:net')
+const crypto = require('node:crypto')
+const { pathToFileURL } = require('node:url')
+const { createUpdater } = require('./updater.js')
+
+const APP_ID = 'com.lenovo.tianxi.concept'
+app.setAppUserModelId(APP_ID)
+app.setName('天禧AI')
+app.setPath('userData', path.join(app.getPath('appData'), 'TianxiAI-Concept'))
+if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0) }
+
+// ---------- paths ----------
+const USER = app.getPath('userData')
+const DSH_HOME = path.join(USER, 'dsh')
+const TIANXI_HOME = path.join(USER, 'data')
+const LOGS = path.join(USER, 'logs')
+const CFG_FILE = path.join(USER, 'config.json')
+const PATCH_FILE = path.join(USER, 'tianxi.cordis.yml')
+const RUNTIME = app.isPackaged ? path.join(process.resourcesPath, 'runtime') : (process.env.TIANXI_RUNTIME || path.join(__dirname, '..', 'rt'))
+// Set by main.js: which version runs and where its client code and 天禧 bundle live (shipped or an installed update).
+const BOOT = global.TIANXI_BOOT || { version: app.getVersion(), shipped: app.getVersion(), appDir: __dirname, bundleDir: null }
+const SHIPPED_BUNDLE = path.join(RUNTIME, 'node_modules', 'dsh-tianxi')
+const BUNDLE = BOOT.bundleDir || SHIPPED_BUNDLE
+const PLUGINS = path.join(BUNDLE, 'plugins')
+const ICON = path.join(__dirname, 'icon.png')
+for (const d of [DSH_HOME, TIANXI_HOME, LOGS]) fs.mkdirSync(d, { recursive: true })
+
+// ---------- third-party model presets (all OpenAI-compatible chat completions) ----------
+const PRESETS = [
+  { id: 'deepseek', name: 'DeepSeek 深度求索', baseURL: 'https://api.deepseek.com/v1', models: ['deepseek-chat', 'deepseek-reasoner'], hint: '在 platform.deepseek.com 创建 API Key。' },
+  { id: 'qwen', name: '通义千问（阿里云百炼）', baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1', models: ['qwen-plus', 'qwen-max', 'qwen-turbo'], hint: '在阿里云百炼控制台创建 API Key。' },
+  { id: 'kimi', name: 'Kimi（月之暗面）', baseURL: 'https://api.moonshot.cn/v1', models: ['kimi-k2-turbo-preview', 'kimi-latest'], hint: '在 platform.moonshot.cn 创建 API Key。' },
+  { id: 'zhipu', name: '智谱 GLM', baseURL: 'https://open.bigmodel.cn/api/paas/v4', models: ['glm-4.6', 'glm-4.5-air'], hint: '在 open.bigmodel.cn 创建 API Key。' },
+  { id: 'doubao', name: '豆包（火山方舟）', baseURL: 'https://ark.cn-beijing.volces.com/api/v3', models: [], hint: '模型一栏填火山方舟里的推理接入点 ID（ep- 开头）。' },
+  { id: 'magpie', name: 'Magpie 本机路由', baseURL: 'http://127.0.0.1:3425/v1', models: [], key: 'magpie', hint: '先在这台电脑上打开 Magpie。API Key 填 magpie；模型写成“服务商/模型”，比如 openrouter/xxx:free，名字以 Magpie 里显示的为准。' },
+  { id: 'ollama', name: 'Ollama 本机模型（免费）', baseURL: 'http://127.0.0.1:11434/v1', models: ['qwen3:8b', 'qwen2.5:7b'], key: 'ollama', hint: '先安装 Ollama 并拉取一个支持工具调用的模型。API Key 填 ollama。本机小模型做复杂任务会吃力。' },
+  { id: 'custom', name: '其他 OpenAI 兼容接口', baseURL: 'https://', models: [], hint: '任何兼容 OpenAI /chat/completions 并支持工具调用的服务都可以。' },
+]
+
+// ---------- config (API key encrypted with Windows DPAPI via safeStorage) ----------
+const loadCfg = () => { try { return JSON.parse(fs.readFileSync(CFG_FILE, 'utf8')) } catch { return {} } }
+const saveCfg = (c) => fs.writeFileSync(CFG_FILE, JSON.stringify(c, null, 2))
+const getKey = (c) => {
+  if (!c.key) return ''
+  try { return safeStorage.isEncryptionAvailable() && c.keyEnc ? safeStorage.decryptString(Buffer.from(c.key, 'base64')) : Buffer.from(c.key, 'base64').toString('utf8') } catch { return '' }
+}
+const putKey = (c, k) => {
+  if (safeStorage.isEncryptionAvailable()) { c.key = safeStorage.encryptString(k).toString('base64'); c.keyEnc = true } else { c.key = Buffer.from(k, 'utf8').toString('base64'); c.keyEnc = false }
+}
+const encrypt = (k) => safeStorage.isEncryptionAvailable() ? { v: safeStorage.encryptString(k).toString('base64'), enc: true } : { v: Buffer.from(k, 'utf8').toString('base64'), enc: false }
+const decrypt = (v, enc) => { try { return enc ? safeStorage.decryptString(Buffer.from(v, 'base64')) : Buffer.from(v, 'base64').toString('utf8') } catch { return '' } }
+let cfg = loadCfg()
+
+// ---------- runtime (DeepSeek Harness + 天禧 plugins) ----------
+const TOKEN = crypto.randomBytes(18).toString('hex')
+let PORT = 0
+const DSH_ENTRY = path.join(RUNTIME, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js')
+let child = null
+let quitting = false
+let restarts = 0
+
+const yamlStr = (s) => JSON.stringify(String(s))
+function writePatch(target = PATCH_FILE) {
+  // The bundle's own patch (plugins + the lean 'tianxi' preset), with plugin names turned into file URLs,
+  // followed by the model the user picked.
+  const bundle = fs.readFileSync(path.join(BUNDLE, 'cordis.patch.yml'), 'utf8')
+    .replace(/name: dsh-tianxi\/plugins\/([\w-]+\.js)/g, (_m, f) => 'name: ' + yamlStr(pathToFileURL(path.join(PLUGINS, f)).href))
+  const yml = `# Generated by 天禧AI at start-up. Edit settings in the app instead.
+${bundle}
+- id: llm-pi-ai
+  config:
+    providers:
+      tianxi:
+        apiKeyEnv: TIANXI_API_KEY
+        api: openai-completions
+        baseURL: ${yamlStr(cfg.baseURL || 'http://127.0.0.1:9/v1')}
+        compat:
+          supportsDeveloperRole: false
+          maxTokensField: max_tokens
+        models:
+          - id: ${yamlStr(cfg.model || 'none')}
+- id: agent-default-model
+  name: '@deepseek-ai/dsh-agent-default-model'
+  config:
+    provider: tianxi
+    model: ${yamlStr(cfg.model || 'none')}
+`
+  fs.writeFileSync(target, yml)
+}
+
+const freePort = (pref) => new Promise((resolve) => {
+  const s = net.createServer(); s.once('error', () => { const t = net.createServer(); t.listen(0, '127.0.0.1', () => { const p = t.address().port; t.close(() => resolve(p)) }) })
+  s.listen(pref, '127.0.0.1', () => s.close(() => resolve(pref)))
+})
+
+async function startRuntime() {
+  if (child) return
+  writePatch()
+  PORT = PORT || await freePort(3090)
+  const log = fs.createWriteStream(path.join(LOGS, 'runtime.log'), { flags: 'a' })
+  log.write(`\n===== ${new Date().toISOString()} start =====\n`)
+  child = spawn(process.execPath, [DSH_ENTRY, '--profile', 'web', '--patch', PATCH_FILE, '--no-open', '--port', '0'], {
+    cwd: os.homedir(), windowsHide: true,
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME, TIANXI_HOME, TIANXI_PORT: String(PORT), TIANXI_TOKEN: TOKEN, TIANXI_API_KEY: getKey(cfg) || 'none' },
+  })
+  child.stdout.pipe(log); child.stderr.pipe(log)
+  const me = child
+  child.on('exit', (code) => {
+    log.write(`===== exit ${code} =====\n`)
+    if (child === me) child = null
+    if (!quitting && !restarting && restarts < 5) { restarts++; setTimeout(startRuntime, 3000) }
+  })
+}
+let restarting = false
+function stopRuntime() {
+  return new Promise((resolve) => {
+    if (!child) return resolve()
+    const c = child; child = null
+    c.once('exit', () => resolve())
+    if (process.platform === 'win32') spawn('taskkill', ['/pid', String(c.pid), '/t', '/f'], { windowsHide: true })
+    else c.kill()
+    setTimeout(resolve, 5000)
+  })
+}
+async function waitReady(ms = 60000) {
+  const t0 = Date.now()
+  while (Date.now() - t0 < ms) {
+    try { const r = await fetch(`http://127.0.0.1:${PORT}/api/ping`, { headers: { 'x-tianxi-token': TOKEN } }); if (r.ok) return true } catch {}
+    await new Promise((r) => setTimeout(r, 400))
+  }
+  return false
+}
+const uiURL = (page = '') => `http://127.0.0.1:${PORT}/${page}?t=${TOKEN}`
+const api = (p, body) => fetch(`http://127.0.0.1:${PORT}/api/${p}`, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', 'x-tianxi-token': TOKEN }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json()).catch(() => null)
+
+// ---------- windows ----------
+let win = null, pill = null, tray = null, refreshTray = () => {}
+
+function createWindow(hidden) {
+  win = new BrowserWindow({
+    width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, frame: false, backgroundColor: '#212121',
+    title: '天禧AI', icon: ICON, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
+  })
+  win.on('close', (e) => { if (!quitting) { e.preventDefault(); win.hide() } })
+  win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
+  win.once('ready-to-show', () => { if (!hidden) win.show() })
+}
+async function loadMain() {
+  if (!getKey(cfg)) { await win.loadFile(path.join(BUNDLE, 'web', 'index.html')); return }
+  await win.loadFile(path.join(__dirname, 'loading.html'))
+  await startRuntime()
+  if (await waitReady()) { await win.loadURL(uiURL()); createPill(); updater.started() }
+  else win.webContents.executeJavaScript(`document.getElementById('msg').textContent = '天禧没能启动。日志在 ${LOGS.replace(/\\/g, '\\\\')}\\\\runtime.log'`)
+}
+function createPill() {
+  if (pill || cfg.pill === false) return
+  const { workArea } = screen.getPrimaryDisplay()
+  pill = new BrowserWindow({
+    width: 340, height: 46, x: Math.round(workArea.x + workArea.width / 2 - 170), y: workArea.y, frame: false, transparent: true, resizable: false,
+    alwaysOnTop: true, skipTaskbar: true, focusable: false, hasShadow: false, show: false,
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
+  })
+  pill.setAlwaysOnTop(true, 'screen-saver')
+  pill.loadURL(uiURL('pill.html'))
+  pill.once('ready-to-show', () => pill.showInactive())
+  pill.on('closed', () => { pill = null })
+}
+const showMain = () => { if (!win) return; if (win.isMinimized()) win.restore(); win.show(); win.focus() }
+
+function createTray() {
+  tray = new Tray(nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 }))
+  tray.setToolTip('天禧AI 概念版')
+  const menu = () => Menu.buildFromTemplate([
+    { label: '打开天禧', click: showMain },
+    { label: '天禧之光（屏幕顶部状态）', type: 'checkbox', checked: cfg.pill !== false, click: (m) => { cfg.pill = m.checked; saveCfg(cfg); if (m.checked) createPill(); else pill?.close() } },
+    { label: '临时模式（不记住这段对话）', type: 'checkbox', checked: false, click: (m) => api('private', { on: m.checked }) },
+    { type: 'separator' },
+    { label: '打开数据文件夹', click: () => shell.openPath(USER) },
+    { label: updater.status().pending ? `新版本 ${updater.status().pending.version} 已下好，点这里重启` : `版本 ${BOOT.version} · 检查更新`, click: () => (updater.status().pending ? relaunch() : runCheck(true)) },
+    { label: '退出天禧', click: () => { quitting = true; app.quit() } },
+  ])
+  tray.setContextMenu(menu())
+  refreshTray = () => tray.setContextMenu(menu())
+  tray.on('click', showMain)
+}
+
+// ---------- bridge for the page ----------
+ipcMain.handle('tianxi:win', (e, cmd) => {
+  const w = BrowserWindow.fromWebContents(e.sender); if (!w) return
+  if (cmd === 'min') w.minimize(); else if (cmd === 'max') w.isMaximized() ? w.unmaximize() : w.maximize(); else if (cmd === 'close') w.close()
+})
+ipcMain.handle('tianxi:show', () => showMain())
+ipcMain.handle('tianxi:getConfig', () => ({
+  provider: cfg.provider || 'deepseek', model: cfg.model || '', baseURL: cfg.baseURL || '', hasKey: !!getKey(cfg),
+  autoLaunch: app.getLoginItemSettings().openAtLogin, presets: PRESETS,
+}))
+// Ask an OpenAI-compatible endpoint which models it serves (Magpie and Ollama list theirs here).
+ipcMain.handle('tianxi:listModels', async (e, c = {}) => {
+  const key = c.apiKey || (PRESETS.find((p) => p.id === c.provider) || {}).key || getKey(cfg)
+  try {
+    const r = await fetch(String(c.baseURL || '').replace(/\/+$/, '') + '/models', { headers: { authorization: 'Bearer ' + key }, signal: AbortSignal.timeout(8000) })
+    if (!r.ok) return { ok: false, error: 'HTTP ' + r.status }
+    const j = await r.json()
+    return { ok: true, models: (j.data || j.models || []).map((m) => m.id || m.name).filter(Boolean) }
+  } catch (err) { return { ok: false, error: err.message } }
+})
+ipcMain.handle('tianxi:saveConfig', async (e, c) => {
+  const key = c.apiKey || (PRESETS.find((p) => p.id === c.provider) || {}).key || getKey(cfg)
+  const baseURL = String(c.baseURL || '').replace(/\/+$/, '')
+  // Check the model answers (and accepts tools) before switching to it.
+  try {
+    const r = await fetch(baseURL + '/chat/completions', {
+      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + key },
+      body: JSON.stringify({ model: c.model, max_tokens: 8, messages: [{ role: 'user', content: '你好' }],
+        tools: [{ type: 'function', function: { name: 'ping', description: 'test', parameters: { type: 'object', properties: {} } } }] }),
+      signal: AbortSignal.timeout(30000),
+    })
+    if (!r.ok) { const t = await r.text(); return { ok: false, error: `HTTP ${r.status} ${t.slice(0, 200)}` } }
+  } catch (err) { return { ok: false, error: err.message } }
+  cfg.provider = c.provider; cfg.model = c.model; cfg.baseURL = baseURL
+  if (key && key !== getKey(cfg)) putKey(cfg, key)
+  if (typeof c.autoLaunch === 'boolean') app.setLoginItemSettings({ openAtLogin: c.autoLaunch, args: ['--hidden'] })
+  saveCfg(cfg)
+  setTimeout(async () => { restarting = true; await stopRuntime(); restarting = false; restarts = 0; await loadMain() }, 300)
+  return { ok: true }
+})
+
+// ---------- 评测: a separate runtime with its own data and a sandbox per task ----------
+const EVAL_DIR = path.join(USER, 'eval')
+let evalChild = null, evalOut = null
+const readJSON = (f) => { try { return JSON.parse(fs.readFileSync(f, 'utf8')) } catch { return null } }
+const killTree = (c) => { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(c.pid), '/t', '/f'], { windowsHide: true }) : c.kill() } catch {} }
+ipcMain.handle('tianxi:runEval', async (e, o = {}) => {
+  if (evalChild) return { ok: false, error: '评测正在进行' }
+  if (!getKey(cfg)) return { ok: false, error: '先接好模型' }
+  const stamp = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16).replace(/[:T]/g, '-')
+  evalOut = path.join(EVAL_DIR, `${stamp}_${String(cfg.model || 'model').replace(/[^\w.-]/g, '_')}`)
+  const base = path.join(USER, 'eval-runtime')
+  fs.rmSync(base, { recursive: true, force: true })
+  for (const d of [evalOut, base]) fs.mkdirSync(d, { recursive: true })
+  const patch = path.join(base, 'patch.yml'); writePatch(patch)
+  const log = fs.createWriteStream(path.join(evalOut, 'runtime.log'))
+  const preset = PRESETS.find((p) => p.id === cfg.provider)
+  evalChild = spawn(process.execPath, [DSH_ENTRY, '--profile', 'web', '--patch', patch, '--no-open', '--port', '0'], {
+    cwd: evalOut, windowsHide: true,
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME: path.join(base, 'dsh'), TIANXI_HOME: path.join(base, 'data'), TIANXI_API_KEY: getKey(cfg),
+      TIANXI_EVAL: '1', TIANXI_EVAL_OUT: evalOut, TIANXI_EVAL_RUNS: String(o.runs || 3), TIANXI_EVAL_ONLY: o.only || '',
+      TIANXI_EVAL_PROVIDER: preset ? preset.name : cfg.provider, TIANXI_JUDGE_URL: cfg.baseURL, TIANXI_JUDGE_MODEL: cfg.model },
+  })
+  evalChild.stdout.pipe(log); evalChild.stderr.pipe(log)
+  const me = evalChild
+  evalChild.on('exit', () => { if (evalChild === me) evalChild = null })
+  return { ok: true, out: evalOut }
+})
+ipcMain.handle('tianxi:evalStop', () => { if (evalChild) { killTree(evalChild); evalChild = null } return { ok: true } })
+ipcMain.handle('tianxi:evalStatus', () => {
+  let history = []
+  try {
+    history = fs.readdirSync(EVAL_DIR).sort().reverse().slice(0, 12).map((d) => ({ dir: path.join(EVAL_DIR, d), ...(readJSON(path.join(EVAL_DIR, d, 'progress.json')) || { state: 'unknown' }) }))
+  } catch {}
+  return { running: !!evalChild, out: evalOut, history }
+})
+ipcMain.handle('tianxi:evalOpen', (e, dir) => {
+  const d = dir || evalOut; if (!d || !d.startsWith(EVAL_DIR)) return
+  const rep = path.join(d, '报告.md'); shell.openPath(fs.existsSync(rep) ? rep : d)
+})
+
+// ---------- updates: differential, from the GitHub repository (see updater.js) ----------
+const UPDATE_DEFAULT = readJSON(path.join(__dirname, 'update.json')) || {}
+const getSource = () => ({
+  repo: cfg.updateRepo || UPDATE_DEFAULT.repo || '', branch: cfg.updateBranch || UPDATE_DEFAULT.branch || 'main',
+  token: cfg.updateToken ? decrypt(cfg.updateToken, cfg.updateTokenEnc) : '',
+})
+const updater = createUpdater({
+  userDir: USER, boot: BOOT, runtimeDir: RUNTIME, shippedApp: path.join(process.resourcesPath || '', 'app'), shippedBundle: SHIPPED_BUNDLE, getSource,
+  log: (m) => { try { fs.appendFileSync(path.join(LOGS, 'update.log'), `${new Date().toISOString()} ${m}\n`) } catch {} },
+})
+async function runCheck(manual) {
+  const before = updater.status().pending
+  const st = await updater.check()
+  refreshTray()
+  if (st.pending && !before) {
+    // Nobody is using 天禧 right now: switch over quietly. Otherwise the page offers a restart.
+    if ((!win || !win.isVisible()) && powerMonitor.getSystemIdleTime() > 180 && !evalChild) return relaunch()
+  }
+  if (win && !win.isDestroyed() && (st.pending || manual)) win.webContents.send('tianxi:update', st)
+  return st
+}
+async function relaunch() {
+  quitting = true
+  if (evalChild) killTree(evalChild)
+  await stopRuntime()
+  const args = process.argv.slice(1).filter((a) => a !== '--hidden')
+  app.relaunch({ args: win && win.isVisible() ? args : args.concat('--hidden') })
+  app.exit(0)
+}
+setInterval(runCheck, 2 * 3600 * 1000)
+ipcMain.handle('tianxi:updateStatus', () => updater.status())
+ipcMain.handle('tianxi:updateCheck', () => runCheck(true))
+ipcMain.handle('tianxi:restart', () => relaunch())
+ipcMain.handle('tianxi:updateSource', (e, c = {}) => {
+  if (c.repo !== undefined) cfg.updateRepo = String(c.repo).trim().replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '')
+  if (c.token) { const t = encrypt(String(c.token).trim()); cfg.updateToken = t.v; cfg.updateTokenEnc = t.enc }
+  if (c.clearToken) { delete cfg.updateToken; delete cfg.updateTokenEnc }
+  saveCfg(cfg)
+  return updater.status()
+})
+
+// ---------- presence: lets 天禧 do queued work while you are away ----------
+setInterval(() => { if (child) api('presence', { idleSec: powerMonitor.getSystemIdleTime() }) }, 30000)
+powerMonitor.on('lock-screen', () => { if (child) api('presence', { idleSec: 3600 }) })
+powerMonitor.on('unlock-screen', () => { if (child) api('presence', { idleSec: 0 }) })
+
+// ---------- lifecycle ----------
+app.on('second-instance', showMain)
+app.on('before-quit', () => { quitting = true })
+app.on('will-quit', () => { globalShortcut.unregisterAll() })
+app.on('quit', () => { if (evalChild) killTree(evalChild); if (child) { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(child.pid), '/t', '/f']) : child.kill() } catch {} } })
+app.on('window-all-closed', () => {})
+
+app.whenReady().then(async () => {
+  const hidden = process.argv.includes('--hidden')
+  // First run: put a shortcut on the desktop and in the Start menu.
+  if (app.isPackaged && process.platform === 'win32' && !cfg.shortcuts) {
+    try {
+      const opts = { target: process.execPath, icon: process.execPath, iconIndex: 0, appUserModelId: APP_ID, description: '天禧AI 概念版' }
+      shell.writeShortcutLink(path.join(app.getPath('desktop'), '天禧AI 概念版.lnk'), opts)
+      const sm = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs')
+      shell.writeShortcutLink(path.join(sm, '天禧AI 概念版.lnk'), opts)
+      cfg.shortcuts = true; saveCfg(cfg)
+    } catch {}
+  }
+  createWindow(hidden)
+  createTray()
+  globalShortcut.register('Control+Alt+Space', () => { win.isVisible() && win.isFocused() ? win.hide() : showMain() })
+  await loadMain()
+  setTimeout(runCheck, 20000)
+})

@@ -1,0 +1,443 @@
+{
+ "version": "0.4.0",
+ "notes": "支持从 GitHub 差分更新",
+ "minBase": "0.4.0",
+ "at": "2026-10-20T10:51:10.335Z",
+ "files": {
+  "app/shell.js": {
+   "path": "desktop/shell.js",
+   "sha256": "bfa23f845e8600c72cda4b6dc5be1a38109783d89e1e087d4a2ea09873535f94",
+   "size": 20535
+  },
+  "app/updater.js": {
+   "path": "desktop/updater.js",
+   "sha256": "0f98057c4f582ba9185d88bb230a01ec2525c782c6a0987497ecf8272f7202ab",
+   "size": 6261
+  },
+  "app/preload.js": {
+   "path": "desktop/preload.js",
+   "sha256": "6f3decb90ae337805a6f8aad696400bca6586939e93654e884f3524dcd040813",
+   "size": 982
+  },
+  "app/loading.html": {
+   "path": "desktop/loading.html",
+   "sha256": "f15f5f29ef8c4d48a691eed92fc55c1043f620de3e5bf4a87395ce1fcd5a16a8",
+   "size": 762
+  },
+  "app/icon.png": {
+   "path": "desktop/icon.png",
+   "sha256": "90987bfce1773a0687e47f19605f1b307e1a8e191cff07edbd8d95e40e451a61",
+   "size": 32996
+  },
+  "app/update.json": {
+   "path": "desktop/update.json",
+   "sha256": "09a8715ce6fb6a2a833e08ccaf7e4e496a2aa4295cab49fd31757354530705cc",
+   "size": 58
+  },
+  "bundle/cordis.patch.yml": {
+   "path": "tianxi/cordis.patch.yml",
+   "sha256": "5f1cc6c71b54bb1a4e87ad7e176aacd17a723003baa06d98642df2154eca822b",
+   "size": 2017
+  },
+  "bundle/eval/fixtures/01/下载/IMG_0012.jpg": {
+   "path": "tianxi/eval/fixtures/01/下载/IMG_0012.jpg",
+   "sha256": "efb02e900e055bfe9e9f93e5f779757601ec06d9744fa0f7727031051de29ff4",
+   "size": 676
+  },
+  "bundle/eval/fixtures/01/下载/产品介绍.pptx": {
+   "path": "tianxi/eval/fixtures/01/下载/产品介绍.pptx",
+   "sha256": "669954c88ab353e53ecc7002bf03e1aa1655175575d669ae5504c82cd2a526ad",
+   "size": 28255
+  },
+  "bundle/eval/fixtures/01/下载/会议记录.txt": {
+   "path": "tianxi/eval/fixtures/01/下载/会议记录.txt",
+   "sha256": "d290e8e70650b95a54031d03d6a03c04077621356ad858bc7f85b7288a2a3e72",
+   "size": 35
+  },
+  "bundle/eval/fixtures/01/下载/合同v2.pdf": {
+   "path": "tianxi/eval/fixtures/01/下载/合同v2.pdf",
+   "sha256": "2476fcee1d4ec4f449cc8866970e186cebe4785a1b967458d89c1dd38331c79c",
+   "size": 2329
+  },
+  "bundle/eval/fixtures/01/下载/截图 2026-10-12.png": {
+   "path": "tianxi/eval/fixtures/01/下载/截图 2026-10-12.png",
+   "sha256": "200586251325601abcfe11232c5443775cf279ec81e89306c843cff1743ba2f2",
+   "size": 138
+  },
+  "bundle/eval/fixtures/01/下载/报价单.xlsx": {
+   "path": "tianxi/eval/fixtures/01/下载/报价单.xlsx",
+   "sha256": "5a15155eef17ebd84b45980f9952a2d113ef858ffa2a472a8dc6e834a5af1a06",
+   "size": 4881
+  },
+  "bundle/eval/fixtures/01/下载/素材包.zip": {
+   "path": "tianxi/eval/fixtures/01/下载/素材包.zip",
+   "sha256": "ea132efa649937bb3be3e01d26e3a29ac2387fd2d1645370c1e32babb1a9cec4",
+   "size": 170
+  },
+  "bundle/eval/fixtures/01/下载/设计规范v3.docx": {
+   "path": "tianxi/eval/fixtures/01/下载/设计规范v3.docx",
+   "sha256": "7f3efc5fa35293dcdef850885a79950a077286e739d9d9d576390f65fb85b89d",
+   "size": 36662
+  },
+  "bundle/eval/fixtures/02/下载/readme.txt": {
+   "path": "tianxi/eval/fixtures/02/下载/readme.txt",
+   "sha256": "67e50ec6de8f0a4182c452793ce84c772d2408dd3e311cb1b315ab3d5012a07e",
+   "size": 13
+  },
+  "bundle/eval/fixtures/02/下载/发票-10月(1).pdf": {
+   "path": "tianxi/eval/fixtures/02/下载/发票-10月(1).pdf",
+   "sha256": "f3db1232b3f5655ca07e45cacb44b62636fb2e52a18451bf9bf0bfafae8ca809",
+   "size": 2370
+  },
+  "bundle/eval/fixtures/02/下载/发票-10月.pdf": {
+   "path": "tianxi/eval/fixtures/02/下载/发票-10月.pdf",
+   "sha256": "f3db1232b3f5655ca07e45cacb44b62636fb2e52a18451bf9bf0bfafae8ca809",
+   "size": 2370
+  },
+  "bundle/eval/fixtures/02/下载/团建合影 - 副本.jpg": {
+   "path": "tianxi/eval/fixtures/02/下载/团建合影 - 副本.jpg",
+   "sha256": "a33e0d10cde688eab3313051202eecf0f6eb8b30c27e09c14a2645036be12301",
+   "size": 676
+  },
+  "bundle/eval/fixtures/02/下载/团建合影.jpg": {
+   "path": "tianxi/eval/fixtures/02/下载/团建合影.jpg",
+   "sha256": "a33e0d10cde688eab3313051202eecf0f6eb8b30c27e09c14a2645036be12301",
+   "size": 676
+  },
+  "bundle/eval/fixtures/02/下载/方案A.docx": {
+   "path": "tianxi/eval/fixtures/02/下载/方案A.docx",
+   "sha256": "847880583e25880e84e1f82a096d9b1249dac3dff92fee6fb0cc4d96a8d4562c",
+   "size": 36639
+  },
+  "bundle/eval/fixtures/02/下载/方案B.docx": {
+   "path": "tianxi/eval/fixtures/02/下载/方案B.docx",
+   "sha256": "905cf62919f5612ab81a879d542171b8cdb23e950145f73077c070a393f8b815",
+   "size": 36660
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4100.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4100.jpg",
+   "sha256": "8a184c77e3f45f8b208e98d1dd58bc1c964728774d683d13a9254644bcb865bc",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4107.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4107.jpg",
+   "sha256": "56889f720e1a9e1e88880180dfb2ff3d030edf6b1d0a6730b6fee0d80309d04b",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4114.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4114.jpg",
+   "sha256": "72f0f59b08c098170230aeb1894ffbb7c2fffdaad6a2e6185e90241bb0bfb2b9",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4121.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4121.jpg",
+   "sha256": "e30f955dbf66222ad44cb3b340add67658f44177395e836f46f39605cf5904ac",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4128.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4128.jpg",
+   "sha256": "03050bdf9893b2c2d88ed0a089c330622d2a8a2e606a97c97e7e1254431188ca",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4135.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4135.jpg",
+   "sha256": "cfd0e7064348191bc0eb59396015259f5cea4e24f88291372d480a305250d378",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4142.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4142.jpg",
+   "sha256": "21f2b18b70a67b0f0fc47e653cb6ac275f9eaea6a1ccd638b4772b1ef3a2aa18",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4149.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4149.jpg",
+   "sha256": "6cf84eebcfb570c9084cb73df10453b8bbf6137b15040e4329860e8c07cfe88f",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4156.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4156.jpg",
+   "sha256": "306faff61a3a831adaec7b4a1532d09b187aa5a5f0f5a12e66c1b55519e1caf2",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4163.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4163.jpg",
+   "sha256": "d55953509fb20cb8d7921da63bef2b6494d6ed231dba137b95b28656a0b4dc19",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4170.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4170.jpg",
+   "sha256": "0e2eb2411df0102fd883a3932be48b9293bec83dad7bf63c036aafbd87ae4cf4",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4177.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4177.jpg",
+   "sha256": "3ac521b222569d97aeca4129b1849bcd6d9cee23873554f4ed84ea73738f37e0",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4184.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4184.jpg",
+   "sha256": "a2171a401f433033f43e563811d2d502e6a0014d752b469b8e049b26b94e1f72",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4191.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4191.jpg",
+   "sha256": "96306800c20a26b6296784fb8b4e760aad078b312aafddac78b6ee2e907df9a3",
+   "size": 781
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4198.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4198.jpg",
+   "sha256": "01f605cfbac452f4f602aef9095916d6ed5d9e3c0df7174a1b60256d3816b610",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4205.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4205.jpg",
+   "sha256": "8ece0bcaa67ea764710874c38a625b0e8484f6aa1cdfbcf9e786e1f7a861474d",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4212.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4212.jpg",
+   "sha256": "34904283176ce0a0c7bd5328668fa9041d821df4484f7789174eac30f0bf6a71",
+   "size": 782
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4219.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4219.jpg",
+   "sha256": "a5dbafacb5b05f00e681ec699ac4f0fe4710d45f2eabd78dcb8d1340da996a03",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4226.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4226.jpg",
+   "sha256": "5cdc37c3e6ce4b8426fb99e19d0c110541f16b0a04e89c49bcfc42f64d469be1",
+   "size": 783
+  },
+  "bundle/eval/fixtures/03/照片/DSC_4233.jpg": {
+   "path": "tianxi/eval/fixtures/03/照片/DSC_4233.jpg",
+   "sha256": "6364b8af29580b9c85c36e77185109b00b5ba6cf93b521c51d65ccf502563876",
+   "size": 783
+  },
+  "bundle/eval/fixtures/04/采购合同.pdf": {
+   "path": "tianxi/eval/fixtures/04/采购合同.pdf",
+   "sha256": "860a59a5a8921271a62f8c9beb9c039d354e5ccd573731f34e517f62b9e30ea3",
+   "size": 4627
+  },
+  "bundle/eval/fixtures/05/会议纪要.docx": {
+   "path": "tianxi/eval/fixtures/05/会议纪要.docx",
+   "sha256": "bf2de7375ecadfae366ee064d29408cd39955242b8d8bf40eba5c7efb8863516",
+   "size": 37047
+  },
+  "bundle/eval/fixtures/06/周报.docx": {
+   "path": "tianxi/eval/fixtures/06/周报.docx",
+   "sha256": "810ca9081ada53077c8eb7e14a0e9111271000df1fe70addd2740cc6042545f0",
+   "size": 37365
+  },
+  "bundle/eval/fixtures/07/Q3汇报.pptx": {
+   "path": "tianxi/eval/fixtures/07/Q3汇报.pptx",
+   "sha256": "098531bfa1b8f78258c5d04c4f6f8734337fc46cf46bf8d796993df034e35995",
+   "size": 32690
+  },
+  "bundle/eval/fixtures/08/销售.xlsx": {
+   "path": "tianxi/eval/fixtures/08/销售.xlsx",
+   "sha256": "f4e1352b89ef3d8f1cf1493d0c5e6d98834b23ce2eb475deb9473688a41bc991",
+   "size": 5356
+  },
+  "bundle/eval/fixtures/09/供应商A.xlsx": {
+   "path": "tianxi/eval/fixtures/09/供应商A.xlsx",
+   "sha256": "6959a12e877b151ed28bf1c2032deac39294637e528e50c0ab116cfd2207edac",
+   "size": 5085
+  },
+  "bundle/eval/fixtures/09/供应商B.xlsx": {
+   "path": "tianxi/eval/fixtures/09/供应商B.xlsx",
+   "sha256": "b7885c4bdaa0079046106804d700050bd7ee8bc47895fd409c4a92ed452c2362",
+   "size": 5057
+  },
+  "bundle/eval/fixtures/10/员工采购数据.xlsx": {
+   "path": "tianxi/eval/fixtures/10/员工采购数据.xlsx",
+   "sha256": "1ce521d73e696c378d0568017cecbd69351106ddb9f05a22f558ae0a1a5c3f6d",
+   "size": 5288
+  },
+  "bundle/eval/fixtures/14/聊天记录.txt": {
+   "path": "tianxi/eval/fixtures/14/聊天记录.txt",
+   "sha256": "7375207b4615e92ce2a18dccea9db9d2a9da6231844713d6aea79c0a64500a83",
+   "size": 558
+  },
+  "bundle/eval/fixtures/16/邮件/客户需求-上海云图.txt": {
+   "path": "tianxi/eval/fixtures/16/邮件/客户需求-上海云图.txt",
+   "sha256": "784ca68aee9c2a324b92802155c22647c52c88ebbcd06d51d623c9f09cc9af08",
+   "size": 209
+  },
+  "bundle/eval/fixtures/16/邮件/客户需求-深圳华光.txt": {
+   "path": "tianxi/eval/fixtures/16/邮件/客户需求-深圳华光.txt",
+   "sha256": "c91278ceff63ed7d95d7c768b222fa9e8e0055515cd3b41c1536341ea9257cce",
+   "size": 196
+  },
+  "bundle/eval/fixtures/16/邮件/客户需求-联想渠道商北京星辰.txt": {
+   "path": "tianxi/eval/fixtures/16/邮件/客户需求-联想渠道商北京星辰.txt",
+   "sha256": "eaba70ec0a55d10426b683b94152bdffc926cfc569014fba0cbbea97cc3d4a5e",
+   "size": 221
+  },
+  "bundle/eval/fixtures/26/资料/说明.docx": {
+   "path": "tianxi/eval/fixtures/26/资料/说明.docx",
+   "sha256": "3e90405d9a125d34e903c310516e1274a6f175c238e6373921f9365e74e05a45",
+   "size": 36632
+  },
+  "bundle/eval/fixtures/26/资料/资料1.txt": {
+   "path": "tianxi/eval/fixtures/26/资料/资料1.txt",
+   "sha256": "6b053f3f7fa0ba12c4e7e147495473618948724fcf67ebcfd1d373201e338e98",
+   "size": 16
+  },
+  "bundle/eval/fixtures/26/资料/资料2.txt": {
+   "path": "tianxi/eval/fixtures/26/资料/资料2.txt",
+   "sha256": "83ca0f5830af2ef0d38d83db659d942d0f84da05398875ff8c62f6eeb6e59601",
+   "size": 16
+  },
+  "bundle/eval/fixtures/26/资料/资料3.txt": {
+   "path": "tianxi/eval/fixtures/26/资料/资料3.txt",
+   "sha256": "c67cab6844bfe4468ca66b9ad2b2b33c6c3a6acce85caa46835b3d8f7e7f4163",
+   "size": 16
+  },
+  "bundle/eval/fixtures/26/资料/资料4.txt": {
+   "path": "tianxi/eval/fixtures/26/资料/资料4.txt",
+   "sha256": "6614ce233c9b6384649b8c36a72a8ef1138a23291d8a50d286e66124be681df2",
+   "size": 16
+  },
+  "bundle/eval/fixtures/26/资料/资料5.txt": {
+   "path": "tianxi/eval/fixtures/26/资料/资料5.txt",
+   "sha256": "5184b94e3757f9bde9a906ec60a7488e98c9b81c3072fd18bd9eb7d972abd6ad",
+   "size": 16
+  },
+  "bundle/eval/fixtures/27/发票/发票_01.pdf": {
+   "path": "tianxi/eval/fixtures/27/发票/发票_01.pdf",
+   "sha256": "cf9ca3193ac29b5db2d07df4fa6a163af69f6e145c8bdd8b18b9cf94feae3114",
+   "size": 2535
+  },
+  "bundle/eval/fixtures/27/发票/发票_02.pdf": {
+   "path": "tianxi/eval/fixtures/27/发票/发票_02.pdf",
+   "sha256": "cacc4d77e045f7f6063a616a73ae3460d39b27262e1d698a7f094a246932cbcc",
+   "size": 2530
+  },
+  "bundle/eval/fixtures/27/发票/发票_03.pdf": {
+   "path": "tianxi/eval/fixtures/27/发票/发票_03.pdf",
+   "sha256": "b00b194f0cc3656cc32d7f875e4ffc0696604462ff7ead36a2d1df8295392cc1",
+   "size": 2535
+  },
+  "bundle/eval/fixtures/27/发票/发票_04.pdf": {
+   "path": "tianxi/eval/fixtures/27/发票/发票_04.pdf",
+   "sha256": "55cba51ac499c3b1afeedf7e55361bb83603dc39483779a444cf0fdd57a66100",
+   "size": 2529
+  },
+  "bundle/eval/fixtures/27/发票/发票_05.pdf": {
+   "path": "tianxi/eval/fixtures/27/发票/发票_05.pdf",
+   "sha256": "e60cd87f3d82eba1129ad774471cbfc3dec69ac2c04f0c42f886eaac75868833",
+   "size": 2533
+  },
+  "bundle/eval/fixtures/30/下载/IMG_0012.jpg": {
+   "path": "tianxi/eval/fixtures/30/下载/IMG_0012.jpg",
+   "sha256": "efb02e900e055bfe9e9f93e5f779757601ec06d9744fa0f7727031051de29ff4",
+   "size": 676
+  },
+  "bundle/eval/fixtures/30/下载/产品介绍.pptx": {
+   "path": "tianxi/eval/fixtures/30/下载/产品介绍.pptx",
+   "sha256": "669954c88ab353e53ecc7002bf03e1aa1655175575d669ae5504c82cd2a526ad",
+   "size": 28255
+  },
+  "bundle/eval/fixtures/30/下载/会议记录.txt": {
+   "path": "tianxi/eval/fixtures/30/下载/会议记录.txt",
+   "sha256": "d290e8e70650b95a54031d03d6a03c04077621356ad858bc7f85b7288a2a3e72",
+   "size": 35
+  },
+  "bundle/eval/fixtures/30/下载/合同v2.pdf": {
+   "path": "tianxi/eval/fixtures/30/下载/合同v2.pdf",
+   "sha256": "e08fd47c9f1739ac0d828d9fe59a2ad62642df46c4ed21f68ea3d01ede2bb58d",
+   "size": 2329
+  },
+  "bundle/eval/fixtures/30/下载/截图 2026-10-12.png": {
+   "path": "tianxi/eval/fixtures/30/下载/截图 2026-10-12.png",
+   "sha256": "200586251325601abcfe11232c5443775cf279ec81e89306c843cff1743ba2f2",
+   "size": 138
+  },
+  "bundle/eval/fixtures/30/下载/报价单.xlsx": {
+   "path": "tianxi/eval/fixtures/30/下载/报价单.xlsx",
+   "sha256": "5a15155eef17ebd84b45980f9952a2d113ef858ffa2a472a8dc6e834a5af1a06",
+   "size": 4881
+  },
+  "bundle/eval/fixtures/30/下载/素材包.zip": {
+   "path": "tianxi/eval/fixtures/30/下载/素材包.zip",
+   "sha256": "ea132efa649937bb3be3e01d26e3a29ac2387fd2d1645370c1e32babb1a9cec4",
+   "size": 170
+  },
+  "bundle/eval/fixtures/30/下载/设计规范v3.docx": {
+   "path": "tianxi/eval/fixtures/30/下载/设计规范v3.docx",
+   "sha256": "7f3efc5fa35293dcdef850885a79950a077286e739d9d9d576390f65fb85b89d",
+   "size": 36662
+  },
+  "bundle/eval/fixtures/manifest.json": {
+   "path": "tianxi/eval/fixtures/manifest.json",
+   "sha256": "10a869aac241b86c87004c636d07a7ef6c45f155a5647042cb0e8ccca5df7540",
+   "size": 3322
+  },
+  "bundle/eval/tasks.js": {
+   "path": "tianxi/eval/tasks.js",
+   "sha256": "0f9ee6907e554a946d9459fbb594570d1a7199f7143b95d12bc7c76f45f23ad7",
+   "size": 22582
+  },
+  "bundle/package.json": {
+   "path": "tianxi/package.json",
+   "sha256": "fccfa38689d4b43dbab7f5a82c98baf5efecddbdbb0427f5adac5e3a50e4ccd1",
+   "size": 252
+  },
+  "bundle/plugins/actions.js": {
+   "path": "tianxi/plugins/actions.js",
+   "sha256": "b50692897e7bd711de205c1528c1793d472c1150b7a7b8ac9cd263fbb49162b2",
+   "size": 17133
+  },
+  "bundle/plugins/ambient.js": {
+   "path": "tianxi/plugins/ambient.js",
+   "sha256": "9544fb5a181cdd6760a2ba3e8f44515e1d9c5288226951b74bd10c995ce41d9e",
+   "size": 6196
+  },
+  "bundle/plugins/eval.js": {
+   "path": "tianxi/plugins/eval.js",
+   "sha256": "ff5f2ae569ab5333cb0da4d754b0b7ac66675d1355a433ca5a50283491b7d15e",
+   "size": 12064
+  },
+  "bundle/plugins/host.js": {
+   "path": "tianxi/plugins/host.js",
+   "sha256": "5fbbf6fa694eba8b69aeb4bb393d4bba3e2c612057d94a928eae4e9e26669d1f",
+   "size": 23559
+  },
+  "bundle/plugins/ledger.js": {
+   "path": "tianxi/plugins/ledger.js",
+   "sha256": "360da9e0556359025c6374d587d1ec01e450d67e5c4f2d2ced7a18834c3d10d5",
+   "size": 5982
+  },
+  "bundle/plugins/memory.js": {
+   "path": "tianxi/plugins/memory.js",
+   "sha256": "259074b35c81cff15092ff2b2126ebca5ebc44f526de6ec2caab00e51c5ac2ca",
+   "size": 14449
+  },
+  "bundle/plugins/store.js": {
+   "path": "tianxi/plugins/store.js",
+   "sha256": "18fdef5fc1d252afa17967fe25718ca2b3e48d50e2ec3a0ed5210d6694a56fef",
+   "size": 3549
+  },
+  "bundle/web/app.js": {
+   "path": "tianxi/web/app.js",
+   "sha256": "d773d1dbd0523e53739aa5396a504f4482278912748f7c839062372a97118fe2",
+   "size": 78575
+  },
+  "bundle/web/index.html": {
+   "path": "tianxi/web/index.html",
+   "sha256": "dd164e4869ba7a9ddae8e6bb96113ea12655eae2256d5ced0e03320bf9c2aca9",
+   "size": 7357
+  },
+  "bundle/web/pill.html": {
+   "path": "tianxi/web/pill.html",
+   "sha256": "1e00a13282496519288accbc525037177d06834758687a01a1043a1cd8ed6a7b",
+   "size": 3733
+  },
+  "bundle/web/style.css": {
+   "path": "tianxi/web/style.css",
+   "sha256": "7322dca779105df57652299815eefa636fc3abeb1d2693c430bc6f9def04d353",
+   "size": 31288
+  }
+ }
+}

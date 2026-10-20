@@ -1,0 +1,10 @@
+{
+  "name": "tianxi-concept",
+  "productName": "天禧AI 概念版",
+  "version": "0.4.0",
+  "description": "天禧AI 概念版：基于 DeepSeek Harness 的个人智能体",
+  "main": "main.js",
+  "author": "Lenovo 交互创新",
+  "license": "UNLICENSED",
+  "private": true
+}
