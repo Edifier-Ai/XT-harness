@@ -8,18 +8,19 @@ OUT=$PWD/out-mac; APP="$OUT/小天 Bot.app"; RES="$APP/Contents/Resources"; PL="
 rm -rf "$OUT" && mkdir -p "$OUT"
 ditto -x -k dl/electron-mac-$ARCH.zip "$OUT"
 mv "$OUT/Electron.app" "$APP"
-# Electron counts itself as packaged only when its executable is not called Electron, and looks for
-# "<executable> Helper*.app" next to it: rename both (ASCII names; the name people see is CFBundleDisplayName).
+# Electron counts itself as packaged only when its executable is not called Electron, and looks for its helpers
+# as "<CFBundleName> Helper*.app": rename the executable, and the helpers after the app's name 小天 Bot.
 EXE=XiaotianBot
 mv "$APP/Contents/MacOS/Electron" "$APP/Contents/MacOS/$EXE"
 plutil -replace CFBundleExecutable -string "$EXE" "$PL"
 for h in "$APP/Contents/Frameworks/Electron Helper"*.app; do
-  n=$(basename "$h" .app); m="$EXE${n#Electron}"
+  n=$(basename "$h" .app); m="小天 Bot${n#Electron}"
   mv "$h/Contents/MacOS/$n" "$h/Contents/MacOS/$m"
   for k in CFBundleExecutable CFBundleName CFBundleDisplayName; do plutil -replace $k -string "$m" "$h/Contents/Info.plist"; done
+  plutil -replace CFBundleIdentifier -string "com.lenovo.tianxi.concept.helper$(echo "${n#Electron Helper}" | tr -dc 'A-Za-z' | tr 'A-Z' 'a-z' | sed 's/^./.&/')" "$h/Contents/Info.plist"
   mv "$h" "$APP/Contents/Frameworks/$m.app"
 done
-ls "$APP/Contents/Frameworks"; plutil -p "$PL" | head -40
+ls "$APP/Contents/Frameworks"
 rm -f "$RES/default_app.asar"
 mkdir -p "$RES/app" "$RES/runtime"
 cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} "$RES/app/"
