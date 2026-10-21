@@ -11,6 +11,7 @@ import { load, update, save, id, now, localISO, today, flags, bus, onChange, set
 import { entries, undoEntry, undoLast, pendingArgs } from './ledger.js'
 import { memories, editMemory, forgetMemory, addMemory, reflections, runReflect, applyProposal } from './memory.js'
 import { runBrief } from './ambient.js'
+import { CATALOG, BUILTIN, saveApp, removeApp, toggleApp, toggleBuiltin } from './apps.js'
 
 const WEB = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'web')
 const PORT = +(process.env.TIANXI_PORT || 3090)
@@ -215,7 +216,7 @@ export function apply(ctx) {
       push({ type: 'approval', approval: a })
       req.signal?.addEventListener('abort', () => { approvals.delete(aid); push({ type: 'approval-gone', id: aid }); resolve('cancelled') }, { once: true })
     })
-  })
+  }, true)   // first in line: DSH's own web remote would otherwise hold the request waiting for a page nobody has open
 
   // ---------- HTTP ----------
   const json = (res, code, v) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(v)) }
@@ -236,6 +237,7 @@ export function apply(ctx) {
       later: load('later', []), observations: load('observations', []).slice(-50),
       approvals: [...approvals.values()].map(({ resolve, ...a }) => a), settings: settings(), home: HOME, device: os.hostname(), user: os.userInfo().username,
       model: ctx.agentDefaultModel.currentSelection(),
+      apps: bus.appsState?.() || { apps: [], disabled: [] },
     }
   }
 
@@ -291,6 +293,11 @@ export function apply(ctx) {
       // a changed persona applies from the next turn: the prompt section reads the store each time
       return { ok: true, agent: cur }
     },
+    'GET /api/apps/catalog': () => ({ catalog: CATALOG.map(({ id, n, c, d, transport, fields, command }) => ({ id, n, c, d, transport, fields, node: command === 'npx' })), builtin: BUILTIN }),
+    'POST /api/apps/save': async (b) => ({ ok: true, app: saveApp(b.app || {}) }),
+    'POST /api/apps/remove': async (b) => { removeApp(b.id); return { ok: true } },
+    'POST /api/apps/toggle': async (b) => { toggleApp(b.id, b.on); return { ok: true } },
+    'POST /api/apps/builtin': async (b) => { toggleBuiltin(b.id, b.on); return { ok: true } },
     'POST /api/agents/remove': async (b) => {
       if (b.id === MAIN) throw new Error('主智能体不能删')
       save('agents', agentList().filter((x) => x.id !== b.id))

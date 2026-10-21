@@ -861,3 +861,31 @@ html,body{background:var(--bg);font-size:15px}
 .proc .ptabs{background:none;border:0;padding:0}
 .qopt:not(.pri) .ql{background:var(--blue)}
 button:focus:not(:focus-visible){outline:none}
+/* 0.7 — 连接应用 is real */
+.alist{display:flex;flex-direction:column;gap:4px}
+.arow.big{align-items:flex-start}
+.arow .ab{display:flex;align-items:center;gap:12px;align-self:center}
+.arow .ab .pbtn{width:auto}
+.arow .m .st2{display:flex;align-items:center;gap:6px;color:var(--tx2)}
+.arow .m .st2.ok,.fr .st2.ok{color:#5bc08a}
+.arow .m .st2.bad,.fr .st2.bad{color:#f07a6a;white-space:normal}
+.fr .st2{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:14.5px}
+.arow .m .tl3{display:block;font-size:13px;color:var(--tx3);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spin{width:12px;height:12px;border-radius:50%;border:2px solid #555;border-top-color:#ddd;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bi{font-style:normal;font-weight:500;font-size:12px;color:var(--tx2);background:#2c2c2c;border-radius:6px;padding:1px 6px;margin-left:8px;vertical-align:2px}
+.always{font-size:13.5px;color:var(--tx3);white-space:nowrap}
+.custom{display:flex;align-items:center;gap:16px;padding:16px 18px;border:1px dashed #3a3a3a;border-radius:14px}
+.custom .m{flex:1}.custom .m b{display:block;font-size:15.5px}.custom .m span{display:block;font-size:14px;color:var(--tx2);margin-top:4px;line-height:1.55}
+.crumb{display:flex;align-items:center;gap:4px;border:0;background:none;color:var(--tx2);font-size:15px;padding:4px 6px 4px 0}
+.crumb svg{transform:rotate(180deg)}.crumb:hover{color:var(--tx)}
+.fhead{display:flex;align-items:center;gap:16px;margin:22px 0 8px}
+.fhead h2{margin:0;font-size:21px}.fhead span{color:var(--tx2);font-size:14.5px}
+.form2{display:flex;flex-direction:column;gap:18px;max-width:620px;padding-top:12px}
+.fr label{display:block;font-size:14.5px;margin-bottom:8px;color:#e6e6e6}
+.fr .sin{width:100%;box-sizing:border-box}
+.fr small{display:block;color:var(--tx3);font-size:13px;margin-top:6px;line-height:1.5}
+.sin.ta{height:84px;padding:10px 12px;resize:vertical;font-family:inherit;line-height:1.5}
+.form2 .pempty{text-align:left;margin:0;line-height:1.6}
+.facts{display:flex;align-items:center;gap:10px;padding:14px 0 20px;border-top:1px solid #2a2a2a}
+.facts .hint{color:var(--tx2);font-size:14px}

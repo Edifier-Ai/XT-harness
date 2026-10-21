@@ -39,7 +39,7 @@ const TOOL = {
   schedule_create: '设定时任务', schedule_list: '查看定时任务', schedule_update: '改定时任务', schedule_delete: '删定时任务', working_directory: '切换文件夹',
   create_goal: '定目标', update_goal: '更新目标', get_goal: '看目标', job_list: '查看后台进程', job_output: '查看进程输出', job_kill: '停掉进程', skill: '用技能', workflow: '跑工作流', present: '展示文件',
 }
-const toolLabel = (n) => TOOL[n] || String(n || '').replace(/_/g, ' ')
+const toolLabel = (n) => { if (TOOL[n]) return TOOL[n]; const m = /^mcp__([\w-]+?)__(.+)$/.exec(String(n || '')); if (m) { const a = (S.apps?.apps || []).find((x) => (x.catalogId || '') === m[1] || ('app_' + x.id.slice(-6)) === m[1]); return `用${a?.name || m[1]}：${m[2].replace(/_/g, ' ')}` } return String(n || '').replace(/_/g, ' ') }
 const toolDetail = (a = {}) => {
   const v = a.title || a.subject || a.text || a.query || a.url || a.command || a.path || a.file_path || (a.from && String(a.from).split(/[\\/]/).pop()) || a.to || ''
   return typeof v === 'string' ? v.slice(0, 80) : ''
@@ -190,7 +190,7 @@ function renderRail() {
   setCount($('#nMe'), open + nr)
   $('#meAv').textContent = userInitial()
   $('#meBtn').classList.toggle('on', MINE.includes(view) || !$('#umenu').hidden)
-  $('#appIc').innerHTML = APPS.filter((p) => p.on).slice(0, 3).map((p) => appIcon(p, 18)).join('')
+  $('#appIc').innerHTML = connectedIcons().slice(0, 3).map((k) => appIcon(k, 18, k)).join('')
   $('#bUpd').hidden = !updSt?.pending
 }
 
@@ -893,43 +893,88 @@ function renderModal(enter) {
   if (enter) replay(box, 'pop')
 }
 
-// 连接应用: the tools all bots share. What 天禧 has built in is connected; the rest are on the way.
-const APPS = [
-  { n: '日历', c: '效率', g: '历', bg: '#3f7fe6', on: true, d: '本机日历，加日程时自动查冲突', t: ['calendar_list', 'calendar_add', 'calendar_update', 'calendar_delete'] },
-  { n: '邮箱', c: '通信', g: '✉', bg: '#e8483f', on: true, d: '每个 Bot 有自己的邮箱，对外发送先问你', t: ['mail_draft', 'mail_send', 'mail_inbox'] },
-  { n: '记忆', c: '记忆', g: '忆', bg: '#8b6cf0', on: true, d: '记住你的偏好、人物和项目，每条带出处', t: ['memory_save', 'memory_search', 'memory_update', 'memory_forget'] },
-  { n: '待办', c: '效率', g: '✓', bg: '#2fb380', on: true, d: '本机待办清单', t: ['todo_list', 'todo_add', 'todo_done'] },
-  { n: '文件', c: '文件', g: '文', bg: '#e0a020', on: true, d: '列文件夹、移动和重命名，每次都能撤回', t: ['folder_list', 'file_move', 'read', 'write', 'edit'] },
-  { n: '生成式卡片', c: '效率', g: '卡', bg: '#f2f2f2', fg: '#111', on: true, d: '要你挑、调、确认时直接给出可点的卡片', t: ['show_ui'] },
-  { n: '每日简报', c: '效率', g: '报', bg: '#ee6a2b', on: true, d: '每天整理要你定的和替你做完的事', t: ['brief_publish', 'brief_resolve', 'later_add'] },
-  { n: '操作记录', c: '效率', g: '↩', bg: '#53b8a5', on: true, d: '每件事都记下原因，一句“算了”就撤回', t: ['ledger_recent', 'undo_actions'] },
-  { n: '联网搜索', c: '联网', g: '网', bg: '#2b2b2b', on: true, d: 'DeepSeek Harness 自带：搜索、读网页', t: ['web_search', 'web_fetch'] },
-  { n: '命令行', c: '代码', g: '>_', bg: '#2b2b2b', on: true, d: '在这台电脑上跑命令', t: ['shell'] },
-  { n: '飞书', c: '通信', g: '飞', bg: '#3370ff', d: '读写飞书文档、日历和消息' },
-  { n: '钉钉', c: '通信', g: '钉', bg: '#1e7bff', d: '查看审批、日程和群消息' },
-  { n: '企业微信', c: '通信', g: '企', bg: '#2fae66', d: '收发企业微信消息' },
-  { n: 'Outlook', c: '通信', g: 'O', bg: '#0f6cbd', d: '收发邮件、查看日历' },
-  { n: '百度网盘', c: '文件', g: '盘', bg: '#4e8cff', d: '查找和整理网盘文件' },
-  { n: '高德地图', c: '效率', g: '图', bg: '#2a8cf7', d: '查路线、估算通勤时间' },
-  { n: 'GitHub', c: '代码', g: 'G', bg: '#f2f2f2', fg: '#111', d: '看 issue 和 PR，提交代码' },
-  { n: '联想乐享', c: '效率', g: '享', bg: '#e2231a', d: '查询联想知识库和工单' },
+// 连接应用: the real plugin manager. 内置 groups switch on and off; outside apps connect as MCP servers.
+const LOOK = {
+  calendar: ['历', '#3f7fe6'], todo: ['✓', '#2fb380'], mail: ['✉', '#e8483f'], files: ['文', '#e0a020'], cards: ['卡', '#f2f2f2', '#111'], web: ['网', '#2b2b2b'], shell: ['>_', '#2b2b2b'],
+  memory: ['忆', '#8b6cf0'], ledger: ['↩', '#53b8a5'], brief: ['报', '#ee6a2b'],
+  amap: ['高', '#2a8cf7'], baidumap: ['百', '#3a6df0'], feishu: ['飞', '#3370ff'], github: ['G', '#f2f2f2', '#111'], notion: ['N', '#f2f2f2', '#111'], browser: ['⌖', '#0e8a6a'],
+}
+const CORE = [
+  { id: 'memory', n: '记忆', d: '记住你的偏好、人物和项目，每条带出处' },
+  { id: 'ledger', n: '操作记录', d: '每件事都记下原因，一句“算了”就撤回' },
+  { id: 'brief', n: '每日简报和后台', d: '每天整理要你定的事，你不在时做排着的事' },
 ]
-const appIcon = (p, s = 44) => `<span class="appi" style="width:${s}px;height:${s}px;background:${p.bg};color:${p.fg || '#fff'};font-size:${Math.round(s * .42)}px;border-radius:${Math.round(s * .26)}px">${esc(p.g)}</span>`
+const BUILTIN_D = { calendar: '本机日历，加日程时自动查冲突', todo: '本机待办清单', mail: '每个 Bot 有自己的邮箱，对外发送先问你', files: '列文件夹、移动和重命名，每次都能撤回', cards: '要你挑、调、确认时直接给出可点的卡片', web: '搜索、读网页', shell: '在这台电脑上跑命令' }
+const BUILTIN_C = { calendar: '效率', todo: '效率', mail: '通信', files: '文件', cards: '效率', web: '联网', shell: '代码' }
+let CAT = null   // { catalog, builtin } from the host
+const loadCatalog = async () => { if (!CAT) { CAT = await api('apps/catalog'); renderRail(); if (modal?.kind === 'apps') renderModal() } }
+const appIcon = (k, s = 44, name = '') => { const [g, bg, fg] = LOOK[k] || [String(name).slice(0, 1) || '·', '#3a3a3a']; return `<span class="appi" style="width:${s}px;height:${s}px;background:${bg};color:${fg || '#fff'};font-size:${Math.round(s * .42)}px;border-radius:${Math.round(s * .26)}px">${esc(g)}</span>` }
+const myApps = () => S.apps?.apps || []
+function connectedIcons() {
+  const off = new Set(S.apps?.disabled || [])
+  const b = (CAT?.builtin || []).filter((g) => !g.tools.every((t) => off.has(t))).map((g) => g.id)
+  return [...myApps().filter((a) => a.status === 'ok').map((a) => a.catalogId || a.name), ...b]
+}
+function appStatus(a) {
+  if (a.status === 'off') return '<span>已停用</span>'
+  if (a.status === 'connecting') return '<span class="st2"><i class="spin"></i>正在连接…</span>'
+  if (a.status === 'error') return `<span class="st2 bad">没连上：${esc(a.error)}</span>`
+  return `<span class="st2 ok">已连接 · ${a.tools.length} 个工具</span>`
+}
 function appsModal() {
+  if (!CAT) { loadCatalog(); return `<button class="mx" data-act="modal-close">${ico('x', 20)}</button><div class="ahead"><h2>连接应用</h2></div><div class="pempty" style="margin:40px 0">正在读取…</div>` }
+  if (modal.edit) return appForm()
   const q = (modal.q || '').trim().toLowerCase(), cat = modal.tab
-  const hit = (p) => (cat === '全部' || p.c === cat) && (!q || (p.n + p.d + (p.t || []).join(' ')).toLowerCase().includes(q))
-  const on = APPS.filter((p) => p.on)
-  const row = (p) => `<div class="arow" title="${esc((p.t || []).join('  '))}">${appIcon(p)}<div class="m"><b>${esc(p.n)}</b><span>${esc(p.d)}</span></div><button class="pbtn ${p.on ? 'done' : ''}" data-act="app-add" data-n="${esc(p.n)}">${p.on ? '已连接' : '添加'}</button></div>`
-  const sec = (title, l, all) => l.length ? `<div class="asec"><div class="ah"><b>${title}</b>${all ? `<button class="lk2" data-act="app-cat" data-c="${all}">查看全部</button>` : ''}</div><div class="agrid">${l.map(row).join('')}</div></div>` : ''
-  let body = ''
-  if (q || cat !== '全部') body = sec(q ? '搜索结果' : cat, APPS.filter(hit)) || '<div class="pempty" style="margin:30px 0">没有找到</div>'
-  else body = sec('为你推荐', APPS.filter((p) => !p.on).slice(0, 6)) + sec('已连接', on) + sec('通信', APPS.filter((p) => !p.on && p.c === '通信'), '通信')
+  const off = new Set(S.apps?.disabled || [])
+  const hit = (n, d, c) => (cat === '全部' || cat === c || (cat === '已连接')) && (!q || (n + d).toLowerCase().includes(q))
+  const mine = myApps()
+  const added = new Set(mine.map((a) => a.catalogId).filter(Boolean))
+  const rows = { connected: [], builtin: [], avail: [] }
+  for (const a of mine) {
+    const c = CAT.catalog.find((x) => x.id === a.catalogId)
+    if (!hit(a.name, c?.d || '', c?.c || '自定义')) continue
+    rows.connected.push(`<div class="arow big">${appIcon(a.catalogId || '', 44, a.name)}<div class="m"><b>${esc(a.name)}</b>${appStatus(a)}${a.tools.length ? `<span class="tl3" title="${esc(a.tools.join('  '))}">${esc(a.tools.slice(0, 6).join(' · '))}${a.tools.length > 6 ? ' …' : ''}</span>` : ''}</div>
+      <div class="ab"><button class="pbtn" data-act="app-edit" data-id="${a.id}">设置</button><i class="tg ${a.enabled ? 'on' : ''}" data-act="app-toggle" data-id="${a.id}" title="${a.enabled ? '停用' : '启用'}"></i></div></div>`)
+  }
+  for (const g of CAT.builtin) {
+    if (!hit(g.n, BUILTIN_D[g.id] || '', BUILTIN_C[g.id])) continue
+    const on = !g.tools.every((t) => off.has(t))
+    rows.builtin.push(`<div class="arow">${appIcon(g.id)}<div class="m"><b>${esc(g.n)}<em class="bi">内置</em></b><span>${esc(BUILTIN_D[g.id] || '')}</span></div><i class="tg ${on ? 'on' : ''}" data-act="app-builtin" data-id="${g.id}" title="${on ? '停用' : '启用'}"></i></div>`)
+  }
+  for (const c of CORE) if (hit(c.n, c.d, '记忆')) rows.builtin.push(`<div class="arow">${appIcon(c.id)}<div class="m"><b>${esc(c.n)}<em class="bi">内置</em></b><span>${esc(c.d)}</span></div><span class="always">一直开着</span></div>`)
+  if (cat !== '已连接') for (const c of CAT.catalog) if (!added.has(c.id) && hit(c.n, c.d, c.c)) rows.avail.push(`<div class="arow">${appIcon(c.id)}<div class="m"><b>${esc(c.n)}</b><span>${esc(c.d)}${c.node && S.apps?.node === false ? ' · 需要 Node.js' : ''}</span></div><button class="pbtn" data-act="app-new" data-c="${c.id}">添加</button></div>`)
+  const sec = (title, l, one) => l.length ? `<div class="asec"><div class="ah"><b>${title}</b></div><div class="${one ? 'alist' : 'agrid'}">${l.join('')}</div></div>` : ''
+  const body = sec('我连接的应用', rows.connected, true) + sec('可以添加', rows.avail) + sec('天禧自带', rows.builtin)
+    + (cat === '全部' && !q ? `<div class="asec"><div class="custom"><div class="m"><b>添加自定义应用</b><span>任何 MCP 服务器都能接：填启动命令（比如 npx -y 某个包）或者一个网址。魔搭、Smithery 等 MCP 广场上的服务都可以这样加。</span></div><button class="pbtn" data-act="app-new" data-c="">自定义</button></div></div>` : '')
+  const ic = connectedIcons()
   return `<button class="mx" data-act="modal-close">${ico('x', 20)}</button>
-    <div class="ahead"><h2>连接应用</h2><button class="conn" data-act="app-cat" data-c="已连接"><span class="stack">${on.slice(0, 4).map((p) => appIcon(p, 22)).join('')}</span>已连接 ${on.length} 个 ${ico('chev', 16)}</button></div>
+    <div class="ahead"><h2>连接应用</h2><button class="conn" data-act="app-cat" data-c="已连接"><span class="stack">${ic.slice(0, 4).map((k) => appIcon(k, 22, k)).join('')}</span>已连接 ${ic.length} 个 ${ico('chev', 16)}</button></div>
     <div class="arow2"><label class="asearch"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="appQ" placeholder="在应用和技能中搜索" value="${esc(modal.q || '')}"></label><button class="tplb" data-act="bot-tpl">${avatar(agentOf(S.mainId), 22, true, false)}Bot 模板 ${ico('ext', 15)}</button></div>
-    <div class="acats">${['全部', '已连接', '记忆', '效率', '通信', '文件', '代码', '联网'].map((c) => `<button class="${cat === c ? 'on' : ''}" data-act="app-cat" data-c="${c}">${c}</button>`).join('')}</div>
-    <div class="abody">${cat === '已连接' && !q ? sec('已连接', on) : body}</div>
-    <div class="afoot">工具和插件整个账号共用；记忆、人设和例行任务属于每个 Bot 自己。</div>`
+    <div class="acats">${['全部', '已连接', '效率', '通信', '文件', '代码', '联网'].map((c) => `<button class="${cat === c ? 'on' : ''}" data-act="app-cat" data-c="${c}">${c}</button>`).join('')}</div>
+    <div class="abody">${body || '<div class="pempty" style="margin:30px 0">没有找到</div>'}</div>
+    <div class="afoot">连接的应用所有 Bot 共用。会改动外面数据的操作（发消息、建文档、提交）先问你。</div>`
+}
+// one app's settings: the keys it needs, or a custom server's command / address
+function appForm() {
+  const e = modal.edit, a = e.id ? myApps().find((x) => x.id === e.id) : null
+  const c = CAT.catalog.find((x) => x.id === (a?.catalogId || e.catalogId))
+  const f = (k, l, ph, v = '', secret = false, help = '') => `<div class="fr"><label>${esc(l)}</label><input class="sin" data-f="${k}" type="${secret ? 'password' : 'text'}" placeholder="${esc(ph)}" value="${esc(v)}">${help ? `<small>${esc(help)}</small>` : ''}</div>`
+  let h = `<button class="mx" data-act="modal-close">${ico('x', 20)}</button><div class="ahead"><button class="crumb" data-act="app-back">${ico('chev', 14)}连接应用</button></div>
+    <div class="fhead">${appIcon(c?.id || '', 52, a?.name || '自')}<div><h2>${esc(c?.n || a?.name || '自定义应用')}</h2><span>${esc(c?.d || '接一个 MCP 服务器')}</span></div></div><div class="abody"><div class="form2">`
+  if (c) {
+    for (const x of c.fields) h += f(x.k, x.l, a?.hasValues?.includes(x.k) ? '已保存，不改就留空' : '', '', x.secret, x.help || '')
+    if (!c.fields.length) h += '<div class="pempty">不用填任何东西，点“连接”就行。</div>'
+    if (c.node) h += `<div class="pempty">${S.apps?.node === false ? '⚠ 这台电脑还没有 Node.js。这个应用要用它启动：先从 nodejs.org 装 LTS 版，再重启天禧。' : '第一次连接会用 npx 下载它，要等一会儿。'}</div>`
+  } else {
+    h += f('name', '名字', '比如：公司知识库', a?.name || '')
+    h += f('commandLine', '启动命令', '比如：npx -y @modelcontextprotocol/server-everything', a?.command ? [a.command, ...(a.args || [])].join(' ') : '', false, '本机启动的 MCP 服务器填这里；远程的填下面的网址')
+    h += f('url', '或者网址', 'https://…/mcp', a?.url || '', false, '支持 Streamable HTTP 的 MCP 地址')
+    h += f('header', '请求头 Authorization', 'Bearer xxx（可选）', '', true)
+    h += `<div class="fr"><label>环境变量</label><textarea class="sin ta" data-f="envText" placeholder="每行一个，比如 API_KEY=xxx">${esc(Object.entries(a?.env || {}).map(([k, v]) => k + '=' + v).join('\n'))}</textarea></div>`
+  }
+  if (a) h += `<div class="fr"><label>状态</label><div id="appSt">${appStatus(a)}</div></div>`
+  h += `</div></div><div class="facts"><button class="pbtn blue" data-act="app-save">${a ? '保存并重连' : '连接'}</button>${a ? `<button class="pbtn red" data-act="app-remove" data-id="${a.id}">删除</button>` : ''}<span class="hint" id="appMsg"></span></div>`
+  return h
 }
 
 // 设置: 通用 · 电脑 · 模型 · 评测 · 更新
@@ -1010,6 +1055,10 @@ function renderAll(keep) {
   if (view === 'chat') { renderHead(); renderMsgs(keep); renderChips() } else renderPage()
   renderProc(); renderMenu()
   if (modal?.tab === 'computer') renderModal()
+  if (modal?.kind === 'apps') {
+    if (!modal.edit) { const y = $('#mbox .abody')?.scrollTop; renderModal(); const b = $('#mbox .abody'); if (b && y) b.scrollTop = y }
+    else { const a = myApps().find((x) => x.id === modal.edit.id), st = $('#appSt'); if (a && st) st.innerHTML = appStatus(a) }
+  }
 }
 
 function connect() {
@@ -1117,7 +1166,20 @@ document.addEventListener('click', async (e) => {
   else if (act === 'modal-close') closeModal()
   else if (act === 'set-tab') { modal.tab = el.dataset.t; renderModal() }
   else if (act === 'app-cat') { modal.tab = el.dataset.c; modal.q = ''; renderModal(); $('#mbox .abody')?.scrollTo(0, 0) }
-  else if (act === 'app-add') { const p = APPS.find((x) => x.n === el.dataset.n); toastText(p?.on ? `${p.n}已经连好了，所有 Bot 都能用` : `概念版还没接入${p?.n || '这个应用'}，先用本机的日历、待办和邮箱`) }
+  else if (act === 'app-new') { modal.edit = { catalogId: el.dataset.c || '' }; renderModal() }
+  else if (act === 'app-edit') { modal.edit = { id: el.dataset.id }; renderModal() }
+  else if (act === 'app-back') { modal.edit = null; renderModal() }
+  else if (act === 'app-toggle') { const on = !el.classList.contains('on'); el.classList.toggle('on', on); await api('apps/toggle', { id: el.dataset.id, on }); soon() }
+  else if (act === 'app-builtin') { const on = !el.classList.contains('on'); el.classList.toggle('on', on); await api('apps/builtin', { id: el.dataset.id, on }); soon() }
+  else if (act === 'app-remove') { if (confirm('删除这个应用？所有 Bot 都不能再用它。')) { await api('apps/remove', { id: el.dataset.id }); modal.edit = null; await refresh(); renderModal() } }
+  else if (act === 'app-save') {
+    const e = modal.edit, v = {}; document.querySelectorAll('#mbox [data-f]').forEach((x) => { v[x.dataset.f] = x.value })
+    const old = e.id ? myApps().find((x) => x.id === e.id) : null, cid = old?.catalogId || e.catalogId
+    const app = cid ? { id: e.id, catalogId: cid, values: v, enabled: true } : { id: e.id, name: v.name, commandLine: v.commandLine, url: v.url, header: v.header, envText: v.envText, enabled: true }
+    el.disabled = true; $('#appMsg').textContent = '正在连接…'
+    const r = await api('apps/save', { app }); if (r.error) { el.disabled = false; $('#appMsg').textContent = r.error; return }
+    modal.edit = { id: r.app.id }; await refresh(); renderModal()
+  }
   else if (act === 'bot-tpl') { closeModal(); draftAgent = null; setView('agent', 'new') }
   else if (act === 'set-toggle' || act === 'rt-toggle') { const k = el.dataset.key, on = !el.classList.contains('on'); el.classList.toggle('on', on); await api('settings', { [k]: on }); soon() }
   else if (act === 'panel-toggle') panelOn() ? closeProc() : openProc(null, 'detail')
@@ -1211,6 +1273,6 @@ document.addEventListener('input', (e) => { if (e.target.type === 'range') { con
   const start = new URLSearchParams(location.search).get('view')
   if (start) view = start
   $('#vChat').hidden = view !== 'chat'; $('#vPage').hidden = view === 'chat'
-  connect()
+  connect(); loadCatalog()
   setInterval(() => { if (view === 'brief') renderPage() }, 60000)
 })()

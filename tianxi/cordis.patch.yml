@@ -7,6 +7,8 @@
       name: dsh-tianxi/plugins/actions.js
     - id: tianxi-ambient
       name: dsh-tianxi/plugins/ambient.js
+    - id: tianxi-apps
+      name: dsh-tianxi/plugins/apps.js
     - id: tianxi-host
       name: dsh-tianxi/plugins/host.js
     - id: tianxi-eval

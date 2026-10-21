@@ -11,6 +11,9 @@ export function defineUndo(kind, fn) { undoers.set(kind, fn) }
 
 /** Mark a tool as needing the user's explicit approval before it runs. */
 export function markRisky(toolName, reason) { RISKY.set(toolName, reason) }
+const RISKY_MATCH = new Set()      // (toolName, args) -> reason or ''
+/** Mark a family of tools (e.g. an outside app's write tools) as needing approval; returns the disposer. */
+export function markRiskyMatch(fn) { RISKY_MATCH.add(fn); return () => RISKY_MATCH.delete(fn) }
 
 /** Append one action. `undo` is { kind, data, label } or null when it cannot be reversed. */
 export function record({ tool, title, why, undo = null, risk = 'low', detail }) {
@@ -88,7 +91,8 @@ export function apply(ctx) {
       snapshots.set(exec.callId, { path: p, before })
     }
     const risky = RISKY.get(exec.name)
-    const why = risky && risky(args)   // a reason function may return '' when this call needs no approval
+    let why = risky && risky(args)     // a reason function may return '' when this call needs no approval
+    if (!why) for (const fn of RISKY_MATCH) { why = fn(exec.name, args); if (why) break }
     if (why) {
       const decision = await next()
       if (decision.kind !== 'allow') return decision

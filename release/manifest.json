@@ -1,8 +1,8 @@
 {
- "version": "0.6.0",
- "notes": "界面按 GrokBot 截图逐屏还原：分组的 Bot 列表、聊天气泡和问题卡、右侧详情/资料库/电脑、头像菜单、连接应用和设置弹窗",
+ "version": "0.7.0",
+ "notes": "连接应用变成真的插件管理：内置工具可开关；高德、百度地图、飞书、GitHub、Notion、浏览器等可直接连接，也能添加任何自定义 MCP 应用；修复需要你确认的操作不弹窗的问题",
  "minBase": "0.4.0",
- "at": "2026-10-21T01:38:53.182Z",
+ "at": "2026-10-21T02:37:42.022Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -36,8 +36,8 @@
   },
   "bundle/cordis.patch.yml": {
    "path": "tianxi/cordis.patch.yml",
-   "sha256": "5f1cc6c71b54bb1a4e87ad7e176aacd17a723003baa06d98642df2154eca822b",
-   "size": 2017
+   "sha256": "5f19ba62bf5ccb71554e22f0691115f9e118869dfb1fef5d08cc8f13530c7284",
+   "size": 2078
   },
   "bundle/eval/fixtures/01/下载/IMG_0012.jpg": {
    "path": "tianxi/eval/fixtures/01/下载/IMG_0012.jpg",
@@ -394,6 +394,11 @@
    "sha256": "91630e85d6cfc7055aef0ef98b8dd2d38280f2cf1c34740fdd329bbdb123c81e",
    "size": 6251
   },
+  "bundle/plugins/apps.js": {
+   "path": "tianxi/plugins/apps.js",
+   "sha256": "238acbc3350639fc0d8a79e74f8cb8f4c74d8b5ac80025656ee3b4756e48acc8",
+   "size": 10537
+  },
   "bundle/plugins/eval.js": {
    "path": "tianxi/plugins/eval.js",
    "sha256": "ff5f2ae569ab5333cb0da4d754b0b7ac66675d1355a433ca5a50283491b7d15e",
@@ -401,13 +406,13 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "5cfdc3a185bd30b1f90cc8caad3339d39650763f9489294217c93c5976aec24a",
-   "size": 23575
+   "sha256": "c3e6f7bdda2ac79728f03d7f9d4be5221045afe944bb05fcb3a71e63bb16b3b6",
+   "size": 24387
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
-   "sha256": "360da9e0556359025c6374d587d1ec01e450d67e5c4f2d2ced7a18834c3d10d5",
-   "size": 5982
+   "sha256": "8376088124b5961e87b92cca8bd3b06717f5af1257d0dff104f96bdb075e8a85",
+   "size": 6348
   },
   "bundle/plugins/memory.js": {
    "path": "tianxi/plugins/memory.js",
@@ -421,8 +426,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "58374490c59a0fd081e614f66f4820e93cf3cd1390a3e839cf6ad39c8740fab7",
-   "size": 115333
+   "sha256": "44b8928f4c9fc2f6f7f0f3946d976f343a1542d83eea53ad17a67a71c5468113",
+   "size": 121620
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -456,8 +461,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "beba17a6a0ab1ba7f5ffb35de472ecd74878326e41e46f8fe2b15d3c37252d85",
-   "size": 62870
+   "sha256": "a7ea9497eb37e327c587a57277630cd24383b9d9f072771ea984f763dde846f8",
+   "size": 65095
   }
  }
 }
