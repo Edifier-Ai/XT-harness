@@ -1,5 +1,5 @@
 // node build/genui/build.mjs
-// Writes 天禧's generative UI pieces from library.mjs:
+// Writes 小天's generative UI pieces from library.mjs:
 //   tianxi/plugins/genui-prompt.md  the system prompt section that teaches the agent OpenUI Lang
 //   tianxi/web/genui/openui.js      OpenUI's parser and evaluator, with the library, for the client (window.OpenUI)
 import fs from 'node:fs'
@@ -103,7 +103,7 @@ export { createStreamingParser, createStore, evaluateRoot, BuiltinActionType, AC
   },
   bundle: true, format: 'iife', globalName: 'OpenUI', minify: true, target: 'chrome120', legalComments: 'none',
   define: { 'process.env.NODE_ENV': '"production"' },
-  banner: { js: '/* OpenUI Lang runtime (@openuidev/lang-core, MIT, github.com/thesysdev/openui) and zod (MIT), with 天禧\'s component library. Built by build/genui/build.mjs. */' },
+  banner: { js: '/* OpenUI Lang runtime (@openuidev/lang-core, MIT, github.com/thesysdev/openui) and zod (MIT), with 小天\'s component library. Built by build/genui/build.mjs. */' },
   outfile: path.join(root, 'tianxi/web/genui/openui.js'),
 })
 console.log('prompt', prompt.length, 'chars; bundle', fs.statSync(path.join(root, 'tianxi/web/genui/openui.js')).size, 'bytes')

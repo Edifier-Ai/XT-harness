@@ -1,7 +1,7 @@
 // Generative UI inside agent replies, after OpenUI (github.com/thesysdev/openui, MIT).
 // An agent writes an ```openui-lang block in its reply; OpenUI's own streaming parser and evaluator
 // (genui/openui.js, window.OpenUI) turn it into a component tree as the text streams in, and this file
-// draws that tree in 天禧's look. Buttons and forms answer the agent the way OpenUI's @ToAssistant does:
+// draws that tree in 小天's look. Buttons and forms answer the agent the way OpenUI's @ToAssistant does:
 // a user message carrying the button's words, the form's values and the button's context.
 // The page's esc, md, fileUrl, isImg, extOf and say come from app.js.
 'use strict'

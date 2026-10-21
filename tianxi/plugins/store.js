@@ -1,4 +1,4 @@
-// Tiny JSON-file store shared by every 天禧 plugin. One file per collection under TIANXI_HOME.
+// Tiny JSON-file store shared by every 小天 plugin. One file per collection under TIANXI_HOME.
 import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
@@ -59,22 +59,29 @@ export const today = () => localISO().slice(0, 10)
 // Runtime flags shared across plugins (not persisted).
 export const flags = { privateMode: false, idleSec: 0, lastSeen: Date.now() }
 
-// Message bus between plugins: host.js installs `say`, ambient.js uses it to wake 天禧 on its own.
+// Message bus between plugins: host.js installs `say`, ambient.js uses it to wake 小天 on its own.
 export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () => 'tianxi', hopsOf: () => -1, deliver: null }
 
 export function settings() {
   return { briefTime: '08:00', watch: ['~/Downloads', '~/Desktop'], idleMinutes: 10, nightFrom: 23, nightTo: 6, callMe: '', reflectAtNight: true, ...load('settings', {}) }
 }
 
-// ---------- 智能体: 天禧 is the main personal agent; the user can add more, each with its own persona and mailbox ----------
+// ---------- 智能体: 小天 is the main personal agent; the user can add more, each with its own persona and mailbox ----------
 export const MAIN = 'tianxi'
 export const STYLES = ['靠谱同事', '温暖贴心', '犀利有梗']
-const MAIN_AGENT = { id: MAIN, name: '天禧', role: '你的个人智能体', style: '靠谱同事', intro: '', email: 'tianxi@agent.local', color: '#e2502e', main: true }
+const MAIN_AGENT = { id: MAIN, name: '小天', role: '你的个人智能体', style: '靠谱同事', intro: '', email: 'xiaotian@agent.local', color: '#e2502e', main: true }
+// the main agent before the product became 小天 Bot
+const OLD_MAIN = { name: '天禧', email: 'tianxi@agent.local' }
 export function agentList() {
-  const l = load('agents', null)
+  let l = load('agents', null)
   if (!Array.isArray(l) || !l.length) return [MAIN_AGENT]
+  const m = l.find((a) => a.id === MAIN)
+  if (m && (m.name === OLD_MAIN.name || m.email === OLD_MAIN.email)) {
+    l = l.map((a) => a.id === MAIN ? { ...a, name: a.name === OLD_MAIN.name ? MAIN_AGENT.name : a.name, email: a.email === OLD_MAIN.email ? MAIN_AGENT.email : a.email } : a)
+    save('agents', l)
+  }
   return l.some((a) => a.id === MAIN) ? l : [MAIN_AGENT, ...l]
 }
 export const agentById = (aid) => agentList().find((a) => a.id === aid) || agentList()[0]
-export const agentByEmail = (addr) => agentList().find((a) => a.email && String(addr || '').toLowerCase().includes(a.email.toLowerCase()))
+export const agentByEmail = (addr) => agentList().find((a) => a.email && String(addr || '').toLowerCase().includes(a.email.toLowerCase())) || (String(addr || '').toLowerCase().includes(OLD_MAIN.email) ? agentById(MAIN) : undefined)
 export const transcriptKey = (aid) => (!aid || aid === MAIN ? 'transcript' : 'transcript_' + aid)

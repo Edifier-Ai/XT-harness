@@ -1,4 +1,4 @@
-// 天禧 host: owns the one long-lived 天禧 agent, serves the 天禧 client UI, streams events to it,
+// 小天 host: owns the one long-lived 小天 agent, serves the 小天 client UI, streams events to it,
 // answers approvals through the client and exposes the ledger / memory / brief APIs.
 import http from 'node:http'
 import fs from 'node:fs'
@@ -27,14 +27,14 @@ const STYLE = {
   犀利有梗: '说中文，直率、机灵，偶尔吐槽或玩个梗，像一个有趣的老朋友；不刻薄，不油腻，做事依旧靠谱。',
 }
 
-/** The system prompt of one agent: its identity (name, role, style, mailbox), then the shared way 天禧 agents work. */
+/** The system prompt of one agent: its identity (name, role, style, mailbox), then the shared way 小天 agents work. */
 export const PERSONA = (agentId = MAIN) => () => {
   const me = agentById(agentId), all = agentList(), main = agentById(MAIN), s = settings()
   const others = all.filter((x) => x.id !== me.id)
   return [
     me.main
-      ? `你是“${me.name}”，${me.role || '用户的个人智能体'}，属于联想天禧。你住在用户的这台电脑里，一直在运行；手机、平板上的${me.name}和你是同一个。`
-      : `你是“${me.name}”，用户的${me.role || '助手'}。你是联想天禧智能体家族的一员，主智能体叫“${main.name}”。你有自己的身份和分工，只做和你分工有关的事；别的事交给合适的智能体。`,
+      ? `你是“${me.name}”，${me.role || '用户的个人智能体'}，是联想的小天 Bot。你住在用户的这台电脑里，一直在运行；手机、平板上的${me.name}和你是同一个。`
+      : `你是“${me.name}”，用户的${me.role || '助手'}。你是小天 Bot 智能体家族的一员，主智能体叫“${main.name}”。你有自己的身份和分工，只做和你分工有关的事；别的事交给合适的智能体。`,
     me.intro ? `你的人设：${me.intro}` : '',
     s.callMe ? `称呼用户为“${s.callMe}”。` : '',
     `你有自己的邮箱 ${me.email}。用 mail_draft / mail_send 发出的邮件，发件人都是你；mail_inbox 看你的收件箱。`,
@@ -44,19 +44,19 @@ export const PERSONA = (agentId = MAIN) => () => {
     '做事的方式：',
     '1. 先给结果。能直接做的就去做，做完用一两句话告诉用户结果；不要只给建议、不要反问可以自己查到的信息。你做的每个改变都会写进“操作记录”，用户随时能撤回，所以可以放心动手。用户说“算了”“撤回刚才那个”时，用 ledger_recent 找到那件事的所有记录，再用 undo_actions 一起撤回。',
     '2. 意图即界面。需要用户比较、挑选、调参数或确认时，直接在回复里写一段 openui-lang 界面（按钮、表单、时间线、表格、图表），不要用长段文字罗列选项。写法见下面的“生成式界面”。',
-    '3. 用好记忆。先看【天禧记忆】再回答；用户透露稳定的偏好、事实、人物关系、习惯时，用 memory_save 记下并附上原话。用户说记错了就用 memory_update 改。所有天禧智能体共用这份关于用户的记忆。',
+    '3. 用好记忆。先看【小天记忆】再回答；用户透露稳定的偏好、事实、人物关系、习惯时，用 memory_save 记下并附上原话。用户说记错了就用 memory_update 改。所有小天智能体共用这份关于用户的记忆。',
     '4. 整理、移动、重命名文件优先用 file_move（会记进操作记录、能撤回），不要用命令行批量移动。对外发送、花钱、删除这类动作，系统会请用户确认；其余可撤回的动作直接做。',
     '5. 每个会改变东西的工具都要填 reason，一句话、写给用户看。',
     '6. 用户不在、或者事情需要时间，用 later_add 放进后台队列，等用户离开或夜里再做。',
     '   执行要简单务实：不先写计划、不列步骤清单，直接用最少的工具调用把事做完；能一条命令解决就不要拆成几步。出错先自己查原因、换个办法再试，不把报错原样丢给用户。',
-    '7. 用户的待办用 todo_add / todo_list / todo_done（天禧待办）；todo_write 只用来拆解你自己手上任务的步骤。需要用户选择时在回复里给界面，不要用 ask_user_question。',
+    '7. 用户的待办用 todo_add / todo_list / todo_done（小天待办）；todo_write 只用来拆解你自己手上任务的步骤。需要用户选择时在回复里给界面，不要用 ask_user_question。',
     `8. ${STYLE[me.style] || STYLE['靠谱同事']}这是即时聊天，不要用 Markdown 标题，不要客套。`,
     '',
     `现在是 ${localISO().replace('T', ' ')}（星期${WEEK[new Date().getDay()]}）。用户主目录是 ${os.homedir()}。`,
   ].filter((x) => x !== '').join('\n')
 }
 
-/** How every 天禧 agent is composed: the lean 'tianxi' preset (files, shell, web, compaction) plus that agent's persona. */
+/** How every 小天 agent is composed: the lean 'tianxi' preset (files, shell, web, compaction) plus that agent's persona. */
 export function agentSetup(ctx, agentId = MAIN) {
   const presetId = async () => { const p = ctx.get('agentPresets'); if (!p) return undefined; try { return (await p.resolve('tianxi')).id } catch { return (await p.resolve()).id } }
   const setup = async (agentCtx) => {
@@ -94,7 +94,7 @@ export function apply(ctx) {
   }
   const patchItem = (aid, tid, patch) => { let it; update(transcriptKey(aid), [], (l) => { it = l.find((x) => x.id === tid); if (it) Object.assign(it, patch) }); if (it) push({ type: 'item', item: it }) }
 
-  // ---------- the agents: one long-lived DSH agent per 天禧 agent ----------
+  // ---------- the agents: one long-lived DSH agent per 小天 agent ----------
   const R = new Map()          // agentId -> runtime
   const callAgent = new Map()  // tool callId -> agentId, so tools know who is calling (mail "from")
   bus.agentOf = (cid) => callAgent.get(cid) || MAIN
@@ -240,7 +240,7 @@ export function apply(ctx) {
     }
   })
 
-  // ---------- approvals answered in the 天禧 client ----------
+  // ---------- approvals answered in the 小天 client ----------
   const approvals = new Map()
   ctx.on('approval/request', (req, next) => {
     const r = byAgent(req.agent); if (!r) return next()
@@ -349,7 +349,7 @@ export function apply(ctx) {
       if (!prompt) throw new Error('先描述一下你想要的样子')
       const routes = (() => { try { return JSON.parse(process.env.TIANXI_ROUTES || '[]') } catch { return [] } })()
       const pick = pickNow(), r = pick && routes.find((x) => x.id === pick.provider)
-      if (!r) throw new Error('生成头像要在天禧客户端里用')
+      if (!r) throw new Error('生成头像要在小天 Bot 客户端里用')
       const sys = '你是吉祥物头像设计师。按用户的描述设计一个扁平、可爱的 Bot 头像：一个圆润饱满的单色实心形状，配两只深色竖条小眼睛（眼睛由程序画，你只给位置）。' +
         '只输出一个 JSON 对象，不要别的文字：{"path":"SVG path 的 d，只用 M L C Q A Z 等命令和数字，画在 0 到 100 的方块里，形状居中、占满 80% 左右、没有尖细的部分","eyes":[左眼x,左眼y,右眼x,右眼y],"color":"#RRGGBB"}。' +
         '眼睛在形状内部偏右上，两眼相距 14 到 18。颜色从这些里选最贴切的：#ffffff #9a6b43 #e5484d #ea6f30 #e89b3a #57c16f #53b8a5 #3f7fe6 #8b5cf6 #e8479a #7a7a7a。'

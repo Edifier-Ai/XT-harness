@@ -114,7 +114,6 @@
 :where(:root[data-theme=light]) .who:hover{background:#ececf2}
 :where(:root[data-theme=light]) .bub{color:#27272d}
 :where(:root[data-theme=light]) .bub li::marker{color:#717177}
-:where(:root[data-theme=light]) .mrow.me .bub{background:#ececf2;color:#222228}
 :where(:root[data-theme=light]) .macts button{color:#717177}
 :where(:root[data-theme=light]) .macts button:hover{background:#ffffff;color:#25252b}
 :where(:root[data-theme=light]) .rx{background:#ececf2}
@@ -239,3 +238,5 @@
 :where(:root[data-theme=light]) .ou-cards button:hover:not(:disabled){border-color:#ceced6}
 :where(:root[data-theme=light]) .ou-cards button.on{border-color:#28282e;box-shadow:inset 0 0 0 1px #202026;background:#ffffff}
 :where(:root[data-theme=light]) .ou-tabs .strip button.on{border-bottom-color:#28282e}
+:where(:root[data-theme=light]) .hand.work{border-color:#ceced6}
+:where(:root[data-theme=light]) .hand .hr{color:#34343a}

@@ -1,4 +1,4 @@
-// 常驻感知: 天禧 keeps running when the user is away. It notices new files, runs queued work while the
+// 常驻感知: 小天 keeps running when the user is away. It notices new files, runs queued work while the
 // user is idle or at night, and prepares the morning brief so the first screen shows results.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -20,7 +20,7 @@ export function briefPrompt(reason = '例行') {
   const since = Date.now() - 18 * 3600e3
   const acts = entries().filter((e) => Date.parse(e.at) > since && e.status === 'done').slice(-30)
   return [
-    `【天禧${reason}·每日简报】现在是 ${localISO().replace('T', ' ')}。请为用户做今天的“每日简报”。简报是单独的一页，不在对话里，用户扫一眼就要知道今天怎么样：`,
+    `【小天${reason}·每日简报】现在是 ${localISO().replace('T', ' ')}。请为用户做今天的“每日简报”。简报是单独的一页，不在对话里，用户扫一眼就要知道今天怎么样：`,
     '1. 用 calendar_list 看今天和明天的日程，用 todo_list 看待办，用 mail_inbox 看有没有新邮件；',
     '2. 结合下面的“新发现”和“后台做完的事”；',
     '3. 调用一次 brief_publish。summary 一句话说清今天；hero 点出最要紧的事；sections 按重要程度排：要拍板的事用 decide（每张都要给按钮），今天的日程用 schedule 块画成时间轴（冲突标 conflict），新文件用 files 块，做完的事用 done，还在做的用 doing。能用图文块的就不要只写文字。',
@@ -33,7 +33,7 @@ export function briefPrompt(reason = '例行') {
 }
 
 export async function runBrief(reason) {
-  if (!bus.say) throw new Error('天禧还没准备好')
+  if (!bus.say) throw new Error('小天还没准备好')
   const obsIds = load('observations', []).filter((o) => !o.seen).map((o) => o.id)
   const jobIds = load('later', []).filter((j) => j.status === 'done' && !j.reported).map((j) => j.id)
   await bus.say(briefPrompt(reason), { kind: 'brief' })
@@ -48,7 +48,7 @@ export async function runOneJob() {
   update('later', [], (l) => { const j = l.find((x) => x.id === job.id); j.status = 'running'; j.startedAt = now() })
   bus.push({ type: 'later' })
   const result = await bus.say(
-    `【天禧后台任务】${job.title}\n${job.instructions}\n\n用户现在不在电脑前。能直接做的就做（所有动作都会记进操作记录、可以撤回）；需要用户拍板或对外发送的事先不要做，记下来留给简报。做完用两三句话总结结果。`,
+    `【小天后台任务】${job.title}\n${job.instructions}\n\n用户现在不在电脑前。能直接做的就做（所有动作都会记进操作记录、可以撤回）；需要用户拍板或对外发送的事先不要做，记下来留给简报。做完用两三句话总结结果。`,
     { kind: 'job' })
   update('later', [], (l) => { const j = l.find((x) => x.id === job.id); j.status = 'done'; j.doneAt = now(); j.result = (result || '').slice(0, 400) })
   bus.push({ type: 'later' })

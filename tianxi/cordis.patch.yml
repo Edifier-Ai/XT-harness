@@ -24,9 +24,9 @@
       name: dsh-tianxi/plugins/host.js
     - id: tianxi-eval
       name: dsh-tianxi/plugins/eval.js
-# 天禧's agent preset, following Pi Agent's stance: few tools, short prompt, no plan mode,
-# no built-in todos, no subagents. The 天禧 domain tools (memory, calendar, mail, files, show_ui,
-# brief, later queue) are registered globally by the plugins above and join every 天禧 agent.
+# 小天's agent preset, following Pi Agent's stance: few tools, short prompt, no plan mode,
+# no built-in todos, no subagents. The 小天 domain tools (memory, calendar, mail, files, show_ui,
+# brief, later queue) are registered globally by the plugins above and join every 小天 agent.
 - insert:
     - id: preset-tianxi
       name: '@deepseek-ai/dsh-agent-preset'
@@ -62,7 +62,7 @@
                   thresholdChars: 8192
                   headChars: 4096
                   tailChars: 1024
-# Keep the prompt short: drop guidance written for DSH's own Web GUI, which 天禧 does not use.
+# Keep the prompt short: drop guidance written for DSH's own Web GUI, which 小天 does not use.
 - id: harness-dev-context
   disabled: true
 - id: ui-deliverables

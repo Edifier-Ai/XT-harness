@@ -1,6 +1,6 @@
-// 天禧's generative UI library, in OpenUI Lang (github.com/thesysdev/openui, MIT).
+// 小天's generative UI library, in OpenUI Lang (github.com/thesysdev/openui, MIT).
 // Component names and arguments follow OpenUI's chat library so its prompt and examples carry over;
-// the set is trimmed to what a personal agent's chat reply needs, plus Timeline and Files for 天禧.
+// the set is trimmed to what a personal agent's chat reply needs, plus Timeline and Files for 小天.
 // Renderers live in tianxi/web/genui.js; here each component is only its props schema.
 import { z } from 'zod/v4'
 import { action, createLibrary, defineComponent } from '@openuidev/lang-core'

@@ -92,7 +92,7 @@ export function apply(ctx) {
     const cfg = mcpConfig(a), sig = JSON.stringify(cfg)
     const l = live.get(a.id); if (l && l.sig === sig && l.status !== 'error') return
     stop(a.id)
-    if (needsNode(a) && nodeOk === false) { live.set(a.id, { fork: { dispose() {} }, sig, status: 'error', error: '这个应用要用 Node.js 启动。先从 nodejs.org 装 Node.js（LTS 版），装好后重启天禧。' }); changed(); return }
+    if (needsNode(a) && nodeOk === false) { live.set(a.id, { fork: { dispose() {} }, sig, status: 'error', error: '这个应用要用 Node.js 启动。先从 nodejs.org 装 Node.js（LTS 版），装好后重启小天 Bot。' }); changed(); return }
     const entry = { sig, status: 'connecting', error: '', at: now() }
     // A wrapper plugin so a failed start shows up here instead of in the log only.
     entry.fork = ctx.plugin({

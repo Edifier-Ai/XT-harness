@@ -1,11 +1,11 @@
-// 天禧 eval tasks. Each task copies its fixtures into a fresh sandbox, sends one or more prompts to a fresh
-// 天禧 agent, then `check` grades the end state (files, 天禧 data, replies). See 任务清单.md for the rationale.
+// 小天 eval tasks. Each task copies its fixtures into a fresh sandbox, sends one or more prompts to a fresh
+// 小天 agent, then `check` grades the end state (files, 小天 data, replies). See 任务清单.md for the rationale.
 //
 // check(c) gets:
 //   c.sb        sandbox folder (absolute)        c.M        facts from fixtures/manifest.json for this task
 //   c.reply     last reply text                 c.replies  every reply, joined
 //   c.tools     [{ name, args, error }]         c.ui       args of every show_ui call
-//   c.data(n)   a 天禧 collection (calendar, todos, outbox, memories, later, brief, ledger)
+//   c.data(n)   a 小天 collection (calendar, todos, outbox, memories, later, brief, ledger)
 //   c.files(rel)  files under sandbox/rel (relative paths, recursive)
 //   c.read(rel)   file text                      c.exists(rel)
 //   c.has(text, alts)  any alternative appears (spaces and thousands separators ignored)
@@ -161,7 +161,7 @@ export default [
   // ---------------- 日程 / 待办 / 邮件 ----------------
   {
     id: '11', cat: '日程', title: '约会议', timeout: 120,
-    say: ['周四下午三点约杨润开“概念版天禧评审”，一小时。'],
+    say: ['周四下午三点约杨润开“概念版小天评审”，一小时。'],
     check(c) {
       const thu = weekdays(4)
       const e = c.data('calendar').find((x) => /评审/.test(x.title))
@@ -194,7 +194,7 @@ export default [
     id: '13', cat: '日程', title: '处理日程冲突', timeout: 180,
     seed() {
       const d = weekdays(4).slice(-1)[0]
-      return { calendar: [{ id: 'cal_a', title: '概念版天禧评审', start: d + 'T15:00', end: d + 'T16:00', people: ['杨润'] }, { id: 'cal_b', title: '设计走查', start: d + 'T15:00', end: d + 'T16:30' }] }
+      return { calendar: [{ id: 'cal_a', title: '概念版小天评审', start: d + 'T15:00', end: d + 'T16:00', people: ['杨润'] }, { id: 'cal_b', title: '设计走查', start: d + 'T15:00', end: d + 'T16:30' }] }
     },
     say: ['周四那个评审和走查时间冲突了，帮我处理一下，评审不能动。'],
     check(c) {
@@ -357,7 +357,7 @@ export default [
     seed() {
       const d = localISO().slice(0, 10)
       return {
-        calendar: [{ id: 'cal_1', title: '概念版天禧评审', start: d + 'T15:00', end: d + 'T16:00' }, { id: 'cal_2', title: '设计走查', start: d + 'T15:30', end: d + 'T16:30' }, { id: 'cal_3', title: '供应商电话会', start: d + 'T10:00', end: d + 'T10:30' }],
+        calendar: [{ id: 'cal_1', title: '概念版小天评审', start: d + 'T15:00', end: d + 'T16:00' }, { id: 'cal_2', title: '设计走查', start: d + 'T15:30', end: d + 'T16:30' }, { id: 'cal_3', title: '供应商电话会', start: d + 'T10:00', end: d + 'T10:30' }],
         todos: [{ id: 'todo_1', title: '周五前同步评审反馈清单', done: false, createdAt: new Date().toISOString() }],
         observations: [{ id: 'obs_1', at: new Date().toISOString(), kind: 'file', text: '下载 里出现了新文件 华贸电子报价单_v3.xlsx', seen: false }],
       }

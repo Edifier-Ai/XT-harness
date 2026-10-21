@@ -4,7 +4,7 @@ import { load, update, save, id, now, localISO, today, flags, bus, agentList, tr
 import { record, defineUndo, entries } from './ledger.js'
 
 const KINDS = ['偏好', '事实', '人物', '习惯', '项目']
-// 经验 = what 天禧 learned about its own way of working, written by 反思 and accepted by the user.
+// 经验 = what 小天 learned about its own way of working, written by 反思 and accepted by the user.
 export const ALL_KINDS = [...KINDS, '经验']
 
 export function memories() { return load('memories', []) }
@@ -35,16 +35,16 @@ export const name = 'tianxi-memory'
 export const inject = ['tools', 'systemPrompt']
 
 export function apply(ctx) {
-  // What 天禧 already knows is placed in front of the model on every step.
+  // What 小天 already knows is placed in front of the model on every step.
   ctx.systemPrompt.section({
     name: 'tianxi:memory', order: 900, interpolate: false,
     text: () => {
       const l = memories()
       if (flags.privateMode) return '【临时模式】用户开启了临时模式：这段对话不要保存任何记忆，也不要引用临时模式下说过的内容。'
-      if (!l.length) return '【天禧记忆】你还没有关于用户的长期记忆。用户透露稳定的偏好、事实、人物关系或习惯时，用 memory_save 记下来。'
+      if (!l.length) return '【小天记忆】你还没有关于用户的长期记忆。用户透露稳定的偏好、事实、人物关系或习惯时，用 memory_save 记下来。'
       const facts = l.filter((m) => m.kind !== '经验'), lessons = l.filter((m) => m.kind === '经验')
       const r = load('reflections', [])[0]
-      return '【天禧记忆】下面是你记住的关于用户的事（每条带 id，可用 memory_search 查更多）。回答时自然地用上，不要逐条复述：\n'
+      return '【小天记忆】下面是你记住的关于用户的事（每条带 id，可用 memory_search 查更多）。回答时自然地用上，不要逐条复述：\n'
         + facts.slice(-60).map((m) => `- [${m.id}] (${m.kind}) ${m.text}`).join('\n')
         + (r?.profile ? `\n\n【你对用户的整体理解（来自最近一次反思）】${r.profile}` : '')
         + (lessons.length ? '\n\n【做事经验（来自反思，用户认可过）】\n' + lessons.slice(-20).map((m) => `- ${m.text}`).join('\n') : '')
@@ -100,7 +100,7 @@ export function apply(ctx) {
 
   ctx.tools.register(defineTool({
     name: 'memory_search',
-    description: '在天禧的长期记忆里查找和问题相关的条目。',
+    description: '在小天的长期记忆里查找和问题相关的条目。',
     parameters: { query: { type: 'string', required: true } },
     output: { schema: { type: 'json' }, render: (_a, v) => [{ type: 'text', text: JSON.stringify(v) }] },
     async execute(args) {
@@ -154,7 +154,7 @@ export function reflectPrompt() {
   const mems = memories().map((m) => `- [${m.id}] (${m.kind}) ${m.text}${m.quote ? ` ——原话“${m.quote.slice(0, 60)}”` : ''}${m.editedByUser ? '（用户亲手改过）' : ''} · 记于 ${m.createdAt.slice(0, 10)} · 用过 ${m.uses || 0} 次`)
   pendingStats = { said: said.length, memories: mems.length, undone: undone.length }
   return [
-    `【天禧反思】现在是 ${localISO().replace('T', ' ')}。像人睡前回想一天那样，安静地想一想${last ? '上次反思以来' : '最近一周'}和用户的相处。不要动手做任何事，不要改记忆，只调用一次 reflection_publish 交出结果。`,
+    `【小天反思】现在是 ${localISO().replace('T', ' ')}。像人睡前回想一天那样，安静地想一想${last ? '上次反思以来' : '最近一周'}和用户的相处。不要动手做任何事，不要改记忆，只调用一次 reflection_publish 交出结果。`,
     '要想的事：',
     '1. 你现在怎么理解这个用户：在意什么、怎么做决定、最近在忙什么。',
     '2. 多条记忆和对话放在一起看，有什么规律或联系（每条写清楚是哪几条记忆、用户哪句原话）。',
@@ -168,7 +168,7 @@ export function reflectPrompt() {
 }
 
 export async function runReflect(reason = '手动') {
-  if (!bus.say) throw new Error('天禧还没准备好')
+  if (!bus.say) throw new Error('小天还没准备好')
   pendingReason = reason
   await bus.say(reflectPrompt(), { kind: 'reflect' })
   update('state', {}, (s) => { s.lastReflectDate = today() })

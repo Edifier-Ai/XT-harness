@@ -1,4 +1,4 @@
-// 天禧AI 概念版 · start-up.
+// 小天 Bot · start-up.
 // Picks which client code to run: the newest installed update under %APPDATA%\TianxiAI-Concept\update,
 // or the code that shipped in this folder. An update that failed to start last time is skipped for good.
 'use strict'

@@ -1,5 +1,5 @@
-// 天禧评测: runs only when TIANXI_EVAL is set (the client starts a separate runtime for it, with its own data).
-// For every task × run it resets 天禧's data, builds a sandbox from the fixtures, talks to a fresh 天禧 agent
+// 小天 Bot 评测: runs only when TIANXI_EVAL is set (the client starts a separate runtime for it, with its own data).
+// For every task × run it resets 小天's data, builds a sandbox from the fixtures, talks to a fresh 小天 agent
 // exactly like the client does, then grades the end state. Writes progress.json, results.json and 报告.md.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -177,7 +177,7 @@ function report(meta, tasks, results) {
   const avg = (k) => n ? Math.round(results.reduce((s, x) => s + x[k], 0) / n * 10) / 10 : 0
   const allPass = tasks.filter((t) => results.filter((x) => x.task === t.id).every((x) => x.pass)).length
   const lines = [
-    `# 天禧评测报告`, '',
+    `# 小天 Bot 评测报告`, '',
     `- 模型：${meta.provider} / ${meta.model}`, `- 时间：${meta.startedAt.replace('T', ' ')}，每个任务跑 ${meta.runs} 轮，共 ${n} 次`, '',
     `| 指标 | 结果 |`, `|---|---|`,
     `| 完成率 | ${pct(results.filter((x) => x.completed).length, n)} |`,

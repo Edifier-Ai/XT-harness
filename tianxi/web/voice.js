@@ -49,7 +49,7 @@ let voiceWaiter = null
 function ensureVoice(then) {
   const v = voiceSt()
   if (v.usable) return then()
-  if (!v.available) return toastText('这台电脑上的天禧没有语音识别组件，重装最新完整版后就有了')
+  if (!v.available) return toastText('这台电脑上的小天 Bot没有语音识别组件，重装最新完整版后就有了')
   voiceWaiter = then
   modal = { kind: 'voice' }; toggleMenu(false); $('#modal').hidden = false; renderModal(true)
 }

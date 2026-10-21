@@ -11,7 +11,7 @@ cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,update.json,preload.js
 cp -r runtime/node_modules $OUT/resources/runtime/node_modules
 cp runtime/package.json $OUT/resources/runtime/
 rm -rf $OUT/resources/runtime/node_modules/dsh-tianxi && cp -r $ROOT/tianxi $OUT/resources/runtime/node_modules/dsh-tianxi
-# slim: not used by 天禧 (document preview wasm, type defs, source maps, other platforms, other UI languages)
+# slim: not used by 小天 (document preview wasm, type defs, source maps, other platforms, other UI languages)
 R=$OUT/resources/runtime/node_modules
 rm -rf $R/@deepseek-ai/libreoffice-kit-wasm $R/node-pty/prebuilds/darwin-* $R/node-pty/prebuilds/linux-* $R/node-pty/prebuilds/win32-arm64
 find $R \( -name '*.map' -o -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' -o -name '*.tsbuildinfo' \) -type f -delete

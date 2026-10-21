@@ -27,7 +27,7 @@
       "signup": "https://bigmodel.cn/usercenter/proj-mgmt/apikeys",
       "keyHint": "形如 xxxxxxxx.xxxxxxxx 的一串",
       "keyPattern": "^[0-9a-f]{32}\\.[0-9A-Za-z]{16}$",
-      "steps": ["用手机号注册或登录智谱开放平台", "在「API Keys」页点「添加新的 API Key」", "复制这个 Key，回到天禧粘贴"],
+      "steps": ["用手机号注册或登录智谱开放平台", "在「API Keys」页点「添加新的 API Key」", "复制这个 Key，回到小天 Bot粘贴"],
       "thinkingFormat": "zai",
       "models": [
         { "id": "glm-4.7-flash", "label": "GLM-4.7-Flash", "free": true, "efforts": ["off", "high"] },

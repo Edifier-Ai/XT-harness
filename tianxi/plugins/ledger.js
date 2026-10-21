@@ -1,4 +1,4 @@
-// 操作记录: every action 天禧 takes is written here with why it did it and how to undo it.
+// 操作记录: every action 小天 takes is written here with why it did it and how to undo it.
 import fs from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { load, update, id, now, flags } from './store.js'
@@ -46,7 +46,7 @@ export async function undoLast() {
 
 // ---- built-in undo for files the harness's own write/edit tools change ----
 defineUndo('file-restore', async ({ path, before }) => {
-  if (before === null) { try { fs.rmSync(path) } catch {} return '已删除天禧新建的文件 ' + path }
+  if (before === null) { try { fs.rmSync(path) } catch {} return '已删除小天新建的文件 ' + path }
   fs.writeFileSync(path, before, 'utf8'); return '已把 ' + path + ' 恢复成修改前的内容'
 })
 
@@ -79,8 +79,8 @@ export function apply(ctx) {
   }))
 
   const snapshots = new Map() // callId -> { path, before }
-  // The 天禧 client answers through generated UI, not DSH's question / plan-mode dialogs.
-  const REDIRECT = { ask_user_question: '天禧客户端不支持这个工具。需要用户选择或填写时，请在回复里写一段 openui-lang 界面（按钮或表单）。', exit_plan_mode: '天禧不使用计划模式，直接动手做，做完说结果。' }
+  // The 小天 client answers through generated UI, not DSH's question / plan-mode dialogs.
+  const REDIRECT = { ask_user_question: '小天 Bot 客户端不支持这个工具。需要用户选择或填写时，请在回复里写一段 openui-lang 界面（按钮或表单）。', exit_plan_mode: '小天不使用计划模式，直接动手做，做完说结果。' }
   ctx.on('tools/pre-execute', async (exec, next) => {
     if (REDIRECT[exec.name]) return { kind: 'deny', reason: REDIRECT[exec.name], displayReason: { en: REDIRECT[exec.name], zh: REDIRECT[exec.name] } }
     const args = exec.arguments || {}

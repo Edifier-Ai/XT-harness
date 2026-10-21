@@ -1,4 +1,4 @@
-// Writes release/manifest.json: the sha256 of every file of the 天禧 layer, which clients compare to
+// Writes release/manifest.json: the sha256 of every file of the 小天 layer, which clients compare to
 // download only what changed. Usage: node build/release.mjs <version> "<what changed>"
 // Commit and push the result to main; clients pick it up on their next check.
 import fs from 'node:fs'

@@ -1,6 +1,6 @@
-// 天禧AI 概念版 · differential updates from the GitHub repository.
+// 小天 Bot · differential updates from the GitHub repository.
 // The repository carries release/manifest.json: the version plus the sha256 of every file of the
-// 天禧 layer (app/… = this client code, bundle/… = the DSH plugins and web page). The client compares
+// 小天 layer (app/… = this client code, bundle/… = the DSH plugins and web page). The client compares
 // hashes with what it already has and downloads only the files that changed, then unpacks the new
 // version to update/<version>. main.js starts it next time; if it fails to start, main.js falls back.
 // Electron and the DSH runtime (the base layer) are not updated this way: a manifest that needs a
@@ -105,7 +105,7 @@ function createUpdater({ userDir, boot, runtimeDir, shippedApp, shippedBundle, g
     for (const d of fs.readdirSync(UPD)) if (/^\d+\.\d+\.\d+(\.tmp)?$/.test(d) && d !== man.version && d !== boot.version) fs.rmSync(path.join(UPD, d), { recursive: true, force: true })
   }
 
-  // Called once the window shows a working 天禧: this version started fine.
+  // Called once the window shows a working 小天: this version started fine.
   function started() { try { fs.rmSync(path.join(UPD, 'booting.json'), { force: true }) } catch {} }
 
   const status = () => ({ version: boot.version, shipped: boot.shipped, fellBack: boot.fellBack || null, ...state, source: { repo: getSource().repo, branch: getSource().branch, hasToken: !!getSource().token } })

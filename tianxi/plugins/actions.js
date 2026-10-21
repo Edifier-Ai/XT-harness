@@ -1,4 +1,4 @@
-// 天禧 action tools: calendar, to-dos, mail outbox, files, generative UI and the daily brief.
+// 小天 action tools: calendar, to-dos, mail outbox, files, generative UI and the daily brief.
 // Every tool that changes something writes a ledger entry with its own undo.
 import fs from 'node:fs'
 import path from 'node:path'
@@ -23,7 +23,7 @@ defineUndo('dir-remove', async ({ dir }) => { try { fs.rmdirSync(dir) } catch { 
 
 markRisky('mail_send', (a) => {
   const m = load('outbox', []).find((x) => x.id === a.id)
-  if (m && agentByEmail(m.to)) return ''   // mail between your own agents stays inside 天禧
+  if (m && agentByEmail(m.to)) return ''   // mail between your own agents stays inside 小天
   return `要对外发送邮件${m ? '给 ' + m.to : ''}。对外发送需要你确认。`
 })
 
@@ -35,7 +35,7 @@ export function apply(ctx) {
 
   // ---------- calendar ----------
   reg({
-    name: 'calendar_list', description: '查看天禧日历里的日程。时间用本地时间 YYYY-MM-DDTHH:mm。不填 from/to 时返回今天起 7 天。',
+    name: 'calendar_list', description: '查看小天日历里的日程。时间用本地时间 YYYY-MM-DDTHH:mm。不填 from/to 时返回今天起 7 天。',
     parameters: { from: { type: 'string' }, to: { type: 'string' } },
     async execute(a) {
       const from = a.from || today() + 'T00:00'
@@ -44,10 +44,10 @@ export function apply(ctx) {
     },
   })
   reg({
-    name: 'calendar_add', description: '在天禧日历里添加日程。会检查冲突并在结果里告诉你。',
+    name: 'calendar_add', description: '在小天日历里添加日程。会检查冲突并在结果里告诉你。',
     parameters: { title: { type: 'string', required: true }, start: { type: 'string', required: true }, end: { type: 'string', required: true }, location: { type: 'string' }, people: { type: 'array', items: { type: 'string' } }, reason: WHY },
     async execute(a) {
-      const ev = { id: id('ev'), title: a.title, start: a.start, end: a.end, location: a.location || '', people: a.people || [], createdBy: '天禧', createdAt: now() }
+      const ev = { id: id('ev'), title: a.title, start: a.start, end: a.end, location: a.location || '', people: a.people || [], createdBy: '小天', createdAt: now() }
       const conflicts = load('calendar', []).filter((e) => e.start < ev.end && e.end > ev.start)
       update('calendar', [], (l) => { l.push(ev) })
       record({ tool: 'calendar_add', title: `添加日程“${ev.title}”（${fmt(ev.start)}–${ev.end.slice(11)}）`, why: a.reason, undo: { kind: 'cal-remove', data: { id: ev.id }, label: '删掉' } })
@@ -124,7 +124,7 @@ export function apply(ctx) {
       if (target) {
         const inmail = { id: id('in'), agent: target.id, from: m.from, fromName: m.fromName, to: target.email, subject: m.subject, body: m.body, at: now(), hops, read: false, outId: m.id }
         update('inbox', [], (l) => { l.push(inmail); if (l.length > 1000) l.splice(0, l.length - 1000) })
-        record({ tool: 'mail_send', title: `${m.fromName || '天禧'}给${target.name}发邮件：${m.subject}`, why: a.reason, undo: { kind: 'mail-recall', data: { id: m.id }, label: '撤回' } })
+        record({ tool: 'mail_send', title: `${m.fromName || '小天'}给${target.name}发邮件：${m.subject}`, why: a.reason, undo: { kind: 'mail-recall', data: { id: m.id }, label: '撤回' } })
         bus.deliver?.(target.id, inmail)
         return { ok: true, delivered: target.name, note: `已送到${target.name}的收件箱，它会自己处理。` }
       }
@@ -175,13 +175,13 @@ export function apply(ctx) {
   reg({
     name: 'show_ui',
     description: [
-      '在天禧界面里直接生成一个可以操作的界面，而不是只回复文字。能用控件回答的，优先用它。',
+      '在小天 Bot 界面里直接生成一个可以操作的界面，而不是只回复文字。能用控件回答的，优先用它。',
       'blocks 是一个数组，每个元素是一种块：',
       '{type:"text", text}；{type:"kv", items:[{k,v}]}；{type:"list", items:[{title, sub?, tag?}]}；',
       '{type:"table", columns:[...], rows:[[...]]}；{type:"timeline", items:[{time, title, sub?, tag?}]}；',
       '{type:"metric", items:[{label, value, note?}]}；',
-      '{type:"choices", prompt?, options:[{label, say, primary?}]} 用户点按钮时，天禧会收到 say 里的话；',
-      '{type:"form", fields:[{key, label, kind:"select"|"range"|"text"|"toggle", options?, min?, max?, step?, value?, unit?}], submit:{label, say}} 用户提交时，天禧会收到 say 加上各字段的取值（JSON）。',
+      '{type:"choices", prompt?, options:[{label, say, primary?}]} 用户点按钮时，小天会收到 say 里的话；',
+      '{type:"form", fields:[{key, label, kind:"select"|"range"|"text"|"toggle", options?, min?, max?, step?, value?, unit?}], submit:{label, say}} 用户提交时，小天会收到 say 加上各字段的取值（JSON）。',
       '图文块：{type:"image", src, caption?}；{type:"files", items:[{path, note?}]}；{type:"bar", unit?, items:[{label, value}]}；{type:"progress", items:[{label, value:0到1}]}；{type:"schedule", items:[{start, end, title, conflict?}]}。',
       '控件改变后要重新调用 show_ui 给出更新后的界面。',
     ].join('\n'),
@@ -220,9 +220,9 @@ export function apply(ctx) {
     },
   })
 
-  // ---------- 交给天禧稍后做 ----------
+  // ---------- 交给小天稍后做 ----------
   reg({
-    name: 'later_add', description: '把一件事放进天禧的后台队列，在用户离开电脑或夜里再做，做完写进第二天的简报。',
+    name: 'later_add', description: '把一件事放进小天的后台队列，在用户离开电脑或夜里再做，做完写进第二天的简报。',
     parameters: { title: { type: 'string', required: true }, instructions: { type: 'string', required: true }, when: { type: 'string', enum: ['idle', 'night'] } },
     async execute(a) {
       const t = { id: id('job'), title: a.title, instructions: a.instructions, when: a.when || 'idle', status: 'queued', createdAt: now() }

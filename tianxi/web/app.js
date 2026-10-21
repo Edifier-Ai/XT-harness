@@ -1,4 +1,4 @@
-// 天禧 client: an IM for your personal agents. Talks to the tianxi-host plugin over /api (JSON) and /api/events (SSE).
+// 小天 client: an IM for your personal agents. Talks to the tianxi-host plugin over /api (JSON) and /api/events (SSE).
 'use strict'
 const $ = (s, r = document) => r.querySelector(s)
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
@@ -75,7 +75,7 @@ function md(src) {
 }
 
 // ---------- agents ----------
-const agents = () => S.agents.length ? S.agents : [{ id: 'tianxi', name: '天禧', role: '你的个人智能体', main: true, email: 'tianxi@agent.local' }]
+const agents = () => S.agents.length ? S.agents : [{ id: 'tianxi', name: '小天', role: '你的个人智能体', main: true, email: 'xiaotian@agent.local' }]
 const agentOf = (aid) => agents().find((a) => a.id === aid) || agents()[0]
 const busy = (aid) => (S.agentStatus[aid] || 'idle') !== 'idle'
 const doneAt = {}                            // agentId -> when it last finished, for the little "done" hop
@@ -157,6 +157,8 @@ function turnsOf(aid) {
   return turns
 }
 const toolsOf = (t) => t.items.filter((i) => i.role === 'tool')
+// the open chat handed work to this agent, so its progress shows here too
+const waitsOn = (aid) => transcript(cur).some((i) => i.role === 'tool' && i.name === 'mail_send' && handoff(i.args?.id)?.to.id === aid)
 const turnTitle = (t) => t.head ? (t.head.role === 'user' ? t.head.text : (t.kind === 'mail' && t.head.mail ? '处理邮件：' + t.head.mail.subject : agentOf(t.agent).name + t.head.text)) : '对话'
 
 // ---------- motion: what is new slides in; a plain refresh replays nothing ----------
@@ -276,6 +278,48 @@ function welcome(a) {
   return h
 }
 
+// ---------- hand-offs between agents, shown in the conversation ----------
+// One agent mails another (mail_send to an @agent.local address): the sender's chat shows the hand-off with
+// the receiver's live state and, once done, what it said; the receiver's chat opens with who handed it over.
+const agentByMail = (addr) => agents().find((a) => a.email && String(addr || '').toLowerCase().includes(a.email.toLowerCase())) || (/tianxi@agent\.local/i.test(addr || '') ? agentOf(S.mainId) : null)
+function handoff(outId) {
+  const out = (S.outbox || []).find((x) => x.id === outId); if (!out) return null
+  const to = agentByMail(out.to); if (!to) return null
+  const inm = (S.inbox || []).find((x) => x.outId === outId)
+  const turn = inm && turnsOf(to.id).find((t) => t.kind === 'mail' && t.head?.mail?.id === inm.id)
+  const said = turn ? turn.items.filter((i) => i.role === 'assistant' && i.text).map((i) => GU.plain(i.text, '')).join(' ').trim() : ''
+  const state = out.status === 'recalled' ? 'recalled' : !turn ? 'sent' : turn.running ? 'work' : 'done'
+  return { out, to, from: agentOf(out.agent), turn, said, state }
+}
+const ARROW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>'
+function handoffCard(h, k) {
+  const st = { sent: '已送达', work: `${esc(h.to.name)}在${esc(nowDoing(h.to.id).replace(/^正在/, ''))}`, done: '已完成', recalled: '已撤回' }[h.state]
+  return `<div class="hand ${h.state}" data-k="${k}">
+    <div class="hh">${avatar(h.from, 22, true, false)}<span class="ar">${ARROW}</span>${avatar(h.to, 22, h.state !== 'work', false)}<b>交给 ${esc(h.to.name)}</b><span class="hst">${h.state === 'work' ? '<span class="tdots"><i></i><i></i><i></i></span>' : h.state === 'done' ? `<span class="okdot">${CHECK}</span>` : ''}${st}</span></div>
+    <div class="hs">${esc(h.out.subject)}</div><div class="hb">${esc(h.out.body)}</div>
+    ${h.state === 'done' && h.said ? `<div class="hr">${avatar(h.to, 18, true, false)}<span>${esc(h.said.slice(0, 160))}${h.said.length > 160 ? '…' : ''}</span></div>` : ''}
+    <button class="lk hgo" data-act="to-agent" data-id="${h.to.id}">去 ${esc(h.to.name)} 那里看看 ›</button></div>`
+}
+// a mail turn in the receiver's chat: from another agent it reads as a hand-off, otherwise as mail
+function mailHead(t) {
+  const m = t.head.mail, src = agentByMail(m.from), me = agentOf(t.agent)
+  if (!src || src.id === me.id) return `<div class="mailcard" data-k="mail${t.id}"><div class="h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>收到 ${esc(m.fromName || m.from)} 的邮件 · ${hhmm(t.at)}</div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`
+  // it is a reply when this agent handed something to the sender earlier
+  const back = (S.outbox || []).some((o) => o.agent === me.id && agentByMail(o.to)?.id === src.id && o.createdAt < t.at)
+  return `<div class="hand in" data-k="mail${t.id}"><div class="hh">${avatar(src, 22, true, false)}<span class="ar">${ARROW}</span>${avatar(me, 22, true, false)}<b>${esc(src.name)} ${back ? '交回结果' : '交给我'}</b><span class="hst">${hhmm(t.at)}</span></div><div class="hs">${esc(m.subject)}</div><div class="hb">${esc(m.body)}</div><button class="lk hgo" data-act="to-agent" data-id="${src.id}">回 ${esc(src.name)} 那里 ›</button></div>`
+}
+
+// Your own messages take the bot's colour (its accent), or black, as chosen in 设置 → 通用.
+function meBubble(el, a) {
+  const black = store.get('meBubble', 'bot') === 'black'
+  const c = black ? '#0a0a0b' : colorOf(a)
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255)
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  el.style.setProperty('--me-bg', c)
+  el.style.setProperty('--me-tx', lum > 0.62 ? '#141414' : '#ffffff')
+  el.style.setProperty('--me-bd', black ? 'rgba(255,255,255,.12)' : 'transparent')
+}
+
 function renderMsgs(keepScroll) {
   const feed = $('#feed'); const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 80
   const a = agentOf(cur)
@@ -288,21 +332,20 @@ function renderMsgs(keepScroll) {
     day = dayOf(t.at); lastAt = at
     if (t.head?.role === 'user') h += `<div class="mrow me" id="m_${t.head.id}" data-k="${t.head.id}"><div class="body"><div class="bub" data-mid="${t.head.id}">${esc(t.head.text)}</div></div></div>`
     let body = ''
-    if (t.kind === 'mail' && t.head.mail) {
-      const m = t.head.mail
-      body += `<div class="mailcard" data-k="mail${t.id}"><div class="h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>收到 ${esc(m.fromName || m.from)} 的邮件 · ${hhmm(t.at)}</div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`
-    }
+    if (t.kind === 'mail' && t.head.mail) body += mailHead(t)
     const chip = procChip(t); if (chip) body += chip
     for (const it of t.items) {
       if (it.role === 'assistant' && it.text) body += `<div class="aw" id="m_${it.id}" data-k="${it.id}">${replyHtml(it)}</div>`
       else if (it.role === 'ui') body += `<div class="uiw" data-k="${it.id}">${renderUI(it)}</div>`
       else if (it.role === 'error') body += `<div class="bub err" data-k="${it.id}">${esc(it.text)}</div>`
+      else if (it.role === 'tool' && it.name === 'mail_send' && it.state !== 'error') { const h = handoff(it.args?.id); if (h) body += handoffCard(h, 'hand' + it.id) }
     }
     if (t.running && !t.items.some((i) => i.role === 'assistant' && i.text) && !toolsOf(t).length) body += '<div class="bub typing"><i></i><i></i><i></i></div>'
     if (body) h += `<div class="mrow" data-k="a${t.id}"><div class="body">${body}</div></div>`
   }
   for (const x of S.approvals.filter((y) => y.agent === cur)) h += `<div class="mrow" data-k="ask${x.id}"><div class="body">${askCard(x)}</div></div>`
   const M = $('#msgs')
+  meBubble(M, a)
   GU.keepFocus(() => { M.innerHTML = h })
   // Switching to another agent fades the whole conversation in; afterwards only new messages move.
   const switched = M.dataset.agent !== cur
@@ -838,7 +881,7 @@ const modelOpts = (list, sel) => list.map((m) => `<option value="${esc(m.id)}" $
 const effortOpts = (efforts) => efforts.length > 1 ? `<select class="inp fm-eff" style="flex:none;width:auto">${efforts.map((l) => `<option value="${l}">思考 ${EFFORT[l] || l}</option>`).join('')}</select>` : ''
 async function renderFree(el, first) {
   if (!el) return
-  if (!APP || !APP.freeScan) { el.innerHTML = '<div class="hint" style="margin:0">免费模式要在天禧客户端里设置。</div>'; return }
+  if (!APP || !APP.freeScan) { el.innerHTML = '<div class="hint" style="margin:0">免费模式要在小天 Bot 客户端里设置。</div>'; return }
   const cfg = await APP.getConfig()
   const zp = (cfg.free?.cloud || [])[0]
   el.innerHTML = `<div class="fm-tabs"><button data-ft="apps" class="${freeTab === 'apps' ? 'on' : ''}"><b>借用已登录的软件</b>Qoder、WorkBuddy</button><button data-ft="cloud" class="${freeTab === 'cloud' ? 'on' : ''}"><b>云端注册${zp ? '（' + esc(zp.name) + '）' : ''}</b>手机号注册，免费模型</button></div><div class="fm-body"><div class="hint">正在查看这台电脑…</div></div>`
@@ -847,7 +890,7 @@ async function renderFree(el, first) {
   const use = async (c, out) => {
     out.innerHTML = '<div class="fm-res">正在测试并切换…</div>'
     const r = await APP.freeSave({ ...c, on: true })
-    out.innerHTML = r.ok ? `<div class="fm-res ok">好了，${first ? '正在打开天禧' : '正在重启，用上了'}</div>` : freeRes(r)
+    out.innerHTML = r.ok ? `<div class="fm-res ok">好了，${first ? '正在打开小天 Bot' : '正在重启，用上了'}</div>` : freeRes(r)
   }
   if (freeTab === 'cloud') {
     if (!zp) { body.innerHTML = '<div class="hint">暂时没有可用的云端平台。</div>'; return }
@@ -920,7 +963,7 @@ async function renderFree(el, first) {
 // model config form (Electron only), used by settings and first run
 async function renderModelForm(el, first) {
   if (!el) return
-  if (!APP) { el.innerHTML = `<div class="hint" style="margin:0">现在用的是 ${esc(S.model?.provider || '')} / ${esc(S.model?.model || '')}。在天禧客户端里可以切换模型。</div>`; return }
+  if (!APP) { el.innerHTML = `<div class="hint" style="margin:0">现在用的是 ${esc(S.model?.provider || '')} / ${esc(S.model?.model || '')}。在小天 Bot 客户端里可以切换模型。</div>`; return }
   const cfg = await APP.getConfig()
   const presets = cfg.presets
   const c0 = presets.find((p) => p.id === cfg.provider) || presets[0]
@@ -931,7 +974,7 @@ async function renderModelForm(el, first) {
     <div class="setrow"><label>API Key</label><div class="ctl"><input class="inp" id="mfK" type="password" placeholder="${cfg.hasKey ? '已保存，不改就留空' : '粘贴你的 API Key'}"></div></div>
     <div class="hint" id="mfH">${esc(c0.hint || '')}</div>
     ${first ? '' : `<div class="setrow"><label>开机启动</label><div class="ctl"><button class="sw ${cfg.autoLaunch ? 'on' : ''}" id="mfA"></button><span class="hint">开机后在后台待命</span></div></div>`}
-    <div style="margin-top:12px;display:flex;gap:10px;align-items:center"><button class="btn pri" id="mfS" style="flex:none;white-space:nowrap">${first ? '开始用天禧' : '保存并重启'}</button><span class="hint" id="mfR" style="min-width:0;overflow-wrap:anywhere"></span></div>`
+    <div style="margin-top:12px;display:flex;gap:10px;align-items:center"><button class="btn pri" id="mfS" style="flex:none;white-space:nowrap">${first ? '开始用小天 Bot' : '保存并重启'}</button><span class="hint" id="mfR" style="min-width:0;overflow-wrap:anywhere"></span></div>`
   const fillModels = (list) => { $('#mfML', el).innerHTML = list.map((m) => `<option value="${esc(m)}">`).join('') }
   // Local routers (Magpie, Ollama) list their models; ask them so the user can pick instead of guessing a name.
   const probe = async (p) => {
@@ -961,7 +1004,7 @@ async function renderModelForm(el, first) {
 let evalTimer = null
 async function renderEval(el) {
   if (!el) return
-  if (!APP || !APP.runEval) { el.innerHTML = '<div class="hint" style="margin:0">评测要在天禧客户端里运行。</div>'; return }
+  if (!APP || !APP.runEval) { el.innerHTML = '<div class="hint" style="margin:0">评测要在小天 Bot 客户端里运行。</div>'; return }
   const st = await APP.evalStatus()
   const c0 = st.history[0]
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '-'
@@ -987,11 +1030,11 @@ async function renderEval(el) {
 // ---------- 更新 (Electron only): the client checks the GitHub repository and fetches only changed files ----------
 async function renderUpdate(el, st) {
   if (!el) return
-  if (!APP || !APP.updateStatus) { el.innerHTML = '<div class="srow"><div class="m"><b>在天禧客户端里可以检查更新</b></div></div>'; return }
+  if (!APP || !APP.updateStatus) { el.innerHTML = '<div class="srow"><div class="m"><b>在小天 Bot 客户端里可以检查更新</b></div></div>'; return }
   st = st || await APP.updateStatus(); updSt = st
   const when = st.checkedAt ? new Date(st.checkedAt).toLocaleString('zh-CN', { hour12: false }) : '还没检查过'
   const line = st.checking ? '正在检查…'
-    : st.pending ? `天禧 ${esc(st.pending.version)} 已就绪。重启以应用。`
+    : st.pending ? `小天 Bot ${esc(st.pending.version)} 已就绪。重启以应用。`
     : st.error ? `没查成：${esc(st.error)}`
     : st.latest ? `已经是最新版 · 上次检查 ${esc(when)}` : `上次检查 ${esc(when)}`
   el.innerHTML = `<div class="srow"><div class="m"><b>自动更新</b><span>在你离开时自动更新客户端，只下载改动的文件；新版本启动失败会自动退回</span></div><div class="c"><i class="tg on fixed" title="概念版一直开着"></i></div></div>
@@ -1009,7 +1052,7 @@ function updateToast(st) {
   updSt = st || updSt; renderRail(); renderMenu()
   if (!st || !st.pending || $('#updToast')) return
   const el = document.createElement('div'); el.className = 'toast'; el.id = 'updToast'
-  el.innerHTML = `<span>天禧新版本 ${esc(st.pending.version)} 已经下好${st.pending.notes ? '：' + esc(st.pending.notes) : ''}</span><button class="btn sm">现在重启</button><button class="btn sm">稍后</button>`
+  el.innerHTML = `<span>小天 Bot 新版本 ${esc(st.pending.version)} 已经下好${st.pending.notes ? '：' + esc(st.pending.notes) : ''}</span><button class="btn sm">现在重启</button><button class="btn sm">稍后</button>`
   const [go, later] = el.querySelectorAll('button')
   go.onclick = () => APP.restart(); later.onclick = () => dismiss(el)
   $('#toasts').appendChild(el)
@@ -1123,7 +1166,7 @@ function appsModal() {
   for (const c of CORE) if (hit(c.n, c.d, '记忆')) rows.builtin.push(`<div class="arow">${appIcon(c.id)}<div class="m"><b>${esc(c.n)}<em class="bi">内置</em></b><span>${esc(c.d)}</span></div><span class="always">一直开着</span></div>`)
   if (cat !== '已连接') for (const c of CAT.catalog) if (!added.has(c.id) && hit(c.n, c.d, c.c)) rows.avail.push(`<div class="arow">${appIcon(c.id)}<div class="m"><b>${esc(c.n)}</b><span>${esc(c.d)}${c.node && S.apps?.node === false ? ' · 需要 Node.js' : ''}</span></div><button class="pbtn" data-act="app-new" data-c="${c.id}">添加</button></div>`)
   const sec = (title, l, one) => l.length ? `<div class="asec"><div class="ah"><b>${title}</b></div><div class="${one ? 'alist' : 'agrid'}">${l.join('')}</div></div>` : ''
-  const body = sec('我连接的应用', rows.connected, true) + sec('可以添加', rows.avail) + sec('天禧自带', rows.builtin)
+  const body = sec('我连接的应用', rows.connected, true) + sec('可以添加', rows.avail) + sec('小天 Bot 自带', rows.builtin)
     + (cat === '全部' && !q ? `<div class="asec"><div class="custom"><div class="m"><b>添加自定义应用</b><span>任何 MCP 服务器都能接：填启动命令（比如 npx -y 某个包）或者一个网址。魔搭、Smithery 等 MCP 广场上的服务都可以这样加。</span></div><button class="pbtn" data-act="app-new" data-c="">自定义</button></div></div>` : '')
   const ic = connectedIcons()
   return `<button class="mx" data-act="modal-close">${ico('x', 20)}</button>
@@ -1143,7 +1186,7 @@ function appForm() {
   if (c) {
     for (const x of c.fields) h += f(x.k, x.l, a?.hasValues?.includes(x.k) ? '已保存，不改就留空' : '', '', x.secret, x.help || '')
     if (!c.fields.length) h += '<div class="pempty">不用填任何东西，点“连接”就行。</div>'
-    if (c.node) h += `<div class="pempty">${S.apps?.node === false ? '⚠ 这台电脑还没有 Node.js。这个应用要用它启动：先从 nodejs.org 装 LTS 版，再重启天禧。' : '第一次连接会用 npx 下载它，要等一会儿。'}</div>`
+    if (c.node) h += `<div class="pempty">${S.apps?.node === false ? '⚠ 这台电脑还没有 Node.js。这个应用要用它启动：先从 nodejs.org 装 LTS 版，再重启小天 Bot。' : '第一次连接会用 npx 下载它，要等一会儿。'}</div>`
   } else {
     h += f('name', '名字', '比如：公司知识库', a?.name || '')
     h += f('commandLine', '启动命令', '比如：npx -y @modelcontextprotocol/server-everything', a?.command ? [a.command, ...(a.args || [])].join(' ') : '', false, '本机启动的 MCP 服务器填这里；远程的填下面的网址')
@@ -1169,15 +1212,15 @@ function settingsModal() {
   if (t === 'general') {
     const me = s.callMe || S.user || '你'
     h = `<h2>通用</h2><div class="slab">账户</div><div class="scard"><div class="acct"><span class="uav big">${esc(userInitial())}</span><div class="m"><b>${esc(me)}</b><span>${esc(S.user || '')}@${esc(S.device || 'local')}<button class="cp" data-act="copy" data-v="${esc(S.home || '')}" title="复制数据位置">${ico('copy', 15)}</button></span></div><div class="c"><button class="pbtn" data-act="set-tab" data-t="computer">数据位置</button></div></div></div>
-      <div class="slab">外观</div><div class="scard">${row('主题', '', sel('theme', store.get('theme', 'dark'), [['dark', '深色'], ['light', '浅色'], ['system', '跟随系统']]))}${row('强调色', '', sel('accent', 'bot', [['bot', 'Bot 颜色']]))}${row('语言', '', sel('lang', 'zh', [['zh', '简体中文']]))}</div>
+      <div class="slab">外观</div><div class="scard">${row('主题', '', sel('theme', store.get('theme', 'dark'), [['dark', '深色'], ['light', '浅色'], ['system', '跟随系统']]))}${row('我的消息底色', '你发的消息跟着当前 Bot 的颜色，或者一律用黑色', sel('meBubble', store.get('meBubble', 'bot'), [['bot', '强调色（Bot 颜色）'], ['black', '黑色']]))}${row('语言', '', sel('lang', 'zh', [['zh', '简体中文']]))}</div>
       <div class="slab">你</div><div class="scard">${row('怎么称呼你', 'Bot 打招呼和写邮件时用', txt('callMe', s.callMe, '比如：summer'))}</div>
       <div class="slab">Bot</div><div class="scard">${row('时区', '', sel('tz', 'auto', [['auto', `自动检测（${Intl.DateTimeFormat().resolvedOptions().timeZone}）`]]))}${row('每日简报时间', '主 Bot 到点整理当天的简报', txt('briefTime', s.briefTime || '08:00', '08:00', 90))}${row('离开多久算不在', '之后开始做排着的事（分钟）', txt('idleMinutes', s.idleMinutes ?? 10, '10', 70))}${row('夜里时段', '夜里反思和夜里做的事在这段时间', `${txt('nightFrom', s.nightFrom ?? 23, '23', 54)}<span class="to">点到</span>${txt('nightTo', s.nightTo ?? 6, '6', 54)}<span class="to">点</span>`)}${row('留意的文件夹', '出现新文件时记下来，写进简报', txt('watch', (s.watch || []).join('；'), '~/Downloads；~/Desktop', 260))}</div>`
   } else if (t === 'computer') {
     h = `<h2>电脑</h2><div class="slab">你的电脑 <b class="dev">${esc(S.device || '')}</b></div><div class="scard">${row('在这台电脑上执行', '允许 Bot 在你的电脑上打开文件并运行任务。对外发邮件仍会先问你，做过的事都能在操作记录里撤回。', sel('exec', 'always', [['always', '始终允许']]))}${row('临时模式', '开着时所有 Bot 都不记住你说的话', `<button class="tg ${S.privateMode ? 'on' : ''}" data-act="priv"></button>`)}</div>
       <div class="slab">Bot 的电脑</div><div class="scard">${row('数据位置', `记忆、对话、操作记录都在本机：${esc(S.home || '')}`, `<button class="pbtn" data-act="copy" data-v="${esc(S.home || '')}">复制</button>`)}${row(`清空和 ${esc(agentOf(cur).name)} 的对话`, '只清对话记录，记忆和操作记录不受影响。', `<button class="pbtn red" data-act="clear">清空</button>`)}</div>`
-  } else if (t === 'model') h = `<h2>模型</h2><div class="slab">免费模式</div><div class="scard pad" id="freeForm"></div><div class="slab">我自己的 API Key</div><div class="scard pad" id="modelForm"></div><div class="snote">天禧用第三方大模型 API，Key 只加密保存在这台电脑上。</div>`
+  } else if (t === 'model') h = `<h2>模型</h2><div class="slab">免费模式</div><div class="scard pad" id="freeForm"></div><div class="slab">我自己的 API Key</div><div class="scard pad" id="modelForm"></div><div class="snote">小天用第三方大模型 API，Key 只加密保存在这台电脑上。</div>`
   else if (t === 'eval') h = `<h2>评测</h2><div class="scard pad" id="evalBox"></div>`
-  else h = `<h2>更新</h2><div class="slab">天禧更新</div><div class="scard" id="updBox"></div><div class="slab">更新来源</div><div class="scard pad" id="updSrc"></div>`
+  else h = `<h2>更新</h2><div class="slab">小天 Bot 更新</div><div class="scard" id="updBox"></div><div class="slab">更新来源</div><div class="scard pad" id="updSrc"></div>`
   return `${nav}<div class="sbody">${h}</div><button class="mx" data-act="modal-close">${ico('x', 20)}</button>`
 }
 function fillSettings() {
@@ -1187,6 +1230,7 @@ function fillSettings() {
   if (t === 'update') renderUpdate($('#updBox'))
 }
 async function saveSetting(key, raw) {
+  if (key === 'meBubble') { store.set('meBubble', raw); if (view === 'chat') renderMsgs(true); return }
   let v = raw
   if (['idleMinutes', 'nightFrom', 'nightTo'].includes(key)) { v = +raw; if (!Number.isFinite(v)) return }
   if (key === 'watch') v = String(raw).split(/[;；,，\n]/).map((x) => x.trim()).filter(Boolean)
@@ -1251,7 +1295,7 @@ function connect() {
       const l = (S.transcripts[aid] ||= [])
       const i = l.findIndex((t) => t.id === m.item.id)
       if (i >= 0) l[i] = m.item; else l.push(m.item)
-      if (view === 'chat' && aid === cur) { renderMsgs(true); renderHead() } else if (view === 'brief' || view === 'reflect') renderPage()
+      if (view === 'chat' && aid === cur) { renderMsgs(true); renderHead() } else if (view === 'chat' && waitsOn(aid)) renderMsgs(true); else if (view === 'brief' || view === 'reflect') renderPage()
       renderRail(); renderProc()
     } else if (m.type === 'delta') {
       const t = (S.transcripts[m.agent || S.mainId] || []).find((x) => x.id === m.id)
@@ -1275,7 +1319,7 @@ function connect() {
     else if (m.type === 'model') { S.pick = m.pick; renderPicks() }
     else if (m.type === 'turn-end' || m.type === 'store') soon()
   }
-  es.onerror = () => { $('#cSub').textContent = '正在重新连接…' }
+  es.onerror = () => { const el = $('#cSub'); if (el) el.textContent = '正在重新连接…' }
 }
 
 // ---------- input ----------
@@ -1449,6 +1493,7 @@ document.addEventListener('click', async (e) => {
   else if (act === 'ptab') { procTab = el.dataset.t; if (procTab === 'computer') procSel = null; renderProc() }
   else if (act === 'proc-open') { if (view !== 'chat') { cur = el.dataset.agent; setView('chat') } openProc({ agent: el.dataset.agent, turn: el.dataset.turn }, 'computer') }
   else if (act === 'go') setView(el.dataset.v)
+  else if (act === 'to-agent') { cur = el.dataset.id; store.set('agent', cur); setView('chat'); renderAll() }
   else if (act === 'ask') { await api('approval', { id: el.dataset.id, allow: !!el.dataset.allow }) }
   else if (act === 'brief-run') { await api('brief/run', {}); setTimeout(soon, 400) }
   else if (act === 'brief-do') { el.disabled = true; await api('brief/act', { id: el.dataset.id, k: +el.dataset.k }); soon() }

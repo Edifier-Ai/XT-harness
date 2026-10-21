@@ -2,9 +2,9 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>天禧之光</title>
+<title>小天之光</title>
 <style>
-/* 天禧之光: the always-on status pill at the top of the screen. */
+/* 小天之光: the always-on status pill at the top of the screen. */
 html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;user-select:none}
 .pill{position:absolute;left:50%;top:6px;transform:translateX(-50%);height:34px;display:flex;align-items:center;gap:9px;padding:0 16px 0 8px;border-radius:17px;background:rgba(28,28,28,.94);border:1px solid #3a3a3a;color:#e8e8e8;font-size:13px;white-space:nowrap;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.35);transition:opacity .3s,width .3s;max-width:330px}
 .pill.idle{padding:0 8px;opacity:.55}
@@ -30,7 +30,7 @@ function render() {
   const open = st.brief && st.brief.date === today() ? (st.brief.items || []).filter((i) => i.kind === 'decide' && i.status !== 'resolved').length : 0
   p.className = 'pill'
   if (st.approvals.length) { p.classList.add('ask'); t.textContent = '需要你确认：' + (L[st.approvals[0].tool] || st.approvals[0].tool) }
-  else if (st.status !== 'idle') { p.classList.add('busy'); t.textContent = st.last ? '天禧在' + st.last : '天禧在想' }
+  else if (st.status !== 'idle') { p.classList.add('busy'); t.textContent = st.last ? '小天在' + st.last : '小天在想' }
   else if (open) { p.classList.add('dec'); t.innerHTML = '今天有事等你定 <b>' + open + '</b>' }
   else { p.classList.add('idle'); t.textContent = '' }
 }

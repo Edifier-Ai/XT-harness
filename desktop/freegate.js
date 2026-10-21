@@ -180,7 +180,7 @@ async function test({ baseURL, key, model, effort, stream }) {
   }
 }
 
-// The cloud platforms 天禧 can sign the user up for (now 智谱 only).
+// The cloud platforms 小天 can sign the user up for (now 智谱 only).
 const cloud = (bundleDir) => {
   let l = {}; try { l = JSON.parse(fs.readFileSync(path.join(bundleDir, 'web', 'free-models.json'), 'utf8')) } catch {}
   return (l.cloud || []).map((c) => process.env['TIANXI_CLOUD_' + c.id.toUpperCase()] ? { ...c, baseURL: process.env['TIANXI_CLOUD_' + c.id.toUpperCase()] } : c)   // the override is for tests
