@@ -1,13 +1,13 @@
 {
- "version": "0.9.3",
- "notes": "修复任务栏和快捷方式图标显示成空白",
+ "version": "0.10.0",
+ "notes": "免费模式：借用已登录的 Qoder、WorkBuddy、Codex、Claude（经 Magpie），或注册智谱用免费模型；每个模型可测试，失败显示错误码；对话框里直接选模型和思考深度",
  "minBase": "0.4.0",
- "at": "2026-10-21T03:36:32.202Z",
+ "at": "2026-10-21T04:11:50.815Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "8a226dac98308db7910553ced96c74d87584b93244a1590a946f6658a3c8ba27",
-   "size": 21651
+   "sha256": "9295faee3701763769d1546ba24cd556a3c890aeb28fa1afea3d0234633ae6a5",
+   "size": 28284
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -16,8 +16,13 @@
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
-   "sha256": "6f3decb90ae337805a6f8aad696400bca6586939e93654e884f3524dcd040813",
-   "size": 982
+   "sha256": "7e4e191b08a78d71ef2a7dee0b6e9eba303f179230d5f8cf845174d46d31f6c9",
+   "size": 1218
+  },
+  "app/freemode.js": {
+   "path": "desktop/freemode.js",
+   "sha256": "12c768428f8fea9695f04c837ef3b539ef3bb76b0384a22b28807701a5797188",
+   "size": 5469
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
@@ -411,8 +416,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "8286a017fb0434f51b7223a752b9d723b1f2cf2c8ea3d0e0be332680868a5985",
-   "size": 25071
+   "sha256": "ca04e7702c176e3e33f09339024754028cbecd48486fe5bd6b7ce24590c7493f",
+   "size": 27900
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -436,8 +441,13 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "43a6f72df20008831ae409dd6bcdf4db24cccb4b2acfddb738cb4f518b606818",
-   "size": 121597
+   "sha256": "4fd64417c553867d50b705066f55eacbc15ce4a217c19c4fec27e16699887a59",
+   "size": 134337
+  },
+  "bundle/web/free-models.json": {
+   "path": "tianxi/web/free-models.json",
+   "sha256": "906243e13414b617f09b94de35ec38260887c506e60edf565e737895f6fe9155",
+   "size": 1795
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -461,13 +471,13 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "5e3f353cc87d1737bd630325105ce1ba84c752631f8c572026f1e8d2c3ef5ec2",
-   "size": 7894
+   "sha256": "3276b2ec44c45051c53c1339775e35e9947eeee164f9f10ce0fcfd2bdb8b00e5",
+   "size": 8266
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "8a95b0bee8eda0fc2f764672b7f17d1f046c0391f04adbd936e5105970342392",
-   "size": 13820
+   "sha256": "50e8f91cad5ddf713d7cd9eef5b2bc33976c1802db4eb82952d0056478f5c16e",
+   "size": 15336
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
@@ -481,8 +491,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "75813b447477127688381645be55e22f1ec1dc4ee979867865b40bb9e52fabdf",
-   "size": 66641
+   "sha256": "2262c946ddabbb81a3aa3b47f2732b03b8877af3bbe9d58e9ea90aa526ff4d5f",
+   "size": 69606
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

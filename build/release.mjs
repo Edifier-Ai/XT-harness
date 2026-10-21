@@ -12,7 +12,7 @@ const [version, notes = ''] = process.argv.slice(2)
 if (!/^\d+\.\d+\.\d+$/.test(version || '')) { console.error('usage: node build/release.mjs x.y.z "notes"'); process.exit(1) }
 
 // Client code that an update may replace. main.js and package.json stay with the shipped base.
-const APP_FILES = ['shell.js', 'updater.js', 'preload.js', 'loading.html', 'icon.png', 'icon.ico', 'update.json']
+const APP_FILES = ['shell.js', 'updater.js', 'preload.js', 'freemode.js', 'loading.html', 'icon.png', 'icon.ico', 'update.json']
 // The oldest shipped base (Electron + DSH runtime + main.js) these files run on.
 const MIN_BASE = '0.4.0'
 

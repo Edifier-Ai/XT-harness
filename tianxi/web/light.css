@@ -180,3 +180,23 @@
 :where(:root[data-theme=light]) .recbar .rcx:hover{background:#e2e2ea}
 :where(:root[data-theme=light]) .vic{background:#ececf2;color:#25252b}
 :where(:root[data-theme=light]) .vbar{background:#ececf2}
+:where(:root[data-theme=light]) .mp{color:#67676d}
+:where(:root[data-theme=light]) .mp:hover{background:#ececf2;color:#26262c}
+:where(:root[data-theme=light]) .pickmenu{background:#ffffff;border:1px solid #ceced6;box-shadow:0 14px 40px rgba(80,70,120,0.175)}
+:where(:root[data-theme=light]) .pickmenu .pg{color:#808088}
+:where(:root[data-theme=light]) .pickmenu button{color:#26262c}
+:where(:root[data-theme=light]) .pickmenu button small{color:#808088}
+:where(:root[data-theme=light]) .pickmenu button:hover{background:#ececf2}
+:where(:root[data-theme=light]) .pickmenu button.on{background:#ffffff}
+:where(:root[data-theme=light]) .pickmenu .tg2,:where(:root[data-theme=light]) .pickmenu .th{background:#ececf2;color:#67676d}
+:where(:root[data-theme=light]) .pickmenu .pfoot{border-top:1px solid #e2e2ea}
+:where(:root[data-theme=light]) .pickmenu .pfoot button{color:#67676d}
+:where(:root[data-theme=light]) .fm-tabs button{border:1px solid #ceced6;color:#67676d}
+:where(:root[data-theme=light]) .fm-tabs button b{color:#26262c}
+:where(:root[data-theme=light]) .fm-tabs button.on{border-color:#28282e;background:#ffffff}
+:where(:root[data-theme=light]) .fm-sw{border:1px solid #e2e2ea}
+:where(:root[data-theme=light]) .fm-sw .st{background:#ececf2;color:#67676d}
+:where(:root[data-theme=light]) .fm-sw .how{color:#72727a}
+:where(:root[data-theme=light]) .fm-res code{background:#ececf2;color:#26262c}
+:where(:root[data-theme=light]) .fm-steps{color:#48484e}
+:where(:root[data-theme=light]) .fm-note{color:#808088}

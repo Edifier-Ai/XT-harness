@@ -39,8 +39,10 @@
           <div class="inbox" id="ring">
             <button class="plus" id="bPlus" title="更多"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></button>
             <textarea id="inp" rows="1" placeholder="发消息"></textarea>
+            <div class="mpicks" id="mpicks"></div>
             <button class="mic" id="bMic" title="语音输入"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg></button>
             <button class="send" id="send" aria-label="发送"><svg class="wave" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/></svg><svg class="arrow" width="18" height="18" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <div class="pickmenu" id="pickMenu" hidden></div>
             <div class="plusmenu" id="plusMenu" hidden>
               <button id="bPriv"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 20L20 4"/></svg><span>临时模式</span><small>这段对话不记住</small></button>
               <button id="bUndo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg><span>算了</span><small>撤回刚做的上一件事</small></button>
@@ -71,8 +73,10 @@
 
 <div class="setup" id="setup"><div class="box">
   <h2><i class="orb"></i>先给天禧接一个大模型</h2>
-  <p>天禧的“大脑”用第三方大模型 API。选一家，填上你自己的 API Key 就能用。Key 只加密保存在这台电脑上。</p>
-  <div id="setupForm"></div>
+  <p>没有 API Key 也能先免费用起来：借用你电脑上已登录的软件，或者注册一个智谱账号。有 Key 的话选“我有 API Key”。</p>
+  <div class="fm-tabs" id="setupTabs"><button class="on" data-setup="free"><b>免费用起来</b>不用买 Key</button><button data-setup="key"><b>我有 API Key</b>DeepSeek、通义、Kimi 等</button></div>
+  <div id="setupFree"></div>
+  <div id="setupForm" hidden></div>
 </div></div>
 
 <div class="toasts" id="toasts"></div>

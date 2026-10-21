@@ -905,3 +905,42 @@ button:focus:not(:focus-visible){outline:none}
 .vtx{font-size:15px;margin:14px 0 10px}.vtx.bad{color:#f07a6a}
 .vbar{height:6px;border-radius:3px;background:#2c2c2c;overflow:hidden}.vbar i{display:block;height:100%;background:var(--blue2);border-radius:3px;transition:width .3s ease}
 .facts2{display:flex;align-items:center;gap:12px;margin-top:18px}.facts2 .hint{color:var(--tx3);font-size:13px}
+
+/* model and thinking depth in the composer */
+.mpicks{display:flex;gap:4px;align-items:center;margin-left:auto;flex:none}
+.mpicks:empty{display:none}
+.mp{display:flex;align-items:center;gap:5px;height:32px;padding:0 10px;border:0;border-radius:16px;background:none;color:#a2a2aa;font-size:13px;white-space:nowrap;max-width:220px;overflow:hidden}
+.mp:hover{background:#26262b;color:#ececf1}
+.mp svg:last-child{transform:rotate(90deg);flex:none;opacity:.7}
+.mp .fr,.pickmenu .fr{font-style:normal;font-size:11px;line-height:16px;padding:0 6px;border-radius:8px;background:#163a2a;color:#5fd39a}
+.pickmenu{position:absolute;bottom:52px;background:#1c1c20;border:1px solid #303036;border-radius:14px;padding:6px;min-width:260px;max-width:340px;max-height:min(420px,60vh);overflow:auto;box-shadow:0 14px 40px rgba(0,0,0,.5);z-index:6}
+.pickmenu .pg{font-size:12px;color:#7c7c85;padding:8px 10px 4px}
+.pickmenu button{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;border-radius:9px;padding:8px 10px;text-align:left;color:#ececf1;font-size:14px}
+.pickmenu button span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pickmenu button small{color:#7c7c85;font-size:12px}
+.pickmenu button:hover{background:#2a2a30}
+.pickmenu button.on{background:#232328}
+.pickmenu .tg2,.pickmenu .th{font-style:normal;font-size:11px;line-height:16px;padding:0 6px;border-radius:8px;background:#2a2a30;color:#a2a2aa}
+.pickmenu .pfoot{border-top:1px solid #2a2a30;margin-top:6px;padding-top:6px}
+.pickmenu .pfoot button{color:#a2a2aa;font-size:13px}
+
+/* 免费模式 in settings */
+.fm-tabs{display:flex;gap:6px;margin-bottom:12px}
+.fm-tabs button{flex:1;border:1px solid #303036;background:none;color:#a2a2aa;border-radius:12px;padding:10px 12px;text-align:left;font-size:14px}
+.fm-tabs button b{display:block;color:#ececf1;font-weight:600;margin-bottom:2px}
+.fm-tabs button.on{border-color:#ececf1;background:#232328}
+.fm-sw{border:1px solid #2a2a30;border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.fm-sw .hd{display:flex;align-items:center;gap:10px}
+.fm-sw .hd b{font-size:15px}
+.fm-sw .st{font-size:12px;padding:0 8px;line-height:20px;border-radius:10px;background:#2a2a30;color:#a2a2aa}
+.fm-sw .st.ok{background:#163a2a;color:#5fd39a}
+.fm-sw .how{font-size:13px;color:#8a8a92;margin-top:6px;line-height:1.6}
+.fm-sw .row{display:flex;gap:8px;align-items:center;margin-top:10px}
+.fm-sw .row select{flex:1;min-width:0}
+.fm-res{font-size:13px;margin-top:8px;line-height:1.6;overflow-wrap:anywhere}
+.fm-res.ok{color:#5fd39a}
+.fm-res.bad{color:#f08a8a}
+.fm-res code{font-family:ui-monospace,Consolas,monospace;font-size:12px;background:#2a2a30;padding:1px 6px;border-radius:6px;color:#ececf1}
+.fm-steps{margin:8px 0 4px;padding-left:20px;color:#c5c5cc;font-size:14px;line-height:1.9}
+.fm-note{font-size:12px;color:#7c7c85;margin-top:10px;line-height:1.6}
+.composer:has(#pickMenu:not([hidden])){position:relative;z-index:45}

@@ -6,7 +6,8 @@ import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { load, update, save, id, now, localISO, today, flags, bus, onChange, settings, HOME, EVAL, MAIN, STYLES, agentList, agentById, transcriptKey } from './store.js'
 import { entries, undoEntry, undoLast, pendingArgs } from './ledger.js'
 import { memories, editMemory, forgetMemory, addMemory, reflections, runReflect, applyProposal } from './memory.js'
@@ -101,6 +102,26 @@ export function apply(ctx) {
   const bySession = (sid) => { for (const r of R.values()) if (r.handle && r.handle.agent.id === sid) return r; return null }
   bus.hopsOf = (aid) => rt(aid || MAIN).hops
 
+  // ---------- model picked in the chat ----------
+  // The client lists every model it set up (its own key, Magpie, 智谱) in TIANXI_MODELS; the chat switches
+  // among them per agent turn without restarting. A pick made in the client's settings later wins over an older one here.
+  const MODELS = (() => { try { return JSON.parse(process.env.TIANXI_MODELS || '[]') } catch { return [] } })()
+  const known = (p) => p && MODELS.find((m) => m.provider === p.provider && m.model === p.model)
+  const pickNow = () => {
+    let fromApp = null; try { fromApp = JSON.parse(process.env.TIANXI_PICK || 'null') } catch {}
+    const mine = load('modelPick', null)
+    const p = mine && known(mine) && (!fromApp || (mine.at || 0) >= (fromApp.at || 0)) ? mine : (known(fromApp) ? fromApp : null)
+    if (!p) return null
+    const m = known(p), effort = m.efforts.includes(p.effort) ? p.effort : undefined
+    return { provider: p.provider, model: p.model, ...(effort ? { effort } : {}) }
+  }
+  const asSelection = (p) => p && { provider: p.provider, model: p.model, ...(p.effort && p.effort !== 'off' ? { reasoningEffort: ReasoningEffortId(p.effort) } : {}) }
+  const select = (r) => {
+    if (!r.handle || r.sel) return
+    r.sel = { current: asSelection(pickNow()), assembled: undefined }
+    try { r.disposeSel = installModelSelection(r.handle.agent.ctx, r.sel) } catch (e) { console.error('[tianxi] model selection:', e.message) }
+  }
+
   async function ensure(aid) {
     const r = rt(aid)
     if (r.handle) return r.handle.agent
@@ -108,16 +129,17 @@ export function apply(ctx) {
     r.starting = (async () => {
       const { presetId, setup } = agentSetup(ctx, aid)
       const meta = load('agentSessions', {})
-      const agentOptions = { ...ctx.agentDefaultModel.currentSelection() }
+      const agentOptions = { ...ctx.agentDefaultModel.currentSelection(), ...(asSelection(pickNow()) || {}) }
       const legacy = aid === MAIN ? load('state', {}).sessionId : null
       const resumeId = meta[aid] || legacy
       if (resumeId) {
-        try { r.handle = await ctx.agents.resume({ resumeSessionId: resumeId, agentOptions, setup }); return r.handle.agent } catch (e) { console.error(`[tianxi] resume ${aid} failed, starting fresh:`, e.message) }
+        try { r.handle = await ctx.agents.resume({ resumeSessionId: resumeId, agentOptions, setup }); select(r); return r.handle.agent } catch (e) { console.error(`[tianxi] resume ${aid} failed, starting fresh:`, e.message) }
       }
       const sessionId = 'tianxi-' + aid + '-' + randomUUID()
       const agentPreset = await presetId()
       r.handle = await ctx.agents.create({ sessionId, meta: { cwd: os.homedir(), ...(agentPreset ? { agentPreset } : {}) }, agentOptions, setup })
       update('agentSessions', {}, (m) => { m[aid] = sessionId })
+      select(r)
       return r.handle.agent
     })().finally(() => { r.starting = null })
     return r.starting
@@ -195,7 +217,16 @@ export function apply(ctx) {
         break
       }
       case 'turn/end': {
-        if (d.reason?.kind === 'error') addItem(r.aid, { role: 'error', text: d.reason.error?.message || '出错了', internal: h?.internal || false, turn: h?.turn })
+        if (d.reason?.kind === 'error') {
+          // keep the provider's own code and status so the user can tell a quota from a bad key
+          const er = d.reason.error || {}
+          let msg = String(er.message || '出错了'), st = er.status ?? er.statusCode ?? er.cause?.status, code = er.code
+          // providers' errors often arrive as "429: {json}": lift their own message and code out of it
+          const m = /^(\d{3})[:\s]+(\{[\s\S]*\})\s*$/.exec(msg)
+          if (m) { try { const j = JSON.parse(m[2]), e = j.error || j; st = st || m[1]; code = e.code || e.type || code; msg = e.message || e.msg || msg } catch {} }
+          const tail = [st && `HTTP ${st}`, code && `错误码 ${code}`, r.sel?.current && `模型 ${r.sel.current.model}`].filter(Boolean).join(' · ')
+          addItem(r.aid, { role: 'error', text: msg + (tail ? `（${tail}）` : ''), internal: h?.internal || false, turn: h?.turn })
+        }
         if (h) { patchItem(r.aid, h.turn, { endAt: now() }); h.resolve(h.last); r.hidden.delete(r.currentMsg) }
         r.currentMsg = null; r.streamItem = null; r.streamText = ''; r.hops = -1
         push({ type: 'turn-end', agent: r.aid })
@@ -237,6 +268,7 @@ export function apply(ctx) {
       later: load('later', []), observations: load('observations', []).slice(-50),
       approvals: [...approvals.values()].map(({ resolve, ...a }) => a), settings: settings(), home: HOME, device: os.hostname(), user: os.userInfo().username,
       model: ctx.agentDefaultModel.currentSelection(),
+      models: MODELS, pick: pickNow(),
       apps: bus.appsState?.() || { apps: [], disabled: [] },
       voice: bus.voice?.state() || { available: false, phase: 'missing' },
     }
@@ -247,6 +279,14 @@ export function apply(ctx) {
     'GET /api/ping': () => ({ ok: true }),
     'GET /api/state': () => state(),
     'POST /api/say': async (b) => { bus.say(String(b.text || '').slice(0, 20000), { display: b.display, agent: b.agent }); return { ok: true } },
+    'POST /api/model': async (b) => {
+      const m = known(b); if (!m) throw new Error('没有这个模型')
+      const p = { provider: m.provider, model: m.model, ...(m.efforts.includes(b.effort) ? { effort: b.effort } : {}), at: Date.now() }
+      save('modelPick', p)
+      for (const r of R.values()) if (r.sel) r.sel.current = asSelection(p)
+      push({ type: 'model', pick: pickNow() })
+      return { ok: true, pick: pickNow() }
+    },
     'POST /api/cancel': async (b) => { R.get(b.agent || MAIN)?.handle?.agent.cancel({ kind: 'user' }); return { ok: true } },
     'POST /api/undo': async (b) => ({ ok: true, entry: await undoEntry(b.id) }),
     'POST /api/undo-last': async () => ({ ok: true, entry: await undoLast() }),

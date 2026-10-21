@@ -7,7 +7,7 @@ unzip -q dl/electron.zip -d $OUT
 mv $OUT/electron.exe $OUT/TianxiAI.exe
 rm -f $OUT/resources/default_app.asar $OUT/LICENSES.chromium.html
 mkdir -p $OUT/resources/app $OUT/resources/runtime
-cp $ROOT/desktop/{main.js,shell.js,updater.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} $OUT/resources/app/
+cp $ROOT/desktop/{main.js,shell.js,updater.js,freemode.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} $OUT/resources/app/
 cp -r runtime/node_modules $OUT/resources/runtime/node_modules
 cp runtime/package.json $OUT/resources/runtime/
 rm -rf $OUT/resources/runtime/node_modules/dsh-tianxi && cp -r $ROOT/tianxi $OUT/resources/runtime/node_modules/dsh-tianxi

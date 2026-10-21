@@ -1,0 +1,25 @@
+{
+  "_": "免费模式的数据：哪些服务商算哪个软件、哪些模型免费。改这里随差分更新下发。free 是匹配模型 id 或名字的正则。",
+  "software": [
+    { "id": "qoder", "name": "Qoder", "providers": ["^qoder"], "free": ["free", "lite"], "how": "装好 Qoder 后，在 Magpie 的「服务商」里登录 Qoder（国内账号选 Qoder CN）。" },
+    { "id": "workbuddy", "name": "WorkBuddy", "providers": ["^workbuddy"], "free": ["free"], "how": "装好 WorkBuddy 后，在 Magpie 的「插件」里添加 WorkBuddy，再用腾讯账号登录。" },
+    { "id": "codex", "name": "Codex", "providers": ["^codex$", "^chatgpt"], "tag": "订阅内", "free": [], "how": "在这台电脑上装好 Codex，用 ChatGPT 账号登录，Magpie 会自动识别。" },
+    { "id": "claude", "name": "Claude", "providers": ["^claude$"], "tag": "订阅内", "free": [], "how": "在这台电脑上装好 Claude Code 并登录，Magpie 会自动识别。" }
+  ],
+  "freeAnywhere": [":free$", "-free$", "\\bfree\\b"],
+  "cloud": [
+    {
+      "id": "zhipu", "name": "智谱", "full": "智谱 BigModel 开放平台",
+      "baseURL": "https://open.bigmodel.cn/api/paas/v4",
+      "signup": "https://bigmodel.cn/usercenter/proj-mgmt/apikeys",
+      "keyHint": "形如 xxxxxxxx.xxxxxxxx 的一串",
+      "keyPattern": "^[0-9a-f]{32}\\.[0-9A-Za-z]{16}$",
+      "steps": ["用手机号注册或登录智谱开放平台", "在「API Keys」页点「添加新的 API Key」", "复制这个 Key，回到天禧粘贴"],
+      "thinkingFormat": "zai",
+      "models": [
+        { "id": "glm-4.7-flash", "label": "GLM-4.7-Flash", "free": true, "efforts": ["off", "high"] },
+        { "id": "glm-4-flash-250414", "label": "GLM-4-Flash", "free": true, "efforts": [] }
+      ]
+    }
+  ]
+}

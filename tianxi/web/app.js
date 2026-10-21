@@ -739,6 +739,80 @@ function pageAgent() {
   return h
 }
 
+// 免费模式 (Electron only): borrow a signed-in app through Magpie, or sign up for 智谱's free models.
+let freeTab = 'apps'
+const freeRes = (r) => r.ok ? `<div class="fm-res ok">测试通过 · ${(r.ms / 1000).toFixed(1)} 秒，可以用</div>`
+  : `<div class="fm-res bad">没通过 · ${r.status ? `<code>HTTP ${r.status}</code> ` : ''}${r.code ? `<code>${esc(r.code)}</code> ` : ''}${esc(r.message || '')}</div>`
+const modelOpts = (list, sel) => list.map((m) => `<option value="${esc(m.id)}" ${m.id === sel ? 'selected' : ''}>${esc(m.label)}${m.free ? '（免费）' : m.tag ? `（${esc(m.tag)}）` : ''}</option>`).join('')
+const effortOpts = (efforts) => efforts.length > 1 ? `<select class="inp fm-eff" style="flex:none;width:auto">${efforts.map((l) => `<option value="${l}">思考 ${EFFORT[l] || l}</option>`).join('')}</select>` : ''
+async function renderFree(el, first) {
+  if (!el) return
+  if (!APP || !APP.freeScan) { el.innerHTML = '<div class="hint" style="margin:0">免费模式要在天禧客户端里设置。</div>'; return }
+  const cfg = await APP.getConfig()
+  const zp = (cfg.free?.cloud || [])[0]
+  el.innerHTML = `<div class="fm-tabs"><button data-ft="apps" class="${freeTab === 'apps' ? 'on' : ''}"><b>借用已安装的软件</b>Qoder、WorkBuddy、Codex、Claude</button><button data-ft="cloud" class="${freeTab === 'cloud' ? 'on' : ''}"><b>云端注册${zp ? '（' + esc(zp.name) + '）' : ''}</b>手机号注册，免费模型</button></div><div class="fm-body"><div class="hint">正在查看这台电脑…</div></div>`
+  el.querySelector('.fm-tabs').onclick = (e) => { const b = e.target.closest('[data-ft]'); if (b) { freeTab = b.dataset.ft; renderFree(el, first) } }
+  const body = el.querySelector('.fm-body')
+  const use = async (c, out) => {
+    out.innerHTML = '<div class="fm-res">正在测试并切换…</div>'
+    const r = await APP.freeSave({ ...c, on: true })
+    out.innerHTML = r.ok ? `<div class="fm-res ok">好了，${first ? '正在打开天禧' : '正在重启，用上了'}</div>` : freeRes(r)
+  }
+  if (freeTab === 'cloud') {
+    if (!zp) { body.innerHTML = '<div class="hint">暂时没有可用的云端平台。</div>'; return }
+    body.innerHTML = `<div class="fm-sw"><div class="hd"><b>${esc(zp.full)}</b>${zp.on ? '<span class="st ok">正在用</span>' : ''}</div>
+      <ol class="fm-steps">${zp.steps.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+      <div class="row"><button class="btn pri" data-fa="signup" style="flex:none">打开${esc(zp.name)}注册 / 登录</button><span class="hint">在浏览器里完成，回来粘贴 Key</span></div>
+      <div class="row"><input class="inp fm-key" type="password" placeholder="${zp.hasKey ? '已保存，不改就留空' : '粘贴 API Key（' + esc(zp.keyHint) + '）'}"><button class="btn" data-fa="paste" style="flex:none">粘贴</button></div>
+      <div class="row"><select class="inp fm-model">${modelOpts(zp.models, zp.models[0]?.id)}</select><button class="btn" data-fa="test" style="flex:none">测试</button><button class="btn pri" data-fa="use" style="flex:none">用这个</button></div>
+      <div class="fm-out"></div>
+      ${zp.on && !first ? '<div class="row"><button class="btn" data-fa="off" style="flex:none">停用智谱</button></div>' : ''}</div>
+      <div class="fm-note">智谱的 Flash 系列模型免费，免费模型做复杂任务会比付费模型吃力。Key 只加密保存在这台电脑上。</div>`
+    const card = body.querySelector('.fm-sw'), out = card.querySelector('.fm-out'), keyEl = card.querySelector('.fm-key')
+    const pick = () => ({ route: zp.id, model: card.querySelector('.fm-model').value, apiKey: keyEl.value.trim() || undefined })
+    card.onclick = async (e) => {
+      const a = e.target.closest('[data-fa]')?.dataset.fa; if (!a) return
+      if (a === 'signup') APP.open(zp.signup)
+      else if (a === 'paste') { try { keyEl.value = (await navigator.clipboard.readText()).trim(); keyEl.type = 'password' } catch { out.innerHTML = '<div class="fm-res bad">读不到剪贴板，请直接粘贴到输入框</div>' } }
+      else if (a === 'test') { out.innerHTML = '<div class="fm-res">正在测试…</div>'; out.innerHTML = freeRes(await APP.freeTest(pick())) }
+      else if (a === 'use') { const c = pick(); if (!c.apiKey && !zp.hasKey) { out.innerHTML = '<div class="fm-res bad">先粘贴 API Key</div>'; return } use(c, out) }
+      else if (a === 'off') { await APP.freeSave({ route: zp.id, on: false }); out.innerHTML = '<div class="fm-res">已停用，正在重启</div>' }
+    }
+    keyEl.addEventListener('paste', () => setTimeout(() => { if (zp.keyPattern && keyEl.value.trim() && !new RegExp(zp.keyPattern).test(keyEl.value.trim())) out.innerHTML = '<div class="fm-res bad">这串看起来不像智谱的 Key，确认一下有没有复制完整</div>'; else out.innerHTML = '' }, 0))
+    return
+  }
+  const r = await APP.freeScan()
+  if (!r.magpie.ok) {
+    body.innerHTML = `<div class="fm-sw"><div class="hd"><b>需要 Magpie</b><span class="st">${esc(r.magpie.error || '没找到')}</span></div>
+      <div class="how">借用这些软件要靠 Magpie 在本机转接：它会找到你已登录的 Qoder、WorkBuddy、Codex、Claude，把它们的模型交给天禧用。先安装并打开 Magpie，再回来点“重新检测”。</div>
+      <div class="row"><button class="btn pri" data-fa="dl" style="flex:none">下载 Magpie</button><button class="btn" data-fa="rescan" style="flex:none">重新检测</button></div></div>
+      ${r.software.map((s) => `<div class="fm-sw"><div class="hd"><b>${esc(s.name)}</b><span class="st">待识别</span></div><div class="how">${esc(s.how)}</div></div>`).join('')}`
+    body.onclick = (e) => { const a = e.target.closest('[data-fa]')?.dataset.fa; if (a === 'dl') APP.open('https://usemagpie.ai/zh/'); else if (a === 'rescan') renderFree(el, first) }
+    return
+  }
+  body.innerHTML = `<div class="hint" style="margin:0 0 8px">已连上本机 Magpie ${esc(r.magpie.version || '')}。${cfg.free.magpie ? '借用模式已开启，模型可以在对话框里直接切换。' : ''} <a href="#" data-fa="rescan">重新检测</a></div>`
+    + r.software.map((s) => s.models.length ? `<div class="fm-sw" data-sw="${s.id}"><div class="hd"><b>${esc(s.name)}</b><span class="st ok">已识别 ${s.models.length} 个模型</span>${s.models.some((m) => m.free) ? '<span class="st ok">有免费</span>' : ''}</div>
+        <div class="row"><select class="inp fm-model">${modelOpts(s.models, (s.models.find((m) => m.free) || s.models[0]).id)}</select>${effortOpts((s.models.find((m) => m.free) || s.models[0]).efforts)}<button class="btn" data-fa="test" style="flex:none">测试</button><button class="btn pri" data-fa="use" style="flex:none">用这个</button></div><div class="fm-out"></div></div>`
+      : `<div class="fm-sw"><div class="hd"><b>${esc(s.name)}</b><span class="st">没识别到</span></div><div class="how">${esc(s.how)}</div></div>`).join('')
+    + (r.others.length ? `<label class="fm-note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="fm-others" ${cfg.free.others ? 'checked' : ''}> 对话里也列出 Magpie 里的其他 ${r.others.length} 个模型</label>` : '')
+    + `<div class="fm-note">借用不是这些软件官方开放的用法，可能被平台限制甚至封号，请自己决定是否开启。所有借用的模型都会出现在对话框的模型菜单里。</div>`
+  body.onchange = (e) => {
+    const card = e.target.closest('[data-sw]'); if (!card || !e.target.classList.contains('fm-model')) return
+    const s = r.software.find((x) => x.id === card.dataset.sw), m = s.models.find((x) => x.id === e.target.value)
+    const old = card.querySelector('.fm-eff'); const nx = effortOpts(m.efforts)
+    if (old) old.outerHTML = nx || ''; else if (nx) e.target.insertAdjacentHTML('afterend', nx)
+  }
+  body.onclick = async (e) => {
+    const a = e.target.closest('[data-fa]')?.dataset.fa; if (!a) return
+    e.preventDefault()
+    if (a === 'rescan') { renderFree(el, first); return }
+    const card = e.target.closest('[data-sw]'), out = card.querySelector('.fm-out')
+    const c = { route: 'magpie', model: card.querySelector('.fm-model').value, effort: card.querySelector('.fm-eff')?.value, others: !!body.querySelector('.fm-others')?.checked }
+    if (a === 'test') { out.innerHTML = '<div class="fm-res">正在测试…</div>'; out.innerHTML = freeRes(await APP.freeTest(c)) }
+    else if (a === 'use') use(c, out)
+  }
+}
+
 // model config form (Electron only), used by settings and first run
 async function renderModelForm(el, first) {
   if (!el) return
@@ -853,6 +927,7 @@ const MI = {
   settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.2 7.4l2.1 1.2M17.7 15.4l2.1 1.2M4.2 16.6l2.1-1.2M17.7 8.6l2.1-1.2"/><circle cx="12" cy="12" r="7.2"/>',
   priv: '<path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 20L20 4"/>',
   chev: '<path d="M9 6l6 6-6 6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   comp: '<rect x="3" y="4.5" width="18" height="12.5" rx="2.5"/><path d="M8.5 20.5h7M12 17v3.5"/>',
   usage: '<path d="M6 20V11M12 20V5M18 20v-6"/>',
   eval: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H15"/>',
@@ -996,14 +1071,14 @@ function settingsModal() {
   } else if (t === 'computer') {
     h = `<h2>电脑</h2><div class="slab">你的电脑 <b class="dev">${esc(S.device || '')}</b></div><div class="scard">${row('在这台电脑上执行', '允许 Bot 在你的电脑上打开文件并运行任务。对外发邮件仍会先问你，做过的事都能在操作记录里撤回。', sel('exec', 'always', [['always', '始终允许']]))}${row('临时模式', '开着时所有 Bot 都不记住你说的话', `<button class="tg ${S.privateMode ? 'on' : ''}" data-act="priv"></button>`)}</div>
       <div class="slab">Bot 的电脑</div><div class="scard">${row('数据位置', `记忆、对话、操作记录都在本机：${esc(S.home || '')}`, `<button class="pbtn" data-act="copy" data-v="${esc(S.home || '')}">复制</button>`)}${row(`清空和 ${esc(agentOf(cur).name)} 的对话`, '只清对话记录，记忆和操作记录不受影响。', `<button class="pbtn red" data-act="clear">清空</button>`)}</div>`
-  } else if (t === 'model') h = `<h2>模型</h2><div class="slab">大模型</div><div class="scard pad" id="modelForm"></div><div class="snote">天禧用第三方大模型 API，Key 只加密保存在这台电脑上。</div>`
+  } else if (t === 'model') h = `<h2>模型</h2><div class="slab">免费模式</div><div class="scard pad" id="freeForm"></div><div class="slab">我自己的 API Key</div><div class="scard pad" id="modelForm"></div><div class="snote">天禧用第三方大模型 API，Key 只加密保存在这台电脑上。</div>`
   else if (t === 'eval') h = `<h2>评测</h2><div class="scard pad" id="evalBox"></div>`
   else h = `<h2>更新</h2><div class="slab">天禧更新</div><div class="scard" id="updBox"></div><div class="slab">更新来源</div><div class="scard pad" id="updSrc"></div>`
   return `${nav}<div class="sbody">${h}</div><button class="mx" data-act="modal-close">${ico('x', 20)}</button>`
 }
 function fillSettings() {
   const t = modal.tab
-  if (t === 'model') renderModelForm($('#modelForm'), false)
+  if (t === 'model') { renderFree($('#freeForm'), false); renderModelForm($('#modelForm'), false) }
   if (t === 'eval') renderEval($('#evalBox'))
   if (t === 'update') renderUpdate($('#updBox'))
 }
@@ -1050,7 +1125,7 @@ async function refresh() {
 }
 const soon = () => { clearTimeout(refreshT); refreshT = setTimeout(refresh, 150) }
 function renderAll(keep) {
-  renderRail()
+  renderRail(); renderPicks()
   const vis = view === 'chat' ? $('#vChat') : $('#vPage')
   if (vis.dataset.shown !== view) { vis.dataset.shown = view; (view === 'chat' ? $('#vPage') : $('#vChat')).dataset.shown = ''; replay(vis, 'fade') }
   if (view === 'chat') { renderHead(); renderMsgs(keep); renderChips() } else renderPage()
@@ -1093,6 +1168,7 @@ function connect() {
     else if (m.type === 'private') { S.privateMode = m.on; renderAll(true) }
     else if (m.type === 'mail') soon()
     else if (m.type === 'voice') voiceChanged(m.state)
+    else if (m.type === 'model') { S.pick = m.pick; renderPicks() }
     else if (m.type === 'turn-end' || m.type === 'store') soon()
   }
   es.onerror = () => { $('#cSub').textContent = '正在重新连接…' }
@@ -1109,6 +1185,47 @@ async function send() {
   if (!v) { if (busy(cur)) api('cancel', { agent: cur }); return }
   inp.value = ''; grow(); await say(v)
 }
+// ---------- model and thinking depth, picked in the chat ----------
+const EFFORT = { off: '默认', minimal: '最浅', low: '浅', medium: '中', high: '深', xhigh: '很深', max: '最深' }
+const curModel = () => (S.models || []).find((m) => S.pick && m.provider === S.pick.provider && m.model === S.pick.model)
+function renderPicks() {
+  const el = $('#mpicks'); if (!el) return
+  const m = curModel()
+  if (!m || (S.models || []).length < 1) { el.innerHTML = ''; return }
+  const eff = m.efforts.length > 1 ? (S.pick.effort || 'off') : null
+  el.innerHTML = `<button class="mp" data-pick="model" title="换模型">${esc(m.label)}${m.free ? '<i class="fr">免费</i>' : ''}${ico('chev', 13)}</button>`
+    + (eff ? `<button class="mp" data-pick="effort" title="思考深度"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>思考 ${EFFORT[eff] || eff}${ico('chev', 13)}</button>` : '')
+}
+function openPick(kind, btn) {
+  const menu = $('#pickMenu'), m = curModel()
+  if (!menu.hidden && menu.dataset.kind === kind) { menu.hidden = true; return }
+  let h = ''
+  if (kind === 'model') {
+    const groups = {}
+    for (const x of S.models) (groups[x.group] ||= []).push(x)
+    h = Object.entries(groups).map(([g, list]) => `<div class="pg">${esc(g)}</div>` + list.map((x) => `<button data-model="${esc(x.provider + '|' + x.model)}" class="${x === m ? 'on' : ''}"><span>${esc(x.label)}</span>${x.free ? '<i class="fr">免费</i>' : x.tag ? `<i class="tg2">${esc(x.tag)}</i>` : ''}${x.efforts.length > 1 ? '<i class="th" title="可以调思考深度">思考</i>' : ''}${x === m ? ico('check', 15) : ''}</button>`).join('')).join('')
+    h += `<div class="pfoot"><button data-act="set-open" data-t="model">${ico('settings', 15)}<span>管理模型和免费模式</span></button></div>`
+  } else {
+    const cur = S.pick.effort || 'off'
+    h = `<div class="pg">思考深度</div>` + m.efforts.map((l) => `<button data-effort="${l}" class="${l === cur ? 'on' : ''}"><span>${EFFORT[l] || l}</span><small>${l === 'off' ? '按模型自己的默认' : l === 'low' || l === 'minimal' ? '回得快' : l === 'medium' ? '平衡' : '想得更久，更准'}</small>${l === cur ? ico('check', 15) : ''}</button>`).join('')
+  }
+  menu.innerHTML = h; menu.dataset.kind = kind; menu.hidden = false
+  menu.style.right = Math.max(8, btn.parentElement.parentElement.getBoundingClientRect().right - btn.getBoundingClientRect().right) + 'px'
+  replay(menu, 'in')
+}
+async function choose(p) {
+  $('#pickMenu').hidden = true
+  const prev = S.pick; S.pick = { ...S.pick, ...p }; renderPicks()
+  try { const r = await api('model', S.pick); S.pick = r.pick || S.pick; renderPicks() } catch (e) { S.pick = prev; renderPicks(); toastText('没换成：' + e.message) }
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-pick]'); if (b) { e.stopPropagation(); openPick(b.dataset.pick, b); return }
+  const mm = e.target.closest('#pickMenu [data-model]')
+  if (mm) { const [provider, model] = mm.dataset.model.split('|'); const x = S.models.find((y) => y.provider === provider && y.model === model); choose({ provider, model, effort: x && x.efforts.includes(S.pick.effort) ? S.pick.effort : undefined }); return }
+  const ee = e.target.closest('#pickMenu [data-effort]'); if (ee) { choose({ effort: ee.dataset.effort }); return }
+  if (!$('#pickMenu').hidden && !e.target.closest('#pickMenu')) $('#pickMenu').hidden = true
+})
+
 const plusMenu = $('#plusMenu')
 $('#bPlus').onclick = (e) => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; if (!plusMenu.hidden) replay(plusMenu, 'in') }
 document.addEventListener('click', (e) => {
@@ -1268,7 +1385,11 @@ document.addEventListener('input', (e) => { if (e.target.type === 'range') { con
     $('#wctl').hidden = false
     document.querySelectorAll('[data-win]').forEach((b) => { b.onclick = () => APP.win(b.dataset.win) })
     const cfg = await APP.getConfig()
-    if (!cfg.hasKey) { $('#setup').classList.add('on'); renderModelForm($('#setupForm'), true); return }
+    if (!cfg.configured) {
+      $('#setup').classList.add('on'); renderFree($('#setupFree'), true); renderModelForm($('#setupForm'), true)
+      $('#setupTabs').onclick = (e) => { const b = e.target.closest('[data-setup]'); if (!b) return; document.querySelectorAll('#setupTabs button').forEach((x) => x.classList.toggle('on', x === b)); $('#setupFree').hidden = b.dataset.setup !== 'free'; $('#setupForm').hidden = b.dataset.setup !== 'key' }
+      return
+    }
   }
   const start = new URLSearchParams(location.search).get('view')
   if (start) view = start
