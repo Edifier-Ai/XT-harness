@@ -94,6 +94,15 @@ jobs:
           path: ${{ runner.temp }}/shots
           retention-days: 14
 
+      # on test branches, the screenshots also go to the ci-shots branch, to look at without downloading the artifact
+      - name: Screenshots to ci-shots
+        if: always() && startsWith(github.ref, 'refs/heads/ci/')
+        run: |
+          cd "$RUNNER_TEMP/shots" && rm -f *.apk
+          git init -q -b ci-shots && git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "phone e2e $GITHUB_SHA"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-shots
+
       - name: Publish APK
         if: steps.v.outputs.publish == '1'
         run: |
