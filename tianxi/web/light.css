@@ -2,6 +2,7 @@
 :where(:root[data-theme=light]){color-scheme:light}
 :root[data-theme=light]{--bg:#f3f3f9;--rail:#f3f3f9;--s1:#f3f3f9;--s2:#ffffff;--s3:#ffffff;--line:#e2e2ea;--line2:#e2e2ea;--tx:#212127;--tx2:#67676d;--tx3:#8c8c94}
 :where(:root[data-theme=light]) ::-webkit-scrollbar-thumb{background:#ececf2}
+:where(:root[data-theme=light]) .av .eyes rect{fill:#f3f3f9}
 :where(:root[data-theme=light]) .uav{background:#232329;color:#fafafc}
 :where(:root[data-theme=light]) .search:focus-within{border-color:#ceced6}
 :where(:root[data-theme=light]) .wctl button{color:#535359}
@@ -241,3 +242,11 @@
 :where(:root[data-theme=light]) .ou-tabs .strip button.on{border-bottom-color:#28282e}
 :where(:root[data-theme=light]) .hand.work{border-color:#ceced6}
 :where(:root[data-theme=light]) .hand .hr{color:#34343a}
+:where(:root[data-theme=light]) .tour{background:rgba(80,70,120,0.217)}
+:where(:root[data-theme=light]) .tbox{box-shadow:0 30px 80px rgba(80,70,120,0.175)}
+:where(:root[data-theme=light]) .tpic{background:#f3f3f9}
+:where(:root[data-theme=light]) .tchip{background:rgba(20,20,40,0.090);border:1px solid rgba(20,20,40,0.126)}
+:where(:root[data-theme=light]) .tp-brief{border:1px solid rgba(20,20,40,0.108)}
+:where(:root[data-theme=light]) .tb-r i{background:rgba(20,20,40,0.162)}
+:where(:root[data-theme=light]) .tu-in{border:1px solid rgba(20,20,40,0.126)}
+:where(:root[data-theme=light]) .tu-in .mic{background:rgba(20,20,40,0.090)}

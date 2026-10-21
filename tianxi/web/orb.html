@@ -19,6 +19,9 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-famil
 .eye > *{transition:opacity .16s, transform .22s cubic-bezier(.3,1.4,.5,1);transform-box:fill-box;transform-origin:50% 50%}
 .eye .arc,.eye .shut,.eye .x,.eye .o{opacity:0}
 .eyes{transition:transform .12s ease-out}
+/* eyes follow the app's theme: black when the app is dark, white when it is light */
+html.dark .eye .open,html.dark .eye .o{fill:#141414}
+html.dark .eye path{stroke:#141414}
 
 /* ---- faces ---- */
 .blink .eye .open{transform:scaleY(.08)}
@@ -115,6 +118,13 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-famil
 <div id="bub" class="up"></div>
 <script>
 const TOKEN = new URLSearchParams(location.search).get('t') || ''
+// same origin as the app, so its theme choice is right here; 'system' follows Windows
+function theme() {
+  let t = 'dark'; try { t = JSON.parse(localStorage.getItem('tx.theme') || '"dark"') } catch {}
+  if (t === 'system') t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  document.documentElement.classList.toggle('dark', t !== 'light')
+}
+theme(); addEventListener('storage', (e) => { if (e.key === 'tx.theme') theme() }); matchMedia('(prefers-color-scheme: light)').addEventListener('change', theme)
 const host = window.tianxiApp || null
 const L = { calendar_add: '添加日程', calendar_update: '修改日程', calendar_list: '查看日程', todo_add: '添加待办', todo_list: '查看待办', mail_draft: '起草邮件', mail_send: '发送邮件', folder_list: '查看文件夹', file_move: '整理文件', brief_publish: '整理今天', memory_save: '记下来', memory_search: '翻记忆', mail_read: '看邮件', brief_resolve: '处理简报', show_ui: '生成界面', later_add: '记下稍后做', web_search: '搜索网页', web_fetch: '打开网页', read: '读文件', write: '写文件', edit: '改文件', bash: '运行命令' }
 // tools where 小天 looks around (finding things) rather than heads down (making things)

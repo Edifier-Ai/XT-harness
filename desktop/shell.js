@@ -306,7 +306,7 @@ function createTray() {
   const menu = () => Menu.buildFromTemplate([
     { label: '打开小天 Bot', click: showMain },
     { label: '桌面小天（悬浮球）', type: 'checkbox', checked: cfg.pill !== false, click: (m) => { cfg.pill = m.checked; saveCfg(cfg); if (m.checked) createPill(); else pill?.close() } },
-    { label: '临时模式（不记住这段对话）', type: 'checkbox', checked: false, click: (m) => api('private', { on: m.checked }) },
+    { label: '隐私模式（对话不进入记忆）', type: 'checkbox', checked: false, click: (m) => api('private', { on: m.checked }) },
     { type: 'separator' },
     { label: '打开数据文件夹', click: () => shell.openPath(USER) },
     { label: updater.status().pending ? `新版本 ${updater.status().pending.version} 已下好，点这里重启` : `版本 ${BOOT.version} · 检查更新`, click: () => (updater.status().pending ? relaunch() : runCheck(true)) },

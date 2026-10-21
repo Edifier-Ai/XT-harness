@@ -124,3 +124,7 @@
 :root[data-theme=light] .callov .cbot{color:#141833}
 :root[data-theme=light] .gl:not(.end):not(.on){color:#141833;background:linear-gradient(180deg,#fff,#eceef8)}
 :root[data-theme=light] .ou-fc .ctl input[type=date]{color-scheme:light}
+
+/* Bot eyes turn white in the light theme, except on a near-white body */
+:root[data-theme=light] .av:not(.pale) .eyes rect{fill:#fff}
+:root[data-theme=light] .av.pale .eyes rect{fill:#141414}

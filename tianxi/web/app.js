@@ -132,7 +132,9 @@ function avatar(a, size = 36, still = false, badge = true, track = false) {
   const fill = tx ? layer('url(#txb)') + layer('url(#txl)') + layer('url(#txr)') : layer(c)
   // on 小天's round body the eyes sit where the desktop ball has them
   const [e1, f1, e2, f2] = tx && sh === 'circle' && !own ? [40, 47, 61, 45] : [x1, y1, x2, y2]
-  return `<span class="av s-${st}${track ? ' track' : ''}${tx ? ' txball' : ''}" style="width:${size}px;height:${size}px" data-sh="${own ? 'own' : sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}">${fill}<g class="pu"><g class="eyes">${eye(e1, f1)}${eye(e2, f2)}</g></g></svg>${b}</span>`
+  // eye colour follows the theme (style.css / motion.css); a near-white body keeps dark eyes so they still show
+  const pale = !tx && /^#[0-9a-f]{6}$/i.test(c) && [1, 3, 5].reduce((n, i) => n + parseInt(c.slice(i, i + 2), 16), 0) > 690
+  return `<span class="av s-${st}${track ? ' track' : ''}${tx ? ' txball' : ''}${pale ? ' pale' : ''}" style="width:${size}px;height:${size}px" data-sh="${own ? 'own' : sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}">${fill}<g class="pu"><g class="eyes">${eye(e1, f1)}${eye(e2, f2)}</g></g></svg>${b}</span>`
 }
 // Eyes that follow the pointer: each tracking avatar's eyes move toward it (up to 12% of the face) and its body leans that way.
 let lookRaf = 0, lookAt = null
@@ -198,7 +200,7 @@ function setCount(el, n) {
 }
 
 // ---------- rail: the roster, grouped by each bot's tag ----------
-const MINE = ['me', 'brief', 'memory', 'reflect', 'ledger', 'later']
+const MINE = ['brief', 'memory', 'reflect', 'ledger', 'later']
 let query = ''
 function nowDoing(aid) {
   const t = turnsOf(aid).filter((x) => x.running).pop(); if (!t) return ''
@@ -301,13 +303,16 @@ function handoff(outId) {
   return { out, to, from: agentOf(out.agent), turn, said, state }
 }
 const ARROW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>'
+// Hand-offs sit folded to one line (who passed what to whom, and how it stands); a click opens the details.
+const handOpen = new Set()
+const CARET = '<svg class="hcar" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>'
 function handoffCard(h, k) {
   const st = { sent: '已送达', work: `${esc(h.to.name)}在${esc(nowDoing(h.to.id).replace(/^正在/, ''))}`, done: '已完成', recalled: '已撤回' }[h.state]
-  return `<div class="hand ${h.state}" data-k="${k}">
-    <div class="hh">${avatar(h.from, 22, true, false)}<span class="ar">${ARROW}</span>${avatar(h.to, 22, h.state !== 'work', false)}<b>交给 ${esc(h.to.name)}</b><span class="hst">${h.state === 'work' ? '<span class="tdots"><i></i><i></i><i></i></span>' : h.state === 'done' ? `<span class="okdot">${CHECK}</span>` : ''}${st}</span></div>
-    <div class="hs">${esc(h.out.subject)}</div><div class="hb">${esc(h.out.body)}</div>
+  return `<div class="hand ${h.state}${handOpen.has(k) ? ' open' : ''}" data-k="${k}">
+    <div class="hh" data-act="hand-toggle" data-k="${k}">${avatar(h.from, 22, true, false)}<span class="ar">${ARROW}</span>${avatar(h.to, 22, h.state !== 'work', false)}<b>交给 ${esc(h.to.name)}</b><span class="hsub">${esc(h.out.subject)}</span><span class="hst">${h.state === 'work' ? '<span class="tdots"><i></i><i></i><i></i></span>' : h.state === 'done' ? `<span class="okdot">${CHECK}</span>` : ''}${st}${CARET}</span></div>
+    <div class="hd"><div class="hdi"><div class="hs">${esc(h.out.subject)}</div><div class="hb">${esc(h.out.body)}</div>
     ${h.state === 'done' && h.said ? `<div class="hr">${avatar(h.to, 18, true, false)}<span>${esc(h.said.slice(0, 160))}${h.said.length > 160 ? '…' : ''}</span></div>` : ''}
-    <button class="lk hgo" data-act="to-agent" data-id="${h.to.id}">去 ${esc(h.to.name)} 那里看看 ›</button></div>`
+    <button class="lk hgo" data-act="to-agent" data-id="${h.to.id}">去 ${esc(h.to.name)} 那里看看 ›</button></div></div></div>`
 }
 // a mail turn in the receiver's chat: from another agent it reads as a hand-off, otherwise as mail
 function mailHead(t) {
@@ -315,7 +320,8 @@ function mailHead(t) {
   if (!src || src.id === me.id) return `<div class="mailcard" data-k="mail${t.id}"><div class="h"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>收到 ${esc(m.fromName || m.from)} 的邮件 · ${hhmm(t.at)}</div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`
   // it is a reply when this agent handed something to the sender earlier
   const back = (S.outbox || []).some((o) => o.agent === me.id && agentByMail(o.to)?.id === src.id && o.createdAt < t.at)
-  return `<div class="hand in" data-k="mail${t.id}"><div class="hh">${avatar(src, 22, true, false)}<span class="ar">${ARROW}</span>${avatar(me, 22, true, false)}<b>${esc(src.name)} ${back ? '交回结果' : '交给我'}</b><span class="hst">${hhmm(t.at)}</span></div><div class="hs">${esc(m.subject)}</div><div class="hb">${esc(m.body)}</div><button class="lk hgo" data-act="to-agent" data-id="${src.id}">回 ${esc(src.name)} 那里 ›</button></div>`
+  const k = 'mail' + t.id
+  return `<div class="hand in${handOpen.has(k) ? ' open' : ''}" data-k="${k}"><div class="hh" data-act="hand-toggle" data-k="${k}">${avatar(src, 22, true, false)}<span class="ar">${ARROW}</span>${avatar(me, 22, true, false)}<b>${esc(src.name)} ${back ? '交回结果' : '交给我'}</b><span class="hsub">${esc(m.subject)}</span><span class="hst">${hhmm(t.at)}${CARET}</span></div><div class="hd"><div class="hdi"><div class="hs">${esc(m.subject)}</div><div class="hb">${esc(m.body)}</div><button class="lk hgo" data-act="to-agent" data-id="${src.id}">回 ${esc(src.name)} 那里 ›</button></div></div></div>`
 }
 
 // Your own messages take the bot's colour (its accent), or black, as chosen in 设置 → 通用.
@@ -639,13 +645,13 @@ function setView(v, arg) {
   procSel = null; tagEdit = false
   renderAll(false)
 }
-const phead = (title, sub = '', right = '') => `<div class="phead">${MINE.includes(view) && view !== 'me' ? '<button class="crumb" data-go="me"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>我的</button>' : ''}<h2>${title}</h2><span class="s">${sub}</span><div class="r">${right}</div></div>`
+const phead = (title, sub = '', right = '') => `<div class="phead"><h2>${title}</h2><span class="s">${sub}</span><div class="r">${right}</div></div>`
 
 function renderPage() {
   if (view === 'chat') return
   const P = $('#pg')
   const keep = $('#vPage').scrollTop
-  const fn = { me: pageMe, brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, agent: pageAgent }[view]
+  const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, agent: pageAgent }[view]
   if (fn) P.innerHTML = fn()
   const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap), #pg .bgrid > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent'
   const keyOf = (el) => view + ':' + (el.dataset.k || el.className.split(' ')[0] + ':' + hashText(el.textContent.slice(0, 600)))
@@ -663,27 +669,6 @@ function renderPage() {
 }
 
 // 我的: what is yours across every bot — the brief, memory, reflection, records and queued work
-function pageMe() {
-  const b = S.brief, fresh = b && b.date === todayStr()
-  const open = fresh ? (b.items || []).filter((i) => i.kind === 'decide' && i.status === 'open').length : 0
-  const r = S.reflections[0], nr = r ? [...r.proposals, ...r.lessons].filter((p) => p.status === 'open').length : 0
-  const led = [...S.ledger].reverse(), canUndo = led.filter((e) => e.status === 'done' && e.undo).length
-  const q = S.later.filter((j) => j.status === 'queued' || j.status === 'running').length
-  const ms = S.memories
-  const card = (go, k, title, body, foot, extra = '') => `<button class="mcard ${extra}" data-go="${go}" data-k="${go}"><div class="k">${k}</div><div class="t">${title}</div><div class="d">${body}</div>${foot ? `<div class="f">${foot}</div>` : ''}</button>`
-  const dots = KORDER.map((k) => { const n = ms.filter((m) => (m.kind || '事实') === k).length; return n ? `<span style="--c:${KCOL[k]}"><i></i>${k} ${n}</span>` : '' }).join('')
-  let h = phead('我的', '所有 Bot 共用')
-  h += `<div class="mehead"><span class="uav big">${esc(userInitial())}</span><div><div class="nm">${esc(S.settings?.callMe || '你')}</div><div class="s">${r?.profile ? esc(r.profile.slice(0, 90)) + (r.profile.length > 90 ? '…' : '') : '这里放着你的记忆、每日简报和 Bot 替你做过的每件事。'}</div></div></div>`
-  h += '<div class="megrid">'
-  h += card('brief', '每日简报', fresh ? esc(b.greeting || '今天的简报') : '今天还没整理', fresh ? esc(String(b.summary || '').slice(0, 80)) : `每天 ${esc(S.settings?.briefTime || '08:00')} 自动整理`, open ? `<b class="warn">${open} 件等你定</b>` : fresh ? `${hhmm(b.at)} 整理` : '', 'wide')
-  h += card('memory', '我的记忆', `${ms.length} 条`, dots ? `<span class="kd">${dots}</span>` : '聊天时说“记住……”就会记下', '带出处，能改能删')
-  h += card('reflect', '反思', r ? dayLabel(r.at) + ' 的反思' : '还没反思过', r ? `${r.insights.length} 个发现 · ${r.proposals.length + r.lessons.length} 条建议` : '每晚你不在时回想一次', nr ? `<b class="warn">${nr} 条等你采纳</b>` : '')
-  h += card('ledger', '操作记录', `${led.length} 件事`, led[0] ? esc(led[0].title) : '还没替你做过事', canUndo ? `${canUndo} 件能撤回` : '')
-  h += card('later', '系统感知', q ? `${q} 件排着` : '队列是空的', '交给 Bot “晚点做”的事，你离开或夜里做', '')
-  h += '</div>'
-  h += `<div class="sec">隐私</div><div class="panel"><div class="setrow"><label>临时模式</label><div class="ctl"><button class="sw ${S.privateMode ? 'on' : ''}" data-act="priv"></button><span class="hint" style="margin:0">开着时所有 Bot 都不记住你说的话</span></div></div></div>`
-  return h
-}
 
 // 每日简报: its own page, generated cards laid out by importance
 function pageBrief() {
@@ -726,7 +711,7 @@ function pageMemory() {
   const ms = S.memories, r = S.reflections[0]
   let h = phead('我的记忆', `${ms.length} 条 · 所有 Bot 共用`, `<div class="tabs" style="margin:0"><button class="${memTab === 'map' ? 'on' : ''}" data-act="mem-tab" data-t="map">星图</button><button class="${memTab === 'list' ? 'on' : ''}" data-act="mem-tab" data-t="list">列表</button></div>`)
   h += `<div class="portrait">${avatar(agentOf(S.mainId), 40)}<div style="flex:1"><div class="k">${esc(agentOf(S.mainId).name)}眼中的你</div><div class="t">${r?.profile ? esc(r.profile) : '还没有反思过。反思之后，这里会写下它对你的整体理解。'}</div>${r ? `<div class="hint">来自 ${dayLabel(r.at)} ${hhmm(r.at)} 的反思 · <button class="lk" data-act="go" data-v="reflect">看反思</button></div>` : `<div class="hint"><button class="lk" data-act="reflect-run">现在反思一次</button></div>`}</div></div>`
-  if (S.privateMode) h += '<div class="hint" style="color:#ffd7a1;margin-top:10px">临时模式开着：现在说的话不会被记住。</div>'
+  if (S.privateMode) h += '<div class="hint" style="color:#ffd7a1;margin-top:10px">隐私模式开着：现在的对话不会进入你的记忆。</div>'
   if (memTab === 'list') {
     h += `<div class="sec">手动告诉它一件事</div><div class="addrow"><input class="inp" id="memNew" placeholder="比如：我对芒果过敏"><button class="btn" data-act="mem-add">记住</button></div>`
     for (const k of KORDER) {
@@ -838,7 +823,7 @@ function pageLedger() {
   for (const e of list) {
     const d = dayOf(e.at); if (d !== day) { day = d; h += `<div class="sec" style="margin-top:${day === dayOf(list[0].at) ? 0 : 18}px">${dayLabel(e.at)}</div>` }
     const und = e.status === 'undone'
-    h += `<div class="ent ${und ? 'undone' : ''}"><div class="tm">${hhmm(e.at)}</div><div class="m"><div class="t">${esc(e.title)}${e.risk === 'high' ? '<span class="tagx risk">经你确认</span>' : ''}${e.private ? '<span class="tagx priv">临时模式</span>' : ''}</div>${e.why ? `<div class="w">为什么：${esc(e.why)}</div>` : ''}
+    h += `<div class="ent ${und ? 'undone' : ''}"><div class="tm">${hhmm(e.at)}</div><div class="m"><div class="t">${esc(e.title)}${e.risk === 'high' ? '<span class="tagx risk">经你确认</span>' : ''}${e.private ? '<span class="tagx priv">隐私模式</span>' : ''}</div>${e.why ? `<div class="w">为什么：${esc(e.why)}</div>` : ''}
       <div class="a">${und ? `<span class="note">↩ ${esc(e.undoNote || '已撤回')}</span>` : e.undo ? `<button class="btn sm" data-act="undo" data-id="${e.id}">${esc(e.undo.label || '撤回')}</button>` : '<span class="w">这件事不用撤回</span>'}</div></div></div>`
   }
   if (!list.length) h += '<div class="intro" style="margin:0">还没替你做过事。</div>'
@@ -1100,6 +1085,8 @@ const MI = {
   eval: '<path d="M9 11l3 3 8-8"/><path d="M20 12v6.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5v-13A1.5 1.5 0 0 1 5.5 4H15"/>',
   update: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M5 19.5h14"/>',
   x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  sense: '<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>',
+  guide: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 16.5v.01"/>',
   ext: '<path d="M8 16L16 8M9 8h7v7"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>',
 }
@@ -1108,17 +1095,19 @@ function renderMenu() {
   const m = $('#umenu'); if (m.hidden) return
   const { open, nr } = openCount()
   const model = S.model?.model || S.model?.id || ''
+  const later = S.later.filter((j) => j.status === 'queued' || j.status === 'running').length
   const it = (act, k, label, right = '', extra = '') => `<button data-act="${act}" ${extra}>${ico(k)}<span>${label}</span>${right ? `<em>${right}</em>` : ''}</button>`
   m.innerHTML = `${updSt?.pending ? `<div class="ubanner"><span>发现新版本 ${esc(updSt.pending.version)}</span><button data-act="upd-restart">安装</button></div>` : ''}
     ${it('set-open', 'model', '模型', `${esc(String(model).split('/').pop().slice(0, 18))} ${ico('chev', 14)}`, 'data-t="model"')}
-    ${it('menu-go', 'me', '我的', open + nr ? `<b>${open + nr}</b>` : ico('chev', 14), 'data-v="me"')}
     ${it('menu-go', 'brief', '每日简报', open ? `${open} 件等你定` : '', 'data-v="brief"')}
     ${it('menu-go', 'memory', '我的记忆', `${S.memories.length} 条`, 'data-v="memory"')}
     ${it('menu-go', 'reflect', '反思', nr ? `${nr} 条建议` : '', 'data-v="reflect"')}
     ${it('menu-go', 'ledger', '操作记录', '', 'data-v="ledger"')}
+    ${it('menu-go', 'sense', '系统感知', later ? `${later} 件排着` : '', 'data-v="later"')}
+    ${it('tour', 'guide', '功能介绍')}
     ${it('set-open', 'settings', '设置', '', 'data-t="general"')}
     <hr>
-    <button data-act="priv">${ico('priv')}<span>临时模式</span><i class="tg ${S.privateMode ? 'on' : ''}"></i></button>`
+    <button data-act="priv">${ico('priv')}<span>隐私模式</span><i class="tg ${S.privateMode ? 'on' : ''}"></i></button>`
 }
 function toggleMenu(on) { const m = $('#umenu'); m.hidden = on === undefined ? !m.hidden : !on; if (!m.hidden) { renderMenu(); replay(m, 'in') } renderRail() }
 
@@ -1236,7 +1225,7 @@ function settingsModal() {
       <div class="slab">你</div><div class="scard">${row('怎么称呼你', 'Bot 打招呼和写邮件时用', txt('callMe', s.callMe, '比如：summer'))}</div>
       <div class="slab">Bot</div><div class="scard">${row('时区', '', sel('tz', 'auto', [['auto', `自动检测（${Intl.DateTimeFormat().resolvedOptions().timeZone}）`]]))}${row('每日简报时间', '主 Bot 到点整理当天的简报', txt('briefTime', s.briefTime || '08:00', '08:00', 90))}${row('离开多久算不在', '之后开始做排着的事（分钟）', txt('idleMinutes', s.idleMinutes ?? 10, '10', 70))}${row('夜里时段', '夜里反思和夜里做的事在这段时间', `${txt('nightFrom', s.nightFrom ?? 23, '23', 54)}<span class="to">点到</span>${txt('nightTo', s.nightTo ?? 6, '6', 54)}<span class="to">点</span>`)}${row('留意的文件夹', '出现新文件时记下来，写进简报', txt('watch', (s.watch || []).join('；'), '~/Downloads；~/Desktop', 260))}</div>`
   } else if (t === 'computer') {
-    h = `<h2>电脑</h2><div class="slab">你的电脑 <b class="dev">${esc(S.device || '')}</b></div><div class="scard">${row('在这台电脑上执行', '允许 Bot 在你的电脑上打开文件并运行任务。对外发邮件仍会先问你，做过的事都能在操作记录里撤回。', sel('exec', 'always', [['always', '始终允许']]))}${row('临时模式', '开着时所有 Bot 都不记住你说的话', `<button class="tg ${S.privateMode ? 'on' : ''}" data-act="priv"></button>`)}</div>
+    h = `<h2>电脑</h2><div class="slab">你的电脑 <b class="dev">${esc(S.device || '')}</b></div><div class="scard">${row('在这台电脑上执行', '允许 Bot 在你的电脑上打开文件并运行任务。对外发邮件仍会先问你，做过的事都能在操作记录里撤回。', sel('exec', 'always', [['always', '始终允许']]))}${row('隐私模式', '开着时，所有 Bot 的对话都不会进入你的记忆，反思也不会读到', `<button class="tg ${S.privateMode ? 'on' : ''}" data-act="priv"></button>`)}</div>
       <div class="slab">Bot 的电脑</div><div class="scard">${row('数据位置', `记忆、对话、操作记录都在本机：${esc(S.home || '')}`, `<button class="pbtn" data-act="copy" data-v="${esc(S.home || '')}">复制</button>`)}${row(`清空和 ${esc(agentOf(cur).name)} 的对话`, '只清对话记录，记忆和操作记录不受影响。', `<button class="pbtn red" data-act="clear">清空</button>`)}</div>`
   } else if (t === 'model') h = `<h2>模型</h2><div class="slab">免费模式</div><div class="scard pad" id="freeForm"></div><div class="slab">我自己的 API Key</div><div class="scard pad" id="modelForm"></div><div class="snote">小天用第三方大模型 API，Key 只加密保存在这台电脑上。</div>`
   else if (t === 'eval') h = `<h2>评测</h2><div class="scard pad" id="evalBox"></div>`
@@ -1448,6 +1437,8 @@ document.addEventListener('click', async (e) => {
   else if (act === 'menu-go') { toggleMenu(false); setView(el.dataset.v) }
   else if (act === 'set-open') openModal('settings', el.dataset.t)
   else if (act === 'apps') openModal('apps')
+  else if (act === 'hand-toggle') { const k = el.dataset.k, box = el.closest('.hand'); if (handOpen.has(k)) handOpen.delete(k); else handOpen.add(k); box?.classList.toggle('open', handOpen.has(k)) }
+  else if (act === 'tour') window.openTour?.()
   else if (act === 'modal-close') closeModal()
   else if (act === 'set-tab') { modal.tab = el.dataset.t; renderModal() }
   else if (act === 'app-cat') { modal.tab = el.dataset.c; modal.q = ''; renderModal(); $('#mbox .abody')?.scrollTo(0, 0) }
@@ -1578,5 +1569,7 @@ document.addEventListener('input', (e) => { if (e.target.type === 'range') { con
   if (start) view = start
   $('#vChat').hidden = view !== 'chat'; $('#vPage').hidden = view === 'chat'
   connect(); loadCatalog()
+  // first start: walk through what 小天 Bot can do, once
+  if (!store.get('tourSeen') && !start) setTimeout(() => window.openTour?.(), 1200)
   setInterval(() => { if (view === 'brief') renderPage() }, 60000)
 })()

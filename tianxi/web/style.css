@@ -19,6 +19,8 @@ svg{display:block;flex:none}
 .av{flex:none;position:relative;display:block}
 .av svg{overflow:visible}
 .av .bd,.av .eyes,.av .pu{transform-box:fill-box;transform-origin:center}
+/* eyes: black in the dark theme, white in the light one (motion.css) */
+.av .eyes rect{fill:#141414}
 .av .eyes{animation:blink 5.5s infinite}
 .av.s-think .pu{animation:look 2.4s ease-in-out infinite}
 .av.s-think .bd{animation:bob 2.4s ease-in-out infinite}
@@ -1129,11 +1131,21 @@ button:focus:not(:focus-visible){outline:none}
 .ou.live .btn,.ou.live .ou-fu button{pointer-events:none}
 
 /* ---------- hand-offs between agents, in the conversation ---------- */
-.hand{background:var(--s1);border:1px solid var(--line2);border-radius:6px 18px 18px 18px;padding:12px 15px;width:min(520px,100%);box-sizing:border-box;font-size:14px;line-height:22px;transition:border-color .3s var(--ease)}
+.hand{background:var(--s1);border:1px solid var(--line2);border-radius:16px;padding:5px 12px 5px 8px;width:fit-content;max-width:min(520px,100%);box-sizing:border-box;font-size:14px;line-height:22px;transition:border-color .3s var(--ease),border-radius .3s var(--ease)}
+.hand.open{width:min(520px,100%);border-radius:6px 18px 18px 18px;padding:10px 15px 12px}
+.hand .hh{cursor:pointer;min-width:0}
+.hand .hsub{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx3);font-size:12.5px;margin-left:2px}
+.hand.open .hsub{display:none}
+.hand .hcar{flex:none;color:var(--tx3);transition:transform .25s var(--ease)}
+.hand.open .hcar{transform:rotate(90deg)}
+.hand .hd{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .3s var(--ease-out),opacity .25s}
+.hand .hdi{min-height:0;overflow:hidden}
+.hand.open .hd{grid-template-rows:1fr;opacity:1}
 .hand .hh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2)}
 .hand .hh b{color:var(--tx);font-weight:600;margin-left:4px}
 .hand .hh .ar{color:var(--tx3);display:flex}
-.hand .hst{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx3);white-space:nowrap}
+.hand .hst{margin-left:12px;flex:none;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx3);white-space:nowrap}
+.hand.open .hst{margin-left:auto}
 .hand.work .hst{color:var(--tx2)}
 .hand.work{border-color:#3a3a42}
 .hand.recalled{opacity:.6}
@@ -1144,3 +1156,60 @@ button:focus:not(:focus-visible){outline:none}
 .hand .hgo{display:block;margin-top:8px;font-size:12.5px;color:var(--tx3)}
 .hand .hgo:hover{color:var(--tx)}
 .hand.in{border-style:dashed}
+
+/* 功能介绍 (tour.js) */
+.tour{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.62);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:5vh 4vw;animation:tfade .3s ease both}
+.tour.out{animation:tfade .26s ease reverse both}
+@keyframes tfade{from{opacity:0}}
+.tbox{position:relative;width:min(880px,100%);height:min(500px,100%);display:flex;border-radius:22px;overflow:hidden;background:var(--s2);border:1px solid var(--line2);box-shadow:0 30px 80px rgba(0,0,0,.5);animation:pop .34s var(--ease-out) both}
+.tx-close{position:absolute;right:14px;top:14px;z-index:3;width:34px;height:34px;border:0;border-radius:50%;background:none;color:var(--tx3);font-size:14px}
+.tx-close:hover{background:var(--s3);color:var(--tx)}
+.tpic{position:relative;flex:0 0 46%;background:#05040f;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.tglow{position:absolute;inset:0;background:radial-gradient(60% 55% at 22% 100%,rgba(34,87,255,.75),transparent 70%),radial-gradient(55% 55% at 82% 100%,rgba(122,60,255,.7),transparent 70%),radial-gradient(45% 38% at 50% 104%,#f4f1ff 0,#9c8cff 35%,transparent 75%);animation:tglow 8s ease-in-out infinite alternate}
+@keyframes tglow{to{transform:translateY(-4%) scale(1.06);filter:hue-rotate(-12deg)}}
+.tart{position:relative;z-index:1;width:100%;display:flex;justify-content:center}
+.in-r{animation:tinr .38s var(--ease-out) both}.in-l{animation:tinl .38s var(--ease-out) both}
+@keyframes tinr{from{opacity:0;transform:translateX(24px)}}@keyframes tinl{from{opacity:0;transform:translateX(-24px)}}
+.tbody{flex:1;min-width:0;display:flex;flex-direction:column;padding:34px 38px 26px}
+.tnums{display:flex;gap:8px;margin-bottom:26px}
+.tnums button{width:28px;height:28px;border-radius:50%;border:1px solid var(--line2);background:none;color:var(--tx3);font-size:13px;font-weight:600;transition:all .25s}
+.tnums button.past{color:var(--tx2)}
+.tnums button.on{background:var(--tx);border-color:var(--tx);color:var(--s2)}
+.tcopy{flex:1;min-height:0}
+.tcopy h2{margin:0 0 10px;font-size:24px;font-weight:700;color:var(--tx)}
+.tcopy p{margin:0 0 18px;font-size:14.5px;line-height:1.65;color:var(--tx2)}
+.tcopy ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:11px}
+.tcopy li{position:relative;padding-left:18px;font-size:14px;line-height:1.55;color:var(--tx)}
+.tcopy li::before{content:'';position:absolute;left:2px;top:.62em;width:6px;height:6px;border-radius:50%;background:linear-gradient(135deg,#3d5cff,#8540f5)}
+.tfoot{display:flex;justify-content:space-between;align-items:center;margin-top:18px}
+.tb1,.tb2{height:38px;padding:0 22px;border-radius:19px;border:0;font-size:14.5px;font-weight:600}
+.tb1{background:var(--tx);color:var(--s2)}.tb1:hover{opacity:.9}
+.tb2{background:none;color:var(--tx2)}.tb2:hover{color:var(--tx);background:var(--s3)}
+.tchip{display:inline-flex;align-items:center;height:30px;padding:0 13px;border-radius:15px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);color:#eceaf8;font-size:13px;white-space:nowrap;backdrop-filter:blur(6px)}
+.tchip.on{background:#f4f1ff;color:#231b6b;border-color:#f4f1ff}
+.tchip.ghost{background:none;color:#b9b4d8}
+/* the pictures */
+.tp-bots{display:flex;align-items:center;gap:6px}
+.tp-bots span{animation:tbob 3.2s ease-in-out infinite;animation-delay:calc(var(--i) * -.6s)}
+@keyframes tbob{50%{transform:translateY(-6px)}}
+.tp-do{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;max-width:300px}
+.tp-do .tchip{animation:tpop .5s var(--ease-out) both}
+.tp-do .tchip:nth-child(2){animation-delay:.08s}.tp-do .tchip:nth-child(3){animation-delay:.16s}.tp-do .tchip:nth-child(4){animation-delay:.24s}.tp-do .tchip:nth-child(5){animation-delay:.32s}
+@keyframes tpop{from{opacity:0;transform:translateY(10px) scale(.96)}}
+.tp-brief{width:250px;padding:16px 16px 14px;border-radius:16px;background:rgba(20,18,40,.72);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);color:#eceaf8}
+.tb-k{font-size:12px;color:#ffc46b}.tb-t{font-size:15px;font-weight:700;margin:5px 0 12px}
+.tb-r{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}.tb-r i{height:8px;border-radius:4px;background:rgba(255,255,255,.18);width:70%}.tb-r i.c{background:rgba(255,120,120,.55);width:52%;margin-left:22%}.tb-r i.c+i.c{width:44%;margin-left:36%}
+.tb-b{display:flex;gap:8px}.tb-b .tchip{height:28px;font-size:12.5px}
+.tp-mem{position:relative;width:240px;height:220px}
+.tp-mem .core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+.tp-mem i{position:absolute;width:10px;height:10px;border-radius:50%;background:#c9c1ff;box-shadow:0 0 12px #8c7bff;animation:tw2 2.6s ease-in-out infinite;animation-delay:calc(var(--i) * -.4s)}
+@keyframes tw2{50%{opacity:.35;transform:scale(.7)}}
+.tp-use{display:flex;flex-direction:column;align-items:center;gap:10px}
+.tu-in{display:flex;align-items:center;gap:10px;width:270px;height:46px;padding:0 8px 0 16px;border-radius:23px;background:rgba(20,18,40,.72);border:1px solid rgba(255,255,255,.14);color:#9d98bd;font-size:13.5px;margin-bottom:6px}
+.tu-in span{flex:1}
+.tu-in .mic{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.1)}
+.tu-in .wave{width:30px;height:30px;border-radius:50%;background:#f4f1ff;display:flex;align-items:center;justify-content:center;gap:2px}
+.tu-in .wave i{width:2px;height:8px;border-radius:1px;background:#231b6b;animation:twv 1s ease-in-out infinite}
+.tu-in .wave i:nth-child(2){animation-delay:.15s}.tu-in .wave i:nth-child(3){animation-delay:.3s}.tu-in .wave i:nth-child(4){animation-delay:.45s}
+@keyframes twv{50%{height:14px}}
+@media (max-width:760px){.tpic{display:none}}

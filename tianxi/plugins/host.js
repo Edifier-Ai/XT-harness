@@ -90,7 +90,8 @@ export function apply(ctx) {
   // ---------- one transcript per agent ----------
   const transcript = (aid) => load(transcriptKey(aid), [])
   const addItem = (aid, item) => {
-    const it = { id: id('t'), at: now(), agent: aid, ...item }
+    // said in 隐私模式: kept in the chat, never fed to memory or 反思
+    const it = { id: id('t'), at: now(), agent: aid, ...item, ...(flags.privateMode ? { private: true } : {}) }
     update(transcriptKey(aid), [], (l) => { l.push(it); if (l.length > 600) l.splice(0, l.length - 600) })
     push({ type: 'item', item: it }); return it
   }

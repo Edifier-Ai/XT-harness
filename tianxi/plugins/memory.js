@@ -40,7 +40,7 @@ export function apply(ctx) {
     name: 'tianxi:memory', order: 900, interpolate: false,
     text: () => {
       const l = memories()
-      if (flags.privateMode) return '【临时模式】用户开启了临时模式：这段对话不要保存任何记忆，也不要引用临时模式下说过的内容。'
+      if (flags.privateMode) return '【隐私模式】用户开启了隐私模式：这段对话不进入用户的记忆，不要保存任何记忆，之后也不要引用隐私模式下说过的内容。'
       if (!l.length) return '【小天记忆】你还没有关于用户的长期记忆。用户透露稳定的偏好、事实、人物关系或习惯时，用 memory_save 记下来。'
       const facts = l.filter((m) => m.kind !== '经验'), lessons = l.filter((m) => m.kind === '经验')
       const r = load('reflections', [])[0]
@@ -61,7 +61,7 @@ export function apply(ctx) {
     },
     output: { schema: { type: 'json' }, render: (_a, v) => [{ type: 'text', text: JSON.stringify(v) }] },
     async execute(args) {
-      if (flags.privateMode) return { saved: false, reason: '临时模式下不保存记忆' }
+      if (flags.privateMode) return { saved: false, reason: '隐私模式下不保存记忆' }
       const dup = memories().find((m) => m.text === args.text)
       if (dup) return { saved: false, reason: '已经记过', id: dup.id }
       const m = addMemory({ text: args.text, kind: args.kind, quote: args.quote, source: '对话' })
@@ -148,7 +148,7 @@ export function reflectPrompt() {
   const since = last ? Date.parse(last.at) : Date.now() - 7 * 86400e3
   const said = []
   for (const a of agentList()) for (const t of load(transcriptKey(a.id), [])) {
-    if (t.role === 'user' && Date.parse(t.at) > since) said.push(`- ${t.at.slice(0, 16).replace('T', ' ')} 对${a.name}说：${String(t.text).slice(0, 200)}`)
+    if (t.role === 'user' && !t.private && Date.parse(t.at) > since) said.push(`- ${t.at.slice(0, 16).replace('T', ' ')} 对${a.name}说：${String(t.text).slice(0, 200)}`)
   }
   const undone = entries().filter((e) => e.status === 'undone' && Date.parse(e.undoneAt || e.at) > since).map((e) => `- ${e.title}（用户撤回了）`)
   const mems = memories().map((m) => `- [${m.id}] (${m.kind}) ${m.text}${m.quote ? ` ——原话“${m.quote.slice(0, 60)}”` : ''}${m.editedByUser ? '（用户亲手改过）' : ''} · 记于 ${m.createdAt.slice(0, 10)} · 用过 ${m.uses || 0} 次`)
