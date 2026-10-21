@@ -7,24 +7,19 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><radialGradient id="txorb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#ffb46b"/><stop offset=".32" stop-color="#e2502e"/><stop offset=".68" stop-color="#5a2fd0"/><stop offset="1" stop-color="#1d1a4a"/></radialGradient></defs></svg>
 <div class="app" id="app">
-  <!-- left: agents like chats in an IM, then the personal spaces -->
+  <!-- left: the bot roster, like contacts in a messenger; your own space sits at the bottom -->
   <nav class="rail" id="rail">
-    <div class="brand"><i class="orb sm"></i><b>天禧</b><span class="dev" id="devName"></span></div>
-    <div class="rl">智能体</div>
+    <div class="rtop"><div class="drag"></div><button class="ib" data-act="agent-new" title="新建 Bot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button></div>
+    <label class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4-4"/></svg><input id="q" placeholder="搜索"><kbd>Ctrl K</kbd></label>
     <div class="agents" id="agentList"></div>
-    <button class="newag" data-act="agent-new"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>新建智能体</button>
-    <div class="rl">我的</div>
-    <div class="nav" id="nav">
-      <button data-go="brief"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="4" width="17" height="16" rx="3"/><path d="M3.5 9h17M8 13h4M8 16.5h8"/></svg>每日简报<span class="n" id="nBrief" hidden></span></button>
-      <button data-go="memory"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="2.2"/><circle cx="5" cy="7" r="1.6"/><circle cx="19" cy="6" r="1.6"/><circle cx="18" cy="18" r="1.6"/><circle cx="6" cy="18" r="1.6"/><path d="M6.3 8l4 2.8M17.6 7.1l-4 3.3M16.7 16.9l-3-3.2M7.3 16.9l3-3.2"/></svg>我的记忆<span class="n g" id="nMem" hidden></span></button>
-      <button data-go="reflect"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/><path d="M16 4.5l.6 1.4 1.4.6-1.4.6-.6 1.4-.6-1.4-1.4-.6 1.4-.6z"/></svg>反思<span class="n" id="nRef" hidden></span></button>
-      <button data-go="ledger"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 7v5l3 2"/><path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v4h4"/></svg>操作记录</button>
-      <button data-go="later"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="18" cy="16" r="3"/></svg>后台任务<span class="n g" id="nLater" hidden></span></button>
+    <div class="rlinks">
+      <button data-go="plugins"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 3v4M15 3v4M7 7h10v4a5 5 0 0 1-10 0z"/><path d="M12 16v5"/></svg>插件</button>
     </div>
-    <div class="foot">
-      <span class="m" id="modelName">模型</span>
-      <button data-go="settings" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+    <div class="mine">
+      <button class="mebtn" data-go="me" id="meBtn"><span class="uav" id="meAv">你</span><span class="tx"><b id="meName">我的</b><small id="meSub">记忆、简报和操作记录</small></span><span class="n" id="nMe" hidden></span></button>
+      <button class="ib" data-go="settings" title="设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
     </div>
   </nav>
 
@@ -32,12 +27,11 @@
     <!-- chat with one agent -->
     <section class="view" id="vChat">
       <header class="chead">
-        <button class="who" data-act="agent-profile"><span id="cAvatar"></span><span class="nm"><b id="cName">天禧</b><small id="cSub">在这台电脑上</small></span></button>
-        <div class="pm" id="pmBadge" title="点击关闭临时模式">临时模式 · 这段对话不会被记住</div>
+        <button class="who" data-act="agent-profile" title="Bot 设置"><span id="cAvatar"></span><span class="nm"><b id="cName">天禧</b><small id="cSub"></small></span></button>
+        <div class="pm" id="pmBadge" title="点击关闭临时模式">临时模式</div>
         <div class="hacts">
-          <button class="ib" data-act="agent-mail" title="它的邮箱"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg></button>
-          <button class="ib" data-act="agent-profile" title="人设"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c1-3.5 3.8-5.5 7-5.5s6 2 7 5.5"/></svg></button>
-          <button class="ib" id="bProc" data-act="proc-toggle" title="任务过程"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3.5" y="4.5" width="17" height="15" rx="3"/><path d="M14.5 4.5v15"/></svg></button>
+          <button class="ib comp" id="bProc" data-act="proc-toggle" title="它的电脑"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="4.5" width="18" height="12.5" rx="2.5"/><path d="M8.5 20.5h7M12 17v3.5"/></svg></button>
+          <button class="ib" data-act="agent-profile" title="Bot 设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
         </div>
       </header>
       <div class="feed" id="feed"><div class="col" id="msgs"></div></div>
@@ -45,14 +39,14 @@
         <div class="inner">
           <div id="chips"></div>
           <div class="inbox" id="ring">
+            <button class="plus" id="bPlus" title="更多"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg></button>
             <textarea id="inp" rows="1" placeholder="发消息"></textarea>
-            <div class="inbar">
-              <button id="bPriv" title="临时模式：这段对话不保存记忆"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 20L20 4"/></svg>临时模式</button>
-              <button id="bUndo" title="撤回刚做的上一件事"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>算了</button>
-            </div>
             <button class="send" id="send" aria-label="发送"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 13V3M4 7l4-4 4 4" stroke="currentColor" stroke-width="1.8" fill="none"/></svg></button>
+            <div class="plusmenu" id="plusMenu" hidden>
+              <button id="bPriv"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 20L20 4"/></svg><span>临时模式</span><small>这段对话不记住</small></button>
+              <button id="bUndo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg><span>算了</span><small>撤回刚做的上一件事</small></button>
+            </div>
           </div>
-          <div class="fine">内容由 AI 大模型生成 · 每个操作都记在“操作记录”里，可以撤回</div>
         </div>
       </div>
     </section>
@@ -61,9 +55,9 @@
     <section class="view page" id="vPage" hidden><div class="pg" id="pg"></div></section>
   </main>
 
-  <!-- right: what the agent did, step by step -->
+  <!-- right: the bot's computer (what it is doing, step by step) and its routines -->
   <aside class="proc" id="proc">
-    <div class="ph"><b>任务过程</b><button class="ib" data-act="proc-close" title="收起"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10m0-10L3 13" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+    <div class="ph"><div class="ptabs" id="ptabs"><button data-act="ptab" data-t="computer" class="on">电脑</button><button data-act="ptab" data-t="routines">日常任务</button></div><button class="ib" data-act="proc-close" title="收起"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 3l10 10m0-10L3 13" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
     <div class="pb" id="procBody"></div>
   </aside>
 </div>

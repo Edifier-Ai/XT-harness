@@ -279,7 +279,7 @@ export function apply(ctx) {
         const aid = 'ag' + randomUUID().slice(0, 6)
         cur = { id: aid, createdAt: now() }; list.push(cur)
       }
-      for (const k of ['name', 'role', 'style', 'intro', 'color']) if (a[k] !== undefined) cur[k] = String(a[k]).slice(0, 600)
+      for (const k of ['name', 'role', 'style', 'intro', 'color', 'shape']) if (a[k] !== undefined) cur[k] = String(a[k]).slice(0, 600)
       if (!cur.name) throw new Error('名字不能空着')
       if (!STYLES.includes(cur.style)) cur.style = STYLES[0]
       const want = slug(a.emailName) || slug(cur.email?.split('@')[0]) || cur.id

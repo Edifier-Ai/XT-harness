@@ -18,6 +18,7 @@ let view = 'chat'                          // chat | brief | memory | reflect | 
 let viewArg = null
 let procPref = store.get('proc', 'auto')    // auto: the process bar opens when an agent starts working; closed: stays shut
 let procSel = null                          // { agent, turn } pinned in the process bar; null follows the latest
+let procTab = 'computer'                    // the right panel: computer (steps) | routines
 let memSel = null, memTab = 'map', mailTab = 'inbox'
 const usedUI = new Set()
 const seenLedger = new Set()
@@ -77,13 +78,34 @@ function md(src) {
 const agents = () => S.agents.length ? S.agents : [{ id: 'tianxi', name: '天禧', role: '你的个人智能体', main: true, email: 'tianxi@agent.local' }]
 const agentOf = (aid) => agents().find((a) => a.id === aid) || agents()[0]
 const busy = (aid) => (S.agentStatus[aid] || 'idle') !== 'idle'
-function avatar(a, size = 36, withDot = false) {
-  const st = busy(a.id)
-  const dot = withDot ? `<i class="dot ${st ? 'busy' : ''}"></i>` : ''
-  if (a.main) return `<span class="av ${st ? 'busy' : ''}" style="width:${size}px;height:${size}px"><i class="orb" style="width:${size}px;height:${size}px"></i>${dot}</span>`
-  const c = a.color || '#5b6cff'
-  return `<span class="av ${st ? 'busy' : ''}" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px;background:radial-gradient(circle at 30% 25%,${c}ee,${c}88 55%,#15151a 100%)">${esc((a.name || '?').slice(0, 1))}${dot}</span>`
+const doneAt = {}                            // agentId -> when it last finished, for the little "done" hop
+const SHAPES = ['circle', 'blob', 'hex', 'tri', 'rect', 'cloud']
+const hashNum = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h) }
+const shapeOf = (a) => SHAPES.includes(a.shape) ? a.shape : a.main ? 'circle' : SHAPES[1 + hashNum(a.id) % (SHAPES.length - 1)]
+// idle · think (busy, nothing done yet) · work (using tools) · wait (needs you) · done (just finished)
+function stateOf(aid) {
+  if (S.approvals.some((x) => x.agent === aid)) return 'wait'
+  if (!busy(aid)) return doneAt[aid] && Date.now() - doneAt[aid] < 5000 ? 'done' : 'idle'
+  const t = turnsOf(aid).filter((x) => x.running).pop()
+  return t && toolsOf(t).length ? 'work' : 'think'
 }
+const BODY = {
+  circle: '<circle cx="50" cy="52" r="40"/>',
+  blob: '<path d="M50 11c27 0 41 16 40 41-1 27-17 39-41 38-25-1-39-15-38-41 1-25 14-38 39-38z"/>',
+  hex: '<path d="M44 9.5a12 12 0 0 1 12 0l27 15.6a12 12 0 0 1 6 10.4v31a12 12 0 0 1-6 10.4L56 92.5a12 12 0 0 1-12 0L17 76.9a12 12 0 0 1-6-10.4v-31a12 12 0 0 1 6-10.4z"/>',
+  tri: '<path d="M41.5 17a10 10 0 0 1 17 0l33 56a10 10 0 0 1-8.5 15H17a10 10 0 0 1-8.5-15z"/>',
+  rect: '<rect x="12" y="15" width="76" height="74" rx="20"/>',
+  cloud: '<path d="M27 88a19 19 0 0 1-4-37 24 24 0 0 1 45-12 20 20 0 0 1 9 39 13 13 0 0 1-4 10z"/>',
+}
+// still: no state motion or badge (avatars repeated down a transcript)
+function avatar(a, size = 36, still = false) {
+  const st = still ? 'idle' : stateOf(a.id), sh = shapeOf(a)
+  const ey = sh === 'tri' ? 62 : sh === 'cloud' ? 62 : 52
+  const fill = a.main ? 'url(#txorb)' : (a.color || '#5b6cff')
+  const badge = st === 'wait' ? '<i class="abadge w">?</i>' : st === 'done' ? `<i class="abadge d">${CHECK}</i>` : ''
+  return `<span class="av s-${st}" style="width:${size}px;height:${size}px" data-sh="${sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><g class="bd" fill="${fill}">${BODY[sh]}</g><g class="eyes"><ellipse cx="37" cy="${ey}" rx="8.5" ry="10.5" fill="#fff"/><ellipse cx="63" cy="${ey}" rx="8.5" ry="10.5" fill="#fff"/><g class="pu"><circle cx="38.5" cy="${ey + 2}" r="4.6" fill="#141418"/><circle cx="64.5" cy="${ey + 2}" r="4.6" fill="#141418"/></g></g></svg>${badge}</span>`
+}
+const userInitial = () => (S.settings?.callMe || '你').trim().slice(0, 1).toUpperCase()
 const transcript = (aid) => S.transcripts[aid] || []
 
 // turns: a user message (or a system wake-up) and everything the agent did after it
@@ -128,58 +150,68 @@ function setCount(el, n) {
   if (n && n !== was) replay(el, 'bump')
 }
 
-// ---------- rail ----------
+// ---------- rail: the roster ----------
+const MINE = ['me', 'brief', 'memory', 'reflect', 'ledger', 'later']
+let query = ''
+function nowDoing(aid) {
+  const t = turnsOf(aid).filter((x) => x.running).pop(); if (!t) return ''
+  const now = [...toolsOf(t)].reverse().find((x) => x.state === 'running') || toolsOf(t).pop()
+  return now ? `正在${toolLabel(now.name)}${toolDetail(now.args) ? ' · ' + toolDetail(now.args) : ''}` : '正在想'
+}
 function renderRail() {
-  $('#agentList').innerHTML = agents().map((a) => {
+  const q = query.trim().toLowerCase()
+  const list = agents().filter((a) => !q || (a.name + (a.role || '')).toLowerCase().includes(q))
+  $('#agentList').innerHTML = list.map((a) => {
     const items = transcript(a.id).filter((i) => !i.internal && (i.role === 'user' || i.role === 'assistant' || i.kind === 'mail') && (i.text || i.mail))
     const last = items[items.length - 1]
-    const preview = busy(a.id) ? '正在做事…' : last ? (last.role === 'user' ? '你：' + last.text : last.kind === 'mail' ? '收到邮件：' + (last.mail?.subject || '') : last.text) : (a.role || '')
+    const st = stateOf(a.id)
+    const preview = st === 'wait' ? '需要你确认一件事' : busy(a.id) ? nowDoing(a.id) : last ? (last.role === 'user' ? '你：' + last.text : last.kind === 'mail' ? '收到邮件：' + (last.mail?.subject || '') : last.text) : (a.role || '')
     const unread = a.id === cur && view === 'chat' ? 0 : items.filter((i) => i.role !== 'user' && (!seen[a.id] || i.at > seen[a.id])).length
-    const asks = S.approvals.filter((x) => x.agent === a.id).length
-    return `<button class="ag ${a.id === cur && view === 'chat' ? 'on' : ''}" data-act="agent-open" data-id="${a.id}">${avatar(a, 38, true)}
-      <span class="tx"><b>${esc(a.name)}${last ? `<small>${when(last.at)}</small>` : ''}</b><span>${esc(String(preview).replace(/\s+/g, ' ').slice(0, 40))}</span></span>
-      ${asks ? '<span class="badge">!</span>' : unread ? `<span class="badge" style="background:#3a3a40;color:#ddd">${unread}</span>` : ''}</button>`
-  }).join('')
+    const right = busy(a.id) ? '<span class="tdots"><i></i><i></i><i></i></span>' : last ? `<small>${when(last.at)}</small>` : ''
+    return `<button class="ag ${a.id === cur && view === 'chat' ? 'on' : ''} ${st === 'wait' ? 'need' : ''}" data-act="agent-open" data-id="${a.id}" title="${esc(busy(a.id) ? nowDoing(a.id) : a.role || '')}">${avatar(a, 36)}
+      <span class="tx"><b><span class="nm">${esc(a.name)}</span>${a.main ? '<span class="star" title="主 Bot">★</span>' : ''}${right}</b><span class="pv">${esc(String(preview).replace(/\s+/g, ' ').slice(0, 48))}</span></span>
+      ${unread ? '<span class="udot"></span>' : ''}</button>`
+  }).join('') || '<div class="hint" style="padding:10px 12px">没有找到</div>'
   const open = S.brief && S.brief.date === todayStr() ? (S.brief.items || []).filter((i) => i.kind === 'decide' && i.status === 'open').length : 0
-  setCount($('#nBrief'), open)
-  setCount($('#nMem'), S.memories.length)
   const r0 = S.reflections[0]; const nr = r0 ? [...r0.proposals, ...r0.lessons].filter((p) => p.status === 'open').length : 0
-  setCount($('#nRef'), nr)
-  const q = S.later.filter((j) => j.status === 'queued' || j.status === 'running').length
-  setCount($('#nLater'), q)
-  document.querySelectorAll('#nav button').forEach((b) => b.classList.toggle('on', view === b.dataset.go))
-  $('.rail .foot button').classList.toggle('on', view === 'settings')
-  if (S.device) $('#devName').textContent = S.device
-  if (S.model) $('#modelName').textContent = S.model.model ? `${S.model.model}` : '还没接模型'
+  setCount($('#nMe'), open + nr)
+  $('#meAv').textContent = userInitial()
+  $('#meName').textContent = S.settings?.callMe || '我的'
+  $('#meSub').textContent = open ? `简报里有 ${open} 件等你定` : nr ? `反思有 ${nr} 条建议` : `${S.memories.length} 条记忆 · 简报和操作记录`
+  $('#meBtn').classList.toggle('on', MINE.includes(view))
+  document.querySelectorAll('.rlinks [data-go], .mine .ib[data-go]').forEach((b) => b.classList.toggle('on', view === b.dataset.go))
 }
 
 // ---------- chat ----------
 function renderHead() {
   const a = agentOf(cur)
-  $('#cAvatar').innerHTML = avatar(a, 38, true)
+  $('#cAvatar').innerHTML = avatar(a, 34)
   $('#cName').textContent = a.name
-  const asks = S.approvals.filter((x) => x.agent === cur).length
-  $('#cSub').textContent = asks ? '等你确认' : busy(cur) ? '正在做事…' : `${a.role || ''} · ${a.email || ''}`
+  const st = stateOf(cur)
+  $('#cSub').textContent = st === 'wait' ? '等你确认' : busy(cur) ? nowDoing(cur) : (a.role || '')
   $('#pmBadge').classList.toggle('on', !!S.privateMode)
   $('#bPriv').classList.toggle('on', !!S.privateMode)
   $('#ring').classList.toggle('priv', !!S.privateMode)
-  $('#inp').placeholder = `发消息给${a.name}`
+  $('#inp').placeholder = `给 ${a.name} 发消息`
   const send = $('#send'); send.classList.toggle('stop', busy(cur)); send.classList.toggle('hot', !busy(cur) && !!$('#inp').value.trim())
-  $('#bProc').classList.toggle('on', $('#app').classList.contains('procon'))
+  const comp = $('#bProc'); comp.classList.toggle('on', $('#app').classList.contains('procon')); comp.classList.toggle('live', busy(cur))
+  comp.title = busy(cur) ? `${a.name}的电脑正在用：${nowDoing(cur)}` : `${a.name}的电脑`
 }
 
+// one line in the transcript for everything the bot did in a turn; the steps open on its computer
 function procChip(t) {
   const tools = toolsOf(t)
   const sel = procSel && procSel.turn === t.id && $('#app').classList.contains('procon')
+  const ic = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4.5" width="18" height="12.5" rx="2.5"/><path d="M8.5 20.5h7M12 17v3.5"/></svg>'
   if (t.running) {
     if (!tools.length) return ''   // still thinking: the typing dots say it
     const now = [...tools].reverse().find((x) => x.state === 'running') || tools[tools.length - 1]
-    return `<button class="pchip sel" data-act="proc-open" data-agent="${t.agent}" data-turn="${t.id}"><span class="spin"></span><span class="t">${now ? `正在${esc(toolLabel(now.name))}${toolDetail(now.args) ? ' · ' + esc(toolDetail(now.args)) : ''}` : '正在想'}</span><span class="ar">第 ${Math.max(1, tools.length)} 步 ›</span></button>`
+    return `<button class="pchip live" data-act="proc-open" data-agent="${t.agent}" data-turn="${t.id}"><span class="spin"></span><span class="t">${now ? `正在${esc(toolLabel(now.name))}${toolDetail(now.args) ? ' · ' + esc(toolDetail(now.args)) : ''}` : '正在想'}</span><span class="ar">第 ${Math.max(1, tools.length)} 步 ›</span></button>`
   }
   if (!tools.length) return ''
   const errs = tools.filter((x) => x.state === 'error').length
   const labels = [...new Set(tools.map((x) => toolLabel(x.name)))].slice(0, 3).join('、')
-  return `<button class="pchip ${sel ? 'sel' : ''}" data-act="proc-open" data-agent="${t.agent}" data-turn="${t.id}">${errs && errs === tools.length ? '<span class="xdot">!</span>' : `<span class="okdot">${CHECK}</span>`}<span class="t">做了 ${tools.length} 步：${esc(labels)}</span><span class="ar">›</span></button>`
+  return `<button class="pchip ${sel ? 'sel' : ''}" data-act="proc-open" data-agent="${t.agent}" data-turn="${t.id}">${errs && errs === tools.length ? '<span class="xdot">!</span>' : ic}<span class="t">活动记录 · ${tools.length} 步：${esc(labels)}</span><span class="ar">›</span></button>`
 }
 
 function renderMsgs(keepScroll) {
@@ -188,7 +220,7 @@ function renderMsgs(keepScroll) {
   const turns = turnsOf(cur).filter((t) => !t.internal)
   let h = '', day = ''
   if (!turns.length) {
-    h = `<div class="hello">${avatar(a, 84)}<div class="nm">${esc(a.name)}</div><div class="rl2">${esc(a.role || '')}</div>${a.intro ? `<div class="in">${esc(a.intro)}</div>` : ''}<div class="mail">${esc(a.email || '')} · ${esc(a.style || '')}</div></div>`
+    h = `<div class="hello">${avatar(a, 88)}<div class="nm">${esc(a.name)}</div><div class="rl2">${esc(a.role || '')}</div>${a.intro ? `<div class="in">${esc(a.intro)}</div>` : ''}<div class="mail">${esc(a.email || '')}</div></div>`
   }
   for (const t of turns) {
     const d = dayOf(t.at); if (d !== day) { day = d; h += `<div class="day"><span>${dayLabel(t.at)}</span></div>` }
@@ -205,9 +237,9 @@ function renderMsgs(keepScroll) {
       else if (it.role === 'error') body += `<div class="bub err" data-k="${it.id}">${esc(it.text)}</div>`
     }
     if (t.running && !t.items.some((i) => i.role === 'assistant' && i.text) && !toolsOf(t).length) body += '<div class="bub typing"><i></i><i></i><i></i></div>'
-    if (body) h += `<div class="mrow" data-k="a${t.id}"><div class="side">${avatar(a, 34)}</div><div class="body">${body}</div></div>`
+    if (body) h += `<div class="mrow" data-k="a${t.id}"><div class="side">${avatar(a, 34, true)}</div><div class="body">${body}</div></div>`
   }
-  for (const x of S.approvals.filter((y) => y.agent === cur)) h += `<div class="mrow" data-k="ask${x.id}"><div class="side">${avatar(a, 34)}</div><div class="body">${askCard(x)}</div></div>`
+  for (const x of S.approvals.filter((y) => y.agent === cur)) h += `<div class="mrow" data-k="ask${x.id}"><div class="side">${avatar(a, 34, true)}</div><div class="body">${askCard(x)}</div></div>`
   const M = $('#msgs')
   M.innerHTML = h
   // Switching to another agent fades the whole conversation in; afterwards only new messages move.
@@ -220,15 +252,15 @@ function renderMsgs(keepScroll) {
 }
 
 function askCard(x) {
-  let pv = ''
   if (x.tool === 'mail_send') {
-    const mail = (S.outbox || []).find((m) => m.id === x.args?.id)
-    if (mail) pv = `<span class="k">发件人</span>  ${esc(mail.from || '')}\n<span class="k">收件人</span>  ${esc(mail.to)}\n<span class="k">主题</span>  ${esc(mail.subject)}\n\n${esc(mail.body)}`
+    const m = (S.outbox || []).find((y) => y.id === x.args?.id)
+    if (m) return `<div class="askcard mailask"><div class="h"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>邮件草稿 · 要你点头才发出</div>
+      <div class="mf"><span>发件人</span>${esc(m.from || '')}</div><div class="mf"><span>收件人</span>${esc(m.to)}</div><div class="mf"><span>主题</span><b>${esc(m.subject)}</b></div><div class="mb">${esc(m.body)}</div>
+      ${x.args?.reason ? `<div class="r">${esc(x.args.reason)}</div>` : ''}<div class="acts"><button class="btn pri" data-act="ask" data-id="${x.id}" data-allow="1">发送邮件</button><button class="btn" data-act="ask" data-id="${x.id}">放弃</button></div></div>`
   }
-  if (!pv) pv = Object.entries(x.args || {}).filter(([k]) => k !== 'reason').map(([k, v]) => `<span class="k">${esc(k)}</span>  ${esc(typeof v === 'string' ? v : JSON.stringify(v))}`).join('\n')
-  if (x.args?.reason) pv += `\n\n<span class="k">理由</span>  ${esc(x.args.reason)}`
-  return `<div class="askcard"><div class="h"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>要${esc(toolLabel(x.tool))}，需要你确认</div><div class="r">${esc(x.reason || '')}</div>${pv ? `<div class="pv">${pv}</div>` : ''}
-    <div class="acts"><button class="btn pri" data-act="ask" data-id="${x.id}" data-allow="1">允许这一次</button><button class="btn" data-act="ask" data-id="${x.id}">不行</button></div></div>`
+  const pv = Object.entries(x.args || {}).filter(([k]) => k !== 'reason').map(([k, v]) => `<span class="k">${esc(k)}</span>  ${esc(typeof v === 'string' ? v : JSON.stringify(v))}`).join('\n')
+  return `<div class="askcard"><div class="h"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>要${esc(toolLabel(x.tool))}，需要你点头</div><div class="r">${esc(x.reason || x.args?.reason || '')}</div>${pv ? `<div class="pv">${pv}</div>` : ''}
+    <div class="acts"><button class="btn pri" data-act="ask" data-id="${x.id}" data-allow="1">允许一次</button><button class="btn" data-act="ask" data-id="${x.id}">不行</button></div></div>`
 }
 
 function renderChips() {
@@ -325,13 +357,19 @@ function procTarget() {
 }
 function renderProc() {
   if (!$('#app').classList.contains('procon')) return
-  const t = procTarget(), B = $('#procBody')
-  if (!t) { B.innerHTML = '<div class="hint">这里会显示智能体做事的每一步：用了什么工具、改了什么，能直接撤回。</div>'; return }
+  document.querySelectorAll('#ptabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === procTab))
+  const B = $('#procBody')
+  if (procTab === 'routines') { const sig = 'routines:' + cur; B.innerHTML = renderRoutines(); if (B.dataset.turn !== sig) { B.dataset.turn = sig; replay(B, 'swap') } return }
+  const t = procTarget()
+  const ca = agentOf(t ? t.agent : cur)
+  const hr = new Date().getHours(), wall = hr < 6 || hr >= 20 ? 'night' : hr < 11 ? 'morning' : hr < 17 ? 'noon' : 'evening'
+  const screen = `<div class="scr wall-${wall} ${busy(ca.id) ? 'on' : ''}"><div class="sbar"><i></i><i></i><i></i><span>${esc(ca.name)} 的电脑</span><em>${busy(ca.id) ? '使用中' : '空闲'}</em></div><div class="sbody">${busy(ca.id) ? `<span class="spin"></span>${esc(nowDoing(ca.id))}` : '在这台电脑上，用你的文件、日程和邮箱做事'}</div></div>`
+  if (!t) { B.innerHTML = screen + '<div class="hint">这里会显示 Bot 做事的每一步：用了什么工具、改了什么，能直接撤回。</div>'; return }
   const a = agentOf(t.agent)
   const tools = toolsOf(t)
   const secs = t.endAt ? Math.max(1, Math.round((Date.parse(t.endAt) - Date.parse(t.at)) / 1000)) : null
-  let h = `<div class="pt">${esc(String(turnTitle(t)).slice(0, 120))}</div>
-    <div class="pm2">${avatar(a, 18)}${esc(a.name)} · ${hhmm(t.at)} · ${t.running ? '<span class="spin" style="width:11px;height:11px"></span> 正在做' : `${tools.length} 步${secs ? ` · 用时 ${secs < 90 ? secs + ' 秒' : Math.round(secs / 60) + ' 分钟'}` : ''}`}</div><div class="steps">`
+  let h = screen + `<div class="pt">${esc(String(turnTitle(t)).slice(0, 120))}</div>
+    <div class="pm2">${avatar(a, 18, true)}${esc(a.name)} · ${hhmm(t.at)} · ${t.running ? '<span class="spin" style="width:11px;height:11px"></span> 正在做' : `${tools.length} 步${secs ? ` · 用时 ${secs < 90 ? secs + ' 秒' : Math.round(secs / 60) + ' 分钟'}` : ''}`}</div><div class="steps">`
   for (const it of t.items) {
     if (it.role === 'tool') {
       const ic = it.state === 'running' ? '<span class="spin"></span>' : it.state === 'error' ? '<span class="xdot">!</span>' : `<span class="okdot">${CHECK}</span>`
@@ -359,6 +397,30 @@ function renderProc() {
   if (switched) replay(B, 'swap')
 }
 
+// 日常任务: what the bots do on their own, on a schedule or when something happens
+function renderRoutines() {
+  const st = S.settings || {}, main = agentOf(S.mainId), a = agentOf(cur)
+  const briefOn = true, refOn = st.reflectAtNight !== false
+  const row = (icon, title, when, on, acts = '') => `<div class="rt ${on ? '' : 'off'}"><span class="ri">${icon}</span><div class="m"><div class="t">${title}</div><div class="w">${when}</div>${acts ? `<div class="a">${acts}</div>` : ''}</div><span class="rs">${on ? '开' : '已暂停'}</span></div>`
+  const I = {
+    sun: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg>',
+    moon: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>',
+    eye: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></svg>',
+    q: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>',
+  }
+  let h = `<div class="rhd">${avatar(main, 22)}<span>${esc(main.name)}负责的日常任务</span></div>`
+  h += row(I.sun, '每日简报', `每天 ${esc(st.briefTime || '08:00')} · 整理今天要你定的、替你做完的事`, briefOn, '<button class="btn sm" data-act="brief-run">现在跑</button><button class="lk" data-go="brief">看简报</button>')
+  h += row(I.moon, '夜里反思', `每天 ${esc(st.nightFrom ?? 23)}:00 后你不在时 · 回想对话，整理记忆`, refOn, '<button class="btn sm" data-act="reflect-run">现在跑</button><button class="lk" data-go="reflect">看反思</button>')
+  h += row(I.eye, '留意新文件', `一直在 · ${esc((st.watch || []).map((x) => x.replace(/^~[\\/]/, '')).join('、') || '下载、桌面')}`, true)
+  const jobs = S.later.filter((j) => j.status === 'queued' || j.status === 'running')
+  if (jobs.length) {
+    h += '<div class="psec">排着的事</div>'
+    for (const j of jobs) h += row(I.q, esc(j.title), `${j.status === 'running' ? '正在做' : '排队中'} · ${j.when === 'night' ? '夜里做' : '你离开时做'}`, true, j.status === 'queued' ? `<button class="lk" data-act="later-rm" data-id="${j.id}">不做了</button>` : '')
+  }
+  h += `<div class="hint" style="margin-top:14px">想加一个？直接跟${esc(a.name)}说，比如“每周五下午帮我整理这周的报销单”。设置里能改时间。</div>`
+  return h
+}
+
 // ---------- pages ----------
 let entering = true
 function setView(v, arg) {
@@ -369,13 +431,13 @@ function setView(v, arg) {
   $('#app').classList.remove('procon'); procSel = null
   renderAll(false)
 }
-const phead = (title, sub = '', right = '') => `<div class="phead"><h2>${title}</h2><span class="s">${sub}</span><div class="r">${right}</div></div>`
+const phead = (title, sub = '', right = '') => `<div class="phead">${MINE.includes(view) && view !== 'me' ? '<button class="crumb" data-go="me"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 5l-7 7 7 7"/></svg>我的</button>' : ''}<h2>${title}</h2><span class="s">${sub}</span><div class="r">${right}</div></div>`
 
 function renderPage() {
   if (view === 'chat') return
   const P = $('#pg')
   const keep = $('#vPage').scrollTop
-  const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, settings: pageSettings, agent: pageAgent }[view]
+  const fn = { me: pageMe, plugins: pagePlugins, brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, settings: pageSettings, agent: pageAgent }[view]
   if (fn) P.innerHTML = fn()
   if (view === 'settings') { renderModelForm($('#modelForm'), false); renderEval($('#evalBox')); renderUpdate($('#updBox')) }
   const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap), #pg .bgrid > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent'
@@ -391,6 +453,47 @@ function renderPage() {
     reveal(P, CARDS, keyOf, { cls: 'upd', step: 30 })
     $('#vPage').scrollTop = keep
   }
+}
+
+// 我的: what is yours across every bot — the brief, memory, reflection, records and queued work
+function pageMe() {
+  const b = S.brief, fresh = b && b.date === todayStr()
+  const open = fresh ? (b.items || []).filter((i) => i.kind === 'decide' && i.status === 'open').length : 0
+  const r = S.reflections[0], nr = r ? [...r.proposals, ...r.lessons].filter((p) => p.status === 'open').length : 0
+  const led = [...S.ledger].reverse(), canUndo = led.filter((e) => e.status === 'done' && e.undo).length
+  const q = S.later.filter((j) => j.status === 'queued' || j.status === 'running').length
+  const ms = S.memories
+  const card = (go, k, title, body, foot, extra = '') => `<button class="mcard ${extra}" data-go="${go}" data-k="${go}"><div class="k">${k}</div><div class="t">${title}</div><div class="d">${body}</div>${foot ? `<div class="f">${foot}</div>` : ''}</button>`
+  const dots = KORDER.map((k) => { const n = ms.filter((m) => (m.kind || '事实') === k).length; return n ? `<span style="--c:${KCOL[k]}"><i></i>${k} ${n}</span>` : '' }).join('')
+  let h = phead('我的', '所有 Bot 共用')
+  h += `<div class="mehead"><span class="uav big">${esc(userInitial())}</span><div><div class="nm">${esc(S.settings?.callMe || '你')}</div><div class="s">${r?.profile ? esc(r.profile.slice(0, 90)) + (r.profile.length > 90 ? '…' : '') : '这里放着你的记忆、每日简报和 Bot 替你做过的每件事。'}</div></div></div>`
+  h += '<div class="megrid">'
+  h += card('brief', '每日简报', fresh ? esc(b.greeting || '今天的简报') : '今天还没整理', fresh ? esc(String(b.summary || '').slice(0, 80)) : `每天 ${esc(S.settings?.briefTime || '08:00')} 自动整理`, open ? `<b class="warn">${open} 件等你定</b>` : fresh ? `${hhmm(b.at)} 整理` : '', 'wide')
+  h += card('memory', '我的记忆', `${ms.length} 条`, dots ? `<span class="kd">${dots}</span>` : '聊天时说“记住……”就会记下', '带出处，能改能删')
+  h += card('reflect', '反思', r ? dayLabel(r.at) + ' 的反思' : '还没反思过', r ? `${r.insights.length} 个发现 · ${r.proposals.length + r.lessons.length} 条建议` : '每晚你不在时回想一次', nr ? `<b class="warn">${nr} 条等你采纳</b>` : '')
+  h += card('ledger', '操作记录', `${led.length} 件事`, led[0] ? esc(led[0].title) : '还没替你做过事', canUndo ? `${canUndo} 件能撤回` : '')
+  h += card('later', '后台任务', q ? `${q} 件排着` : '队列是空的', '交给 Bot “晚点做”的事，你离开或夜里做', '')
+  h += '</div>'
+  h += `<div class="sec">隐私</div><div class="panel"><div class="setrow"><label>临时模式</label><div class="ctl"><button class="sw ${S.privateMode ? 'on' : ''}" data-act="priv"></button><span class="hint" style="margin:0">开着时所有 Bot 都不记住你说的话</span></div></div></div>`
+  return h
+}
+
+// 插件: the tools every bot shares, by where they come from
+const PLUGINS = [
+  { n: '记忆', k: 'memory', d: '记住你的偏好、人物和项目，每条带出处；夜里反思整理', t: ['memory_save', 'memory_search', 'memory_update', 'memory_forget', 'reflection_publish'] },
+  { n: '日程和待办', k: 'actions', d: '本机日历和待办，添加时查冲突', t: ['calendar_list', 'calendar_add', 'calendar_update', 'calendar_delete', 'todo_list', 'todo_add', 'todo_done'] },
+  { n: '邮箱', k: 'actions', d: '每个 Bot 有自己的邮箱，Bot 之间发邮件派活；对外发送先问你', t: ['mail_draft', 'mail_send', 'mail_inbox'] },
+  { n: '文件', k: 'actions', d: '列文件夹、移动和重命名，每次都能撤回', t: ['folder_list', 'file_move', 'read', 'write', 'edit'] },
+  { n: '生成式卡片', k: 'actions', d: '要你挑、调、确认时直接给出可点的卡片', t: ['show_ui'] },
+  { n: '简报和后台', k: 'ambient', d: '每日简报、留意新文件、你不在时做排着的事', t: ['brief_publish', 'brief_resolve', 'later_add'] },
+  { n: '操作记录', k: 'ledger', d: '每件事都记下原因，一句“算了”就撤回', t: ['ledger_recent', 'undo_actions'] },
+  { n: '联网和命令行', k: 'DSH', d: 'DeepSeek Harness 自带：搜索、读网页、在这台电脑上跑命令', t: ['web_search', 'web_fetch', 'shell'] },
+]
+function pagePlugins() {
+  let h = phead('插件', '所有 Bot 共用')
+  h += '<div class="intro">工具和插件是整个账号共用的；记忆、人设和日常任务属于每个 Bot 自己。</div><div class="plgrid">'
+  for (const p of PLUGINS) h += `<div class="plug" data-k="pl${p.n}"><div class="h"><b>${esc(p.n)}</b><span class="tag">${esc(p.k)}</span><span class="on">已启用</span></div><div class="d">${esc(p.d)}</div><div class="tl2">${p.t.map((x) => `<code>${esc(x)}</code>`).join('')}</div></div>`
+  return h + '</div>'
 }
 
 // 每日简报: its own page, generated cards laid out by importance
@@ -432,7 +535,7 @@ const KCOL = { 偏好: '#e6a66f', 事实: '#8fb0ff', 人物: '#7fd6a8', 习惯: 
 const KORDER = ['偏好', '习惯', '人物', '项目', '事实', '经验']
 function pageMemory() {
   const ms = S.memories, r = S.reflections[0]
-  let h = phead('我的记忆', `${ms.length} 条 · 所有智能体共用`, `<div class="tabs" style="margin:0"><button class="${memTab === 'map' ? 'on' : ''}" data-act="mem-tab" data-t="map">星图</button><button class="${memTab === 'list' ? 'on' : ''}" data-act="mem-tab" data-t="list">列表</button></div>`)
+  let h = phead('我的记忆', `${ms.length} 条 · 所有 Bot 共用`, `<div class="tabs" style="margin:0"><button class="${memTab === 'map' ? 'on' : ''}" data-act="mem-tab" data-t="map">星图</button><button class="${memTab === 'list' ? 'on' : ''}" data-act="mem-tab" data-t="list">列表</button></div>`)
   h += `<div class="portrait">${avatar(agentOf(S.mainId), 40)}<div style="flex:1"><div class="k">${esc(agentOf(S.mainId).name)}眼中的你</div><div class="t">${r?.profile ? esc(r.profile) : '还没有反思过。反思之后，这里会写下它对你的整体理解。'}</div>${r ? `<div class="hint">来自 ${dayLabel(r.at)} ${hhmm(r.at)} 的反思 · <button class="lk" data-act="go" data-v="reflect">看反思</button></div>` : `<div class="hint"><button class="lk" data-act="reflect-run">现在反思一次</button></div>`}</div></div>`
   if (S.privateMode) h += '<div class="hint" style="color:#ffd7a1;margin-top:10px">临时模式开着：现在说的话不会被记住。</div>'
   if (memTab === 'list') {
@@ -542,7 +645,7 @@ function pageReflect() {
 function pageLedger() {
   const list = [...S.ledger].reverse()
   let h = phead('操作记录', `${list.length} 件事`, `<button class="btn" data-act="undo-last" ${list.some((e) => e.status === 'done' && e.undo) ? '' : 'disabled'}>算了，撤回上一步</button>`)
-  h += '<div class="intro">智能体替你做的每一件事都记在这里：做了什么、为什么做。能撤回的都能一键撤回。</div><div class="panel">'
+  h += '<div class="intro">Bot 替你做的每一件事都记在这里：做了什么、为什么做。能撤回的都能一键撤回。</div><div class="panel">'
   let day = ''
   for (const e of list) {
     const d = dayOf(e.at); if (d !== day) { day = d; h += `<div class="sec" style="margin-top:${day === dayOf(list[0].at) ? 0 : 18}px">${dayLabel(e.at)}</div>` }
@@ -556,7 +659,7 @@ function pageLedger() {
 
 function pageLater() {
   const st = { queued: '排队中', running: '正在做', done: '做完了', error: '没做成' }
-  let h = phead('后台任务') + '<div class="intro">交给智能体“晚点做”的事会排在这里。你离开电脑或到了夜里，它会自己做，结果写进第二天的简报。</div>'
+  let h = phead('后台任务') + '<div class="intro">交给 Bot“晚点做”的事会排在这里。你离开电脑或到了夜里，它会自己做，结果写进第二天的简报。</div>'
   const jobs = [...S.later].reverse()
   const jt = turnsOf(S.mainId).filter((t) => t.kind === 'job')
   h += '<div class="sec">队列</div><div class="panel">' + (jobs.length ? jobs.map((j) => { const t = j.startedAt ? jt.find((x) => x.at >= j.startedAt) : null; return `<div class="ent"><div class="tm">${hhmm(j.createdAt)}</div><div class="m"><div class="t">${esc(j.title)}</div><div class="w">${st[j.status] || j.status} · ${j.when === 'night' ? '夜里做' : '你离开时做'}${t ? ` · <button class="lk" data-act="proc-open" data-agent="${S.mainId}" data-turn="${t.id}">过程</button>` : ''}</div>${j.result ? `<div class="w" style="color:#cfcfd4;margin-top:6px;white-space:pre-wrap">${esc(j.result.slice(0, 400))}</div>` : ''}
@@ -601,26 +704,27 @@ function pageAgent() {
   const a = isNew ? (draftAgent ||= { name: '', role: '', style: '靠谱同事', intro: '', emailName: '', color: COLORS[agents().length % COLORS.length] }) : agentOf(viewArg)
   if (!isNew) draftAgent = null
   const v = isNew ? a : { ...a, emailName: (a.email || '').split('@')[0] }
-  let h = phead(isNew ? '新建智能体' : esc(a.name), isNew ? '' : esc(a.email || ''), isNew ? '' : `<button class="btn" data-act="agent-open" data-id="${a.id}">去聊天</button>`)
+  let h = phead(isNew ? '新建 Bot' : 'Bot 设置', isNew ? '' : esc(a.name), isNew ? '' : `<button class="btn" data-act="agent-open" data-id="${a.id}">去聊天</button>`)
   if (!isNew) h += `<div class="prof">${avatar(a, 72)}<div><div class="nm">${esc(a.name)}</div><div class="rl2">${esc(a.role || '')} · ${esc(a.style || '')}</div><div class="ml"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>${esc(a.email || '')}</div></div></div>`
   h += `<div class="two"><div><div class="sec" style="margin-top:0">身份和人设</div><div class="panel">`
   if (isNew) h += `<div class="tpl">${TEMPLATES.map((t, i) => `<button class="chip" data-act="agent-tpl" data-i="${i}">${esc(t.name)}</button>`).join('')}</div>`
   h += `<div class="setrow"><label>名字</label><div class="ctl"><input class="inp" id="agName" value="${esc(v.name)}" placeholder="比如：出差助理"></div></div>
-    <div class="setrow"><label>身份 / 分工</label><div class="ctl"><input class="inp" id="agRole" value="${esc(v.role || '')}" placeholder="比如：负责出差的一切"></div></div>
+    <div class="setrow"><label>头衔</label><div class="ctl"><input class="inp" id="agRole" value="${esc(v.role || '')}" placeholder="比如：负责出差的一切"></div></div>
     <div class="setrow"><label>性格</label><div class="ctl"><div class="seg2" id="agStyle" data-val="${esc(v.style || '靠谱同事')}">${(S.styles.length ? S.styles : ['靠谱同事', '温暖贴心', '犀利有梗']).map((s) => `<button type="button" class="${s === (v.style || '靠谱同事') ? 'on' : ''}" data-v="${esc(s)}">${esc(s)}</button>`).join('')}</div></div></div>
-    <div class="setrow top"><label>人设补充</label><div class="ctl"><textarea class="inp" id="agIntro" placeholder="它是谁、负责什么、说话做事有什么讲究">${esc(v.intro || '')}</textarea></div></div>
+    <div class="setrow top"><label>描述</label><div class="ctl"><textarea class="inp" id="agIntro" placeholder="它负责什么、怎么做事、说话有什么讲究，越具体越好">${esc(v.intro || '')}</textarea></div></div>
     <div class="setrow"><label>邮箱</label><div class="ctl"><input class="inp" id="agMail" value="${esc(v.emailName || '')}" placeholder="英文名" style="max-width:160px"><span class="hint" style="margin:0">@agent.local</span></div></div>
+    <div class="setrow"><label>样子</label><div class="ctl shapes" id="agShape" data-val="${esc(shapeOf({ ...v, id: v.id || 'new' }))}">${SHAPES.map((sh) => `<button type="button" class="${sh === shapeOf({ ...v, id: v.id || 'new' }) ? 'on' : ''}" data-v="${sh}">${avatar({ ...v, id: v.id || 'new', shape: sh }, 34)}</button>`).join('')}</div></div>
     ${a.main ? '' : `<div class="setrow"><label>颜色</label><div class="ctl colors" id="agColor" data-val="${esc(v.color || COLORS[0])}">${COLORS.map((c) => `<button type="button" class="${c === v.color ? 'on' : ''}" data-v="${c}" style="background:${c}"></button>`).join('')}</div></div>`}
-    <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button class="btn pri" data-act="agent-save" data-id="${isNew ? '' : a.id}">${isNew ? '创建' : '保存'}</button>${!isNew && !a.main ? `<button class="btn warn" data-act="agent-del" data-id="${a.id}" style="margin-left:auto">删除这个智能体</button>` : ''}<span class="hint" id="agMsg" style="margin:0"></span></div>
-    </div><div class="hint">改动从下一句话开始生效。所有智能体共用“我的记忆”和“操作记录”；每个智能体有自己的人设、对话和邮箱，互相之间可以发邮件分工协作。</div></div>`
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button class="btn pri" data-act="agent-save" data-id="${isNew ? '' : a.id}">${isNew ? '创建' : '保存'}</button>${!isNew && !a.main ? `<button class="btn warn" data-act="agent-del" data-id="${a.id}" style="margin-left:auto">删除这个 Bot</button>` : ''}<span class="hint" id="agMsg" style="margin:0"></span></div>
+    </div><div class="hint">改动从下一句话开始生效。所有 Bot 共用“我的记忆”和“操作记录”；每个 Bot 有自己的人设、对话、邮箱和日常任务，互相之间可以发邮件分工协作。</div></div>`
   if (isNew) return h + '</div>'
   const inbox = S.inbox.filter((m) => m.agent === a.id).reverse()
   const outbox = S.outbox.filter((m) => (m.agent || S.mainId) === a.id).reverse()
   const list = mailTab === 'inbox' ? inbox : outbox
   const stn = { draft: '草稿', sent: '已发出', delivered: '已送达', recalled: '已召回' }
   h += `<div><div class="sec" style="margin-top:0" id="mailbox">邮箱</div><div class="panel"><div class="tabs"><button class="${mailTab === 'inbox' ? 'on' : ''}" data-act="mail-tab" data-t="inbox">收件箱 ${inbox.length}</button><button class="${mailTab === 'out' ? 'on' : ''}" data-act="mail-tab" data-t="out">发件箱 ${outbox.length}</button></div>
-    ${list.length ? list.slice(0, 40).map((m) => `<div class="mail"><div class="h">${mailTab === 'inbox' ? `<b>${esc(m.fromName || m.from)}</b><span>${esc(m.from)}</span>` : `<span>给</span><b>${esc(m.to)}</b>`}<span class="st">${mailTab === 'inbox' ? when(m.at) : `${stn[m.status] || m.status} · ${when(m.sentAt || m.createdAt)}`}</span></div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`).join('') : `<div class="hint">${mailTab === 'inbox' ? '还没有收到邮件。别的智能体可以直接给它发邮件。' : '还没发过邮件。'}</div>`}
-    </div><div class="hint">当前版本的邮箱在本机：智能体之间的邮件会直接送达；发往外部地址的只放进发件箱，不会真的发出去。</div></div></div>`
+    ${list.length ? list.slice(0, 40).map((m) => `<div class="mail"><div class="h">${mailTab === 'inbox' ? `<b>${esc(m.fromName || m.from)}</b><span>${esc(m.from)}</span>` : `<span>给</span><b>${esc(m.to)}</b>`}<span class="st">${mailTab === 'inbox' ? when(m.at) : `${stn[m.status] || m.status} · ${when(m.sentAt || m.createdAt)}`}</span></div><div class="s">${esc(m.subject)}</div><div class="b">${esc(m.body)}</div></div>`).join('') : `<div class="hint">${mailTab === 'inbox' ? '还没有收到邮件。别的 Bot 可以直接给它发邮件。' : '还没发过邮件。'}</div>`}
+    </div><div class="hint">当前版本的邮箱在本机：Bot 之间的邮件会直接送达；发往外部地址的只放进发件箱，不会真的发出去。</div></div></div>`
   return h
 }
 
@@ -782,7 +886,11 @@ function connect() {
     } else if (m.type === 'delta') {
       const t = (S.transcripts[m.agent || S.mainId] || []).find((x) => x.id === m.id)
       if (t) { t.text = m.text; const el = document.getElementById('m_' + m.id); if (el) { el.innerHTML = md(m.text); const f = $('#feed'); if (f.scrollHeight - f.scrollTop - f.clientHeight < 140) f.scrollTop = f.scrollHeight } else if (view === 'chat' && (m.agent || S.mainId) === cur) renderMsgs(true) }
-    } else if (m.type === 'status') { S.agentStatus[m.agent || S.mainId] = m.status; renderAll(true) }
+    } else if (m.type === 'status') {
+      const aid = m.agent || S.mainId
+      if (busy(aid) && m.status === 'idle') { doneAt[aid] = Date.now(); setTimeout(() => renderAll(true), 5200) }
+      S.agentStatus[aid] = m.status; renderAll(true)
+    }
     else if (m.type === 'approval') {
       S.approvals.push(m.approval); soon()
       const a = agentOf(m.approval.agent)
@@ -810,17 +918,25 @@ async function send() {
   inp.value = ''; grow(); await say(v)
 }
 $('#send').onclick = () => { if (busy(cur) && !inp.value.trim()) api('cancel', { agent: cur }); else send() }
-$('#bPriv').onclick = () => api('private', { on: !S.privateMode })
+const plusMenu = $('#plusMenu')
+$('#bPlus').onclick = (e) => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; if (!plusMenu.hidden) replay(plusMenu, 'in') }
+document.addEventListener('click', (e) => { if (!plusMenu.hidden && !e.target.closest('#plusMenu')) plusMenu.hidden = true })
+$('#q').addEventListener('input', (e) => { query = e.target.value; renderRail() })
+$('#bPriv').onclick = () => { plusMenu.hidden = true; api('private', { on: !S.privateMode }) }
 $('#pmBadge').onclick = () => api('private', { on: false })
-$('#bUndo').onclick = async () => { const r = await api('undo-last', {}); toastText(r.entry ? '已撤回：' + r.entry.title : '没有可以撤回的事') }
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && view !== 'chat') setView('chat') })
+$('#bUndo').onclick = async () => { plusMenu.hidden = true; const r = await api('undo-last', {}); toastText(r.entry ? '已撤回：' + r.entry.title : '没有可以撤回的事') }
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && view !== 'chat') setView(MINE.includes(view) && view !== 'me' ? 'me' : 'chat')
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#q').focus(); $('#q').select() }
+})
 
 document.addEventListener('click', async (e) => {
   const go = e.target.closest('[data-go]')
-  if (go) { const g = go.dataset.go; setView(view === g ? 'chat' : g); return }
+  if (go) { const g = go.dataset.go; setView(view === g && !go.closest('.pg') ? 'chat' : g); return }
   const el = e.target.closest('[data-act]')
   if (!el) {
     const seg = e.target.closest('.seg2 button'); if (seg) { const p = seg.parentElement; p.dataset.val = seg.dataset.v; p.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === seg)) }
+    const shb = e.target.closest('.shapes button'); if (shb) { const p = shb.parentElement; p.dataset.val = shb.dataset.v; p.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === shb)) }
     const col = e.target.closest('.colors button'); if (col) { const p = col.parentElement; p.dataset.val = col.dataset.v; p.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b === col)) }
     const sw = e.target.closest('.sw[data-kind=toggle]'); if (sw) sw.classList.toggle('on')
     return
@@ -834,6 +950,7 @@ document.addEventListener('click', async (e) => {
   else if (act === 'agent-save') {
     const out = { id: el.dataset.id || undefined, name: $('#agName').value.trim(), role: $('#agRole').value.trim(), style: $('#agStyle').dataset.val, intro: $('#agIntro').value.trim(), emailName: $('#agMail').value.trim() }
     const c = $('#agColor'); if (c) out.color = c.dataset.val
+    const shp = $('#agShape'); if (shp) out.shape = shp.dataset.val
     if (!out.name) { $('#agMsg').textContent = '起个名字吧'; return }
     const r = await api('agents/save', { agent: out })
     if (r.error) { $('#agMsg').textContent = r.error; return }
@@ -841,11 +958,12 @@ document.addEventListener('click', async (e) => {
     await refresh()
     if (!el.dataset.id) { cur = r.agent.id; store.set('agent', cur); setView('chat') } else toastText('已保存，下一句话开始生效')
   }
-  else if (act === 'agent-del') { if (confirm('删除这个智能体？它的对话记录会保留在本机数据里。')) { await api('agents/remove', { id: el.dataset.id }); cur = S.mainId; store.set('agent', cur); await refresh(); setView('chat') } }
+  else if (act === 'agent-del') { if (confirm('删除这个 Bot？它的对话记录会保留在本机数据里。')) { await api('agents/remove', { id: el.dataset.id }); cur = S.mainId; store.set('agent', cur); await refresh(); setView('chat') } }
   else if (act === 'mail-tab') { mailTab = el.dataset.t; renderPage() }
   else if (act === 'proc-toggle') { $('#app').classList.contains('procon') ? closeProc() : openProc(null) }
   else if (act === 'proc-close') closeProc()
-  else if (act === 'proc-open') openProc({ agent: el.dataset.agent, turn: el.dataset.turn })
+  else if (act === 'ptab') { procTab = el.dataset.t; renderProc() }
+  else if (act === 'proc-open') { procTab = 'computer'; if (view !== 'chat') { cur = el.dataset.agent; setView('chat') } openProc({ agent: el.dataset.agent, turn: el.dataset.turn }) }
   else if (act === 'go') setView(el.dataset.v)
   else if (act === 'ask') { await api('approval', { id: el.dataset.id, allow: !!el.dataset.allow }) }
   else if (act === 'brief-run') { await api('brief/run', {}); setTimeout(soon, 400) }

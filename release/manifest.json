@@ -1,8 +1,8 @@
 {
- "version": "0.4.2",
- "notes": "更新改走系统代理，并加了 GitHub Raw 和 jsDelivr 两条备用线路",
+ "version": "0.5.0",
+ "notes": "界面改成 GrokBot 样式：Bot 名单、它的电脑和日常任务面板、会动的头像；简报、记忆、反思、操作记录收进“我的”",
  "minBase": "0.4.0",
- "at": "2026-10-20T11:20:40.958Z",
+ "at": "2026-10-21T00:13:50.909Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -401,8 +401,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "5fbbf6fa694eba8b69aeb4bb393d4bba3e2c612057d94a928eae4e9e26669d1f",
-   "size": 23559
+   "sha256": "fb7f92303297915d2bcd268f4c5657ccc347fa0669c1912ea175268e7a670984",
+   "size": 23568
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -421,13 +421,33 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "9711b122a963cc3f09f593046ad12a249488ae686053a0286ec659b6ebede3ce",
-   "size": 82500
+   "sha256": "df10d929d3a27a91d49f746ca6087b05cb798afc10b229b25a32b4a81c7a01ac",
+   "size": 96239
+  },
+  "bundle/web/img/wall-evening.jpg": {
+   "path": "tianxi/web/img/wall-evening.jpg",
+   "sha256": "9b5ad504676b89f3d6649db9bb56eb031c77154b547e1c0e1dde6b1aaf92ee2d",
+   "size": 25075
+  },
+  "bundle/web/img/wall-morning.jpg": {
+   "path": "tianxi/web/img/wall-morning.jpg",
+   "sha256": "68a9b355dc225feca2f5f78d38ead606be3a5809ff26eaeb4966cc690e46b813",
+   "size": 23853
+  },
+  "bundle/web/img/wall-night.jpg": {
+   "path": "tianxi/web/img/wall-night.jpg",
+   "sha256": "3215bae1c4b583af6f5987a92f0bbf7094f101c826e5df84603d7749aa755688",
+   "size": 18600
+  },
+  "bundle/web/img/wall-noon.jpg": {
+   "path": "tianxi/web/img/wall-noon.jpg",
+   "sha256": "939f0370fa27cba7fada1f091636e4ee421fbb4c32c3fec7e75076d32aeccec3",
+   "size": 23389
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "dd164e4869ba7a9ddae8e6bb96113ea12655eae2256d5ced0e03320bf9c2aca9",
-   "size": 7357
+   "sha256": "60c2d623a4a3caa0c9947c3d1b3d1268697586ec2f139de9c4e2e05358a2000d",
+   "size": 6790
   },
   "bundle/web/pill.html": {
    "path": "tianxi/web/pill.html",
@@ -436,8 +456,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "013a91f106d1370a659d0c81d3f62bffb3e837f6cd98e1aa3068012bcb2a8fa0",
-   "size": 36356
+   "sha256": "09fc7efbf7ca5ad55e984a24cefa8c03ecc729be789be4c3d1ea7276ee2d41e6",
+   "size": 45649
   }
  }
 }
