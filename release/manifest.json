@@ -1,8 +1,8 @@
 {
- "version": "0.8.0",
- "notes": "语音输入和语音通话：点麦克风说话自动转成文字；输入框空着时点声波按钮和 Bot 语音通话，说完自动识别、回复并朗读，可静音、打断、在通话里确认。识别在本机运行，第一次用要下载约 230 MB 模型",
+ "version": "0.9.0",
+ "notes": "按参考方案改交互：深色/浅色主题和液态切换动画；打开时各区域逐层进场；麦克风展开成计时胶囊（红光录音、绿光完成）；语音通话换成随声音起伏的蓝色粒子球全屏界面。功能不变",
  "minBase": "0.4.0",
- "at": "2026-10-21T02:47:11.572Z",
+ "at": "2026-10-21T02:53:44.510Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -431,8 +431,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "aee4674a353aa3da3979c6025c0325525476930fb2c6a55f0af23e0662c55be8",
-   "size": 121403
+   "sha256": "43a6f72df20008831ae409dd6bcdf4db24cccb4b2acfddb738cb4f518b606818",
+   "size": 121597
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -456,8 +456,18 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "2877b19835d6706fd84548acd18df176f45a2d4e46a53501d62b1605085de2bb",
-   "size": 6963
+   "sha256": "5e3f353cc87d1737bd630325105ce1ba84c752631f8c572026f1e8d2c3ef5ec2",
+   "size": 7894
+  },
+  "bundle/web/light.css": {
+   "path": "tianxi/web/light.css",
+   "sha256": "8a95b0bee8eda0fc2f764672b7f17d1f046c0391f04adbd936e5105970342392",
+   "size": 13820
+  },
+  "bundle/web/motion.css": {
+   "path": "tianxi/web/motion.css",
+   "sha256": "d4c3588a83c7f9b5d552ed3e8506e206b6f38f69c49bb602d80505df0dd5d583",
+   "size": 13241
   },
   "bundle/web/pill.html": {
    "path": "tianxi/web/pill.html",
@@ -466,13 +476,18 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "227b90403d433fc2723a8e6f42ad473d3cfe79cf89b5385addd1ecc2c4835948",
-   "size": 69008
+   "sha256": "75813b447477127688381645be55e22f1ec1dc4ee979867865b40bb9e52fabdf",
+   "size": 66641
+  },
+  "bundle/web/theme.js": {
+   "path": "tianxi/web/theme.js",
+   "sha256": "b9a3dba830baa230e1f9f201697735cf6725a58cb6836c5a68842deeaf30500d",
+   "size": 2519
   },
   "bundle/web/voice.js": {
    "path": "tianxi/web/voice.js",
-   "sha256": "075fd8120e1b488adf5d1119c8d7a82d8f86d9434e3fa61546f46acd50f0fbc9",
-   "size": 16135
+   "sha256": "41000a68b7146b0172ab1d806349e4cc25693c30eb8503d2e101a2b0c7d53149",
+   "size": 18915
   }
  }
 }

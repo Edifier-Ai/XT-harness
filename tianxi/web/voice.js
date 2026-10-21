@@ -93,13 +93,17 @@ function drawRec() {
   let bar = $('#recBar')
   if (!bar) {
     bar = document.createElement('div'); bar.id = 'recBar'; bar.className = 'recbar'
-    bar.innerHTML = `<button class="rcx" data-act="dict-cancel" title="取消">${ico('x', 18)}</button><div class="rw" id="recW"></div><span class="rtm" id="recT">0:00</span><button class="rok" data-act="dict-done" title="完成">✓</button>`
+    bar.innerHTML = `<button class="rcx" data-act="dict-cancel" title="取消（Esc）">${ico('x', 18)}</button><div class="rw" id="recW"></div>
+      <div class="rpill"><span class="rnum"><b id="recM">00</b><small>MIN.</small></span><button class="rcore" data-act="dict-done" title="说完了"><i></i></button><span class="rnum"><b id="recS">00</b><small>SEC.</small></span></div>`
     $('#ring').appendChild(bar)
     rec.levels = []
   }
-  rec.levels.push(Math.min(1, rec.m.level * 9)); if (rec.levels.length > 64) rec.levels.shift()
-  $('#recW').innerHTML = rec.levels.map((l) => `<i style="height:${Math.max(3, Math.round(l * 26))}px"></i>`).join('')
-  const s = Math.floor((Date.now() - rec.t0) / 1000); $('#recT').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  rec.levels.push(Math.min(1, rec.m.level * 9)); if (rec.levels.length > 48) rec.levels.shift()
+  $('#recW').innerHTML = rec.levels.map((l) => `<i style="height:${Math.max(3, Math.round(l * 24))}px;opacity:${(0.35 + l * 0.65).toFixed(2)}"></i>`).join('')
+  const s = Math.floor((Date.now() - rec.t0) / 1000), mm = String(Math.floor(s / 60)).padStart(2, '0'), ss = String(s % 60).padStart(2, '0')
+  const S2 = $('#recS'); if (S2.textContent !== ss) { S2.textContent = ss; replay(S2, 'tick') }
+  $('#recM').textContent = mm
+  bar.style.setProperty('--lv', Math.min(1, rec.m.level * 8).toFixed(2))
   if (s >= 110) dictateStop(true)
 }
 async function dictateStop(keep) {
@@ -107,7 +111,8 @@ async function dictateStop(keep) {
   const r = rec; rec = null; clearInterval(r.timer); r.m.close()
   const bar = $('#recBar')
   if (!keep || Date.now() - r.t0 < 400) { bar?.remove(); $('#ring').classList.remove('rec'); return }
-  if (bar) bar.innerHTML = `<div class="rbusy"><i class="spin"></i>正在识别…</div>`
+  // the core turns green for a beat, then the pill settles into "recognizing"
+  if (bar) { bar.classList.add('done'); await new Promise((r) => setTimeout(r, 420)); bar.classList.add('busy') }
   try {
     const text = await transcribe(r.m.chunks)
     if (!text) toastText('没听清，再说一次？')
@@ -145,7 +150,7 @@ async function callStart() {
   try { await m.open() } catch (e) { return toastText(micError(e)) }
   call = { m, aid: cur, state: 'listening', muted: false, you: '', bot: '', pre: [], seg: null, loud: 0, quiet: 0, floor: 0.006, t0: Date.now() }
   m.onFrame = onCallFrame
-  const ov = document.createElement('div'); ov.id = 'callOv'; ov.className = 'callov'; $('#vChat').appendChild(ov)
+  const ov = document.createElement('div'); ov.id = 'callOv'; ov.className = 'callov'; $('#app').appendChild(ov)
   drawCall(true); call.tick = setInterval(drawCallLive, 80)
 }
 // Voice activity: speech starts after ~250 ms above the noise floor and ends after ~0.9 s of quiet.
@@ -189,29 +194,72 @@ function drawCallLive() {
       speak(c.bot || '好了。', () => { if (call === c && c.state === 'speaking') { c.state = 'listening'; drawCall() } })
     }
   }
-  const orb = $('#callOrb'); if (orb) orb.style.setProperty('--lv', Math.min(1, (c.state === 'listening' && !c.muted ? c.m.level * 10 : c.state === 'speaking' ? 0.35 + Math.random() * 0.25 : 0)).toFixed(2))
   const cap = $('#callBot'); if (cap && cap.dataset.t !== c.bot) { cap.dataset.t = c.bot; cap.textContent = plain(c.bot).slice(-260) }
   const ask = S.approvals.find((a) => a.agent === c.aid), box = $('#callAsk')
   if (box && (box.dataset.id || '') !== (ask?.id || '')) drawCall()
 }
-const CALLSAY = { listening: '在听，你说', hearing: '听到了，正在识别…', thinking: '在想…', speaking: '正在说，点“打断”可以插话' }
+const CALLSAY = { listening: '在听，你说', hearing: '听到了，正在识别…', thinking: '在想…', speaking: '正在说' }
+const MICSVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg>'
+function callStage(ov) {
+  const a = agentOf(call.aid)
+  ov.innerHTML = `<div class="camb"></div><div class="ctop"><span>${esc(a.name)} · 语音通话</span></div>
+    <div class="cmid"><h1 class="chero">和 <b>${esc(a.name)}</b> 说话</h1>
+      <div class="sphere"><canvas id="callCv"></canvas><div class="core">${MICSVG}</div></div>
+      <div class="cdyn" id="cDyn"></div></div>
+    <div class="cbtns" id="cBtns"></div>`
+  sphere($('#callCv'))
+}
 function drawCall(enter) {
   const c = call, ov = $('#callOv'); if (!c || !ov) return
+  if (!ov.firstChild) callStage(ov)
   const a = agentOf(c.aid), ask = S.approvals.find((x) => x.agent === c.aid)
-  ov.className = 'callov s-' + c.state + (c.muted ? ' muted' : '')
-  ov.innerHTML = `<div class="ctop"><span>${esc(a.name)} · 语音通话</span></div>
-    <div class="cmid"><div class="orb" id="callOrb">${avatar(a, 132, false, false)}</div>
-      <div class="cst">${c.muted ? '麦克风已静音' : CALLSAY[c.state]}</div>
+  ov.className = 'callov s-' + c.state + (c.muted ? ' muted' : '') + (enter ? ' fade' : '')
+  $('#cDyn').innerHTML = `<div class="cst">${c.muted ? '麦克风已静音' : CALLSAY[c.state]}</div>
       ${c.you ? `<div class="cyou">“${esc(c.you)}”</div>` : ''}
       <div class="cbot" id="callBot"></div>
-      <div id="callAsk" data-id="${ask?.id || ''}">${ask ? `<div class="cask"><b>${esc(a.name)}要你确认</b><span>${esc(ask.reason || toolLabel(ask.tool))}</span><div><button class="pbtn" data-act="call-ask" data-id="${ask.id}" data-ok="0">不行</button><button class="pbtn blue" data-act="call-ask" data-id="${ask.id}" data-ok="1">可以</button></div></div>` : ''}</div></div>
-    <div class="cbtns">
-      <button class="cb ${c.muted ? 'on' : ''}" data-act="call-mute" title="${c.muted ? '打开麦克风' : '静音'}">${c.muted ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5M4 4l16 16"/></svg>' : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg>'}<small>${c.muted ? '已静音' : '静音'}</small></button>
-      <button class="cb" data-act="call-cut" ${c.state === 'thinking' || c.state === 'speaking' ? '' : 'disabled'} title="打断"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><rect x="7" y="7" width="10" height="10" rx="2"/></svg><small>打断</small></button>
-      <button class="cb end" data-act="call-end" title="挂断"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg><small>挂断</small></button>
-    </div>`
+      <div id="callAsk" data-id="${ask?.id || ''}">${ask ? `<div class="cask"><b>${esc(a.name)}要你确认</b><span>${esc(ask.reason || toolLabel(ask.tool))}</span><div><button class="pbtn" data-act="call-ask" data-id="${ask.id}" data-ok="0">不行</button><button class="pbtn blue" data-act="call-ask" data-id="${ask.id}" data-ok="1">可以</button></div></div>` : ''}</div>`
+  const cut = c.state === 'thinking' || c.state === 'speaking'
+  $('#cBtns').innerHTML = `<button class="gl ${c.muted ? 'on' : ''}" data-act="call-mute" title="${c.muted ? '打开麦克风' : '静音'}">${c.muted ? MICSVG.replace('</svg>', '<path d="M4 4l16 16"/></svg>') : MICSVG}</button>
+      <button class="glow" data-act="call-cut" ${cut ? '' : 'disabled'}>${cut ? '打断，我来说' : c.muted ? '已静音' : '说完会自动发送'}<span class="bars"><i></i><i></i><i></i><i></i></span></button>
+      <button class="gl end" data-act="call-end" title="挂断（Esc）"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`
   const cap = $('#callBot'); cap.dataset.t = c.bot; cap.textContent = plain(c.bot).slice(-260)
-  if (enter) replay(ov, 'fade')
+}
+// A sphere of dots that breathes with whoever is talking: you while it listens, the bot while it speaks.
+const SPH = { listening: [77, 141, 255], hearing: [122, 168, 255], thinking: [150, 120, 255], speaking: [71, 212, 255], muted: [140, 140, 150] }
+function sphere(cv) {
+  const N = 1500, pts = []
+  for (let i = 0; i < N; i++) { const y = 1 - (i / (N - 1)) * 2, r = Math.sqrt(1 - y * y), th = i * 2.399963; pts.push([Math.cos(th) * r, y, Math.sin(th) * r]) }
+  const ctx = cv.getContext('2d'); let lv = 0, col = SPH.listening.slice(), t0 = performance.now()
+  const frame = (now) => {
+    const c = call; if (!c || !cv.isConnected) return
+    const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight
+    if (cv.width !== W * dpr) { cv.width = W * dpr; cv.height = H * dpr }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H)
+    const target = c.muted ? 0 : c.state === 'listening' ? Math.min(1, c.m.level * 9) : c.state === 'speaking' ? 0.3 + 0.25 * Math.abs(Math.sin(now / 130)) * Math.abs(Math.sin(now / 370)) : c.state === 'thinking' ? 0.12 : 0.18
+    lv += (target - lv) * 0.18
+    const want = SPH[c.muted ? 'muted' : c.state] || SPH.listening
+    for (let k = 0; k < 3; k++) col[k] += (want[k] - col[k]) * 0.08
+    const t = (now - t0) / 1000, R = Math.min(W, H) * 0.36, cx = W / 2, cy = H / 2
+    const ry = t * (c.state === 'thinking' ? 0.9 : 0.35), rx = 0.35 + Math.sin(t * 0.3) * 0.15
+    const cy1 = Math.cos(ry), sy1 = Math.sin(ry), cx1 = Math.cos(rx), sx1 = Math.sin(rx)
+    const amp = 0.05 + lv * 0.2
+    for (const [x0, y0, z0] of pts) {
+      // a slow travelling wave over the surface, louder when someone talks
+      const n = Math.sin(x0 * 3.1 + t * 1.7) * Math.sin(y0 * 2.3 - t * 1.3) + Math.cos(z0 * 4.2 + t * 2.1) * 0.6
+      const r = 1 + amp * n
+      let x = x0 * r, y = y0 * r, z = z0 * r
+      const x2 = x * cy1 + z * sy1, z2 = -x * sy1 + z * cy1; x = x2; z = z2
+      const y3 = y * cx1 - z * sx1, z3 = y * sx1 + z * cx1; y = y3; z = z3
+      const p = 2.6 / (2.6 + z), d = (z + 1.3) / 2.6
+      const a = 0.12 + (1 - d) * 0.85
+      ctx.fillStyle = `rgba(${col[0] | 0},${col[1] | 0},${col[2] | 0},${a.toFixed(3)})`
+      const s = (0.6 + (1 - d) * 1.4) * p
+      ctx.fillRect(cx + x * R * p - s / 2, cy + y * R * p - s / 2, s, s)
+    }
+    cv.parentNode.style.setProperty('--lv', lv.toFixed(3))
+    requestAnimationFrame(frame)
+  }
+  requestAnimationFrame(frame)
 }
 function callEnd() {
   const c = call; if (!c) return

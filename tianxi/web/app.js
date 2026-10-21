@@ -990,7 +990,7 @@ function settingsModal() {
   if (t === 'general') {
     const me = s.callMe || S.user || '你'
     h = `<h2>通用</h2><div class="slab">账户</div><div class="scard"><div class="acct"><span class="uav big">${esc(userInitial())}</span><div class="m"><b>${esc(me)}</b><span>${esc(S.user || '')}@${esc(S.device || 'local')}<button class="cp" data-act="copy" data-v="${esc(S.home || '')}" title="复制数据位置">${ico('copy', 15)}</button></span></div><div class="c"><button class="pbtn" data-act="set-tab" data-t="computer">数据位置</button></div></div></div>
-      <div class="slab">外观</div><div class="scard">${row('主题', '', sel('theme', 'dark', [['dark', '深色']]))}${row('强调色', '', sel('accent', 'bot', [['bot', 'Bot 颜色']]))}${row('语言', '', sel('lang', 'zh', [['zh', '简体中文']]))}</div>
+      <div class="slab">外观</div><div class="scard">${row('主题', '', sel('theme', store.get('theme', 'dark'), [['dark', '深色'], ['light', '浅色'], ['system', '跟随系统']]))}${row('强调色', '', sel('accent', 'bot', [['bot', 'Bot 颜色']]))}${row('语言', '', sel('lang', 'zh', [['zh', '简体中文']]))}</div>
       <div class="slab">你</div><div class="scard">${row('怎么称呼你', 'Bot 打招呼和写邮件时用', txt('callMe', s.callMe, '比如：summer'))}</div>
       <div class="slab">Bot</div><div class="scard">${row('时区', '', sel('tz', 'auto', [['auto', `自动检测（${Intl.DateTimeFormat().resolvedOptions().timeZone}）`]]))}${row('每日简报时间', '主 Bot 到点整理当天的简报', txt('briefTime', s.briefTime || '08:00', '08:00', 90))}${row('离开多久算不在', '之后开始做排着的事（分钟）', txt('idleMinutes', s.idleMinutes ?? 10, '10', 70))}${row('夜里时段', '夜里反思和夜里做的事在这段时间', `${txt('nightFrom', s.nightFrom ?? 23, '23', 54)}<span class="to">点到</span>${txt('nightTo', s.nightTo ?? 6, '6', 54)}<span class="to">点</span>`)}${row('留意的文件夹', '出现新文件时记下来，写进简报', txt('watch', (s.watch || []).join('；'), '~/Downloads；~/Desktop', 260))}</div>`
   } else if (t === 'computer') {
@@ -1044,6 +1044,7 @@ async function refresh() {
   }
   if (!firstLoad && S.brief?.at && S.brief.at !== prevBrief) { notify('每日简报', S.brief.summary || '今天的简报准备好了'); if (view !== 'brief') toastText('今天的简报准备好了', ['去看', () => setView('brief')]) }
   if (!firstLoad && S.reflections[0] && S.reflections[0].id !== prevRef && view !== 'reflect') toastText(`${agentOf(S.mainId).name}反思完了`, ['去看', () => setView('reflect')])
+  if (firstLoad && !REDUCED) { $('#app').classList.add('boot'); setTimeout(() => $('#app').classList.remove('boot'), 1500) }
   firstLoad = false
   renderAll(true)
 }

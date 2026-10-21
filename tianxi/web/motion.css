@@ -1,0 +1,125 @@
+/* 0.9 — 参考方案: liquid theme switch, layered entrances, glass voice controls. Loaded after light.css. */
+
+/* ---------- theme switch ---------- */
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+::view-transition-new(root){-webkit-mask-image:var(--blob);mask-image:var(--blob);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;mask-size:0 0}
+#bTheme .sun{display:none}
+:root[data-theme=light] #bTheme .sun{display:block}
+:root[data-theme=light] #bTheme .moon{display:none}
+#bTheme svg{animation:spinIn .5s var(--ease-out) both}
+@keyframes spinIn{from{transform:rotate(-90deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
+
+/* ---------- light theme, by hand: soft lavender light like the reference ---------- */
+:root[data-theme=light] body{background:linear-gradient(135deg,#f3f0fb 0%,#eef1fb 45%,#f6eef7 100%)}
+:root[data-theme=light] .app{background:transparent}
+:root[data-theme=light] .rail{background:rgba(255,255,255,.55);border-right-color:rgba(120,110,170,.12);backdrop-filter:blur(18px)}
+:root[data-theme=light] .proc{background:rgba(255,255,255,.55);border-left-color:rgba(120,110,170,.12)!important}
+:root[data-theme=light] .view{background:transparent}
+:root[data-theme=light] .feed,:root[data-theme=light] .chead,:root[data-theme=light] .composer{background:transparent}
+:root[data-theme=light] .inbox{background:#fff;border-color:rgba(120,110,170,.16);box-shadow:0 10px 30px -12px rgba(70,60,140,.18)}
+:root[data-theme=light] .bub{background:#fff;box-shadow:0 1px 2px rgba(60,50,120,.06)}
+:root[data-theme=light] .mrow.me .bub{background:#1f1d2b;color:#fff}
+:root[data-theme=light] .rcard,:root[data-theme=light] .scard,:root[data-theme=light] .qcard{box-shadow:0 8px 24px -14px rgba(70,60,140,.22)}
+:root[data-theme=light] .ag.on,:root[data-theme=light] .ag:hover{background:rgba(255,255,255,.9)}
+:root[data-theme=light] .modal{background:rgba(70,60,120,.18);backdrop-filter:blur(6px)}
+:root[data-theme=light] .mbox{border-color:rgba(120,110,170,.14);box-shadow:0 30px 80px -20px rgba(60,50,120,.35)}
+:root[data-theme=light] .av svg{filter:drop-shadow(0 2px 4px rgba(60,50,120,.18))}
+:root[data-theme=light] ::-webkit-scrollbar-thumb{background:#d9d7e6}
+
+/* ---------- layered entrance: rail, header, feed, composer and panel arrive one after another ---------- */
+.boot .rtop,.boot .grp,.boot .ag,.boot .rfoot,.boot .chead,.boot .composer,.boot .proc .pb > *,.boot #msgs > *{animation:enter .7s var(--ease-out) both}
+.boot .rtop{animation-delay:40ms}
+.boot .grp,.boot .ag{animation-name:enterL}
+.boot .agents > :nth-child(1){animation-delay:90ms}.boot .agents > :nth-child(2){animation-delay:130ms}.boot .agents > :nth-child(3){animation-delay:170ms}
+.boot .agents > :nth-child(4){animation-delay:210ms}.boot .agents > :nth-child(5){animation-delay:250ms}.boot .agents > :nth-child(6){animation-delay:290ms}
+.boot .agents > :nth-child(7){animation-delay:330ms}.boot .agents > :nth-child(8){animation-delay:370ms}.boot .agents > :nth-child(9){animation-delay:410ms}
+.boot .agents > :nth-child(n+10){animation-delay:450ms}
+.boot .rfoot{animation-delay:380ms}
+.boot .chead{animation-name:enterD;animation-delay:160ms}
+.boot #msgs > *{animation-delay:280ms}
+.boot .composer{animation-delay:420ms}
+.boot .proc .pb > :nth-child(1){animation-delay:260ms}.boot .proc .pb > :nth-child(2){animation-delay:330ms}.boot .proc .pb > :nth-child(3){animation-delay:400ms}
+.boot .proc .pb > :nth-child(4){animation-delay:470ms}.boot .proc .pb > :nth-child(n+5){animation-delay:540ms}
+@keyframes enter{from{opacity:0;transform:translateY(14px) scale(.985);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+@keyframes enterL{from{opacity:0;transform:translateX(-14px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+@keyframes enterD{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+/* pages and modals reuse the same feel */
+.vpage > * , .vpage .card{animation:enter .55s var(--ease-out) both}
+.mbox.pop .asec,.mbox.pop .scard,.mbox.pop .slab{animation:enter .5s var(--ease-out) both}
+.mbox.pop .asec:nth-of-type(2),.mbox.pop .scard:nth-of-type(2){animation-delay:60ms}
+.mbox.pop .asec:nth-of-type(3),.mbox.pop .scard:nth-of-type(3){animation-delay:120ms}
+.mbox.pop .asec:nth-of-type(4),.mbox.pop .scard:nth-of-type(4){animation-delay:180ms}
+.mbox.pop .arow{animation:enter .5s var(--ease-out) both;animation-delay:calc(var(--i,0) * 28ms + 80ms)}
+/* hover lift on cards, like the reference's tiles */
+.rcard,.arow,.qopt{transition:transform .25s var(--ease-out),box-shadow .25s var(--ease-out),background .2s}
+.rcard:hover{transform:translateY(-2px)}
+@media (prefers-reduced-motion: reduce){.boot *{animation:none!important}}
+:root[data-theme=light] .tg::after{background:#fff;box-shadow:0 1px 3px rgba(40,30,90,.25)}
+:root[data-theme=light] .tg:not(.on){background:#dcdbe6}
+
+/* ---------- 语音输入: a glass mic that opens into a timer pill with a glowing core ---------- */
+.inbox .mic{border-radius:50%;background:radial-gradient(circle at 50% 30%,rgba(255,255,255,.14),rgba(255,255,255,.03) 60%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 4px 12px -4px rgba(0,0,0,.5);transition:transform .2s var(--ease-out),box-shadow .2s}
+.inbox .mic:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -6px rgba(0,0,0,.6)}
+.inbox .mic:active{transform:scale(.94)}
+.recbar{padding-right:4px}
+.rpill{--lv:0;flex:none;display:flex;align-items:center;gap:10px;height:46px;padding:0 6px 0 14px;border-radius:23px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 24px -10px rgba(0,0,0,.7);transform-origin:right center;animation:pillOpen .45s var(--ease-out) both}
+@keyframes pillOpen{from{clip-path:inset(0 0 0 calc(100% - 46px) round 23px);opacity:.6}to{clip-path:inset(0 0 0 0 round 23px);opacity:1}}
+.rnum{display:flex;flex-direction:column;align-items:center;line-height:1;min-width:30px}
+.rnum b{font-weight:300;font-size:21px;letter-spacing:.5px;font-variant-numeric:tabular-nums;color:#f2f2f2}
+.rnum small{font-size:8.5px;letter-spacing:.8px;color:var(--tx2);margin-top:3px}
+.rnum b.tick{animation:tick .35s var(--ease-out)}
+@keyframes tick{from{transform:translateY(-6px);opacity:0}to{transform:none;opacity:1}}
+.rcore{position:relative;width:42px;height:42px;border-radius:50%;border:0;padding:0;background:radial-gradient(circle at 50% 50%,#ff5048 0,#e3241d 45%,#a3120d 100%);box-shadow:0 0 calc(14px + var(--lv) * 26px) rgba(255,50,40,calc(.45 + var(--lv) * .4)),inset 0 2px 4px rgba(255,255,255,.25);transition:box-shadow .1s linear,background .3s}
+.rcore i{position:absolute;inset:14px;border-radius:50%;background:radial-gradient(circle,#fff 0,#ffd1cc 30%,#ff4a40 70%);box-shadow:0 0 10px #ff6a60;animation:pulseDot 1.2s ease-in-out infinite}
+@keyframes pulseDot{50%{transform:scale(.8);opacity:.85}}
+.rcore:hover{transform:scale(1.04)}
+.recbar.done .rcore{background:radial-gradient(circle,#8cf06a 0,#3fbf2a 50%,#1f7a12 100%);box-shadow:0 0 30px rgba(90,230,60,.75),inset 0 2px 4px rgba(255,255,255,.3)}
+.recbar.done .rcore i{background:radial-gradient(circle,#fff 0,#d8ffcc 35%,#62e24a 75%);box-shadow:0 0 10px #8cff70;animation:none}
+.recbar.done .rw i{background:#5fd94a}
+.recbar.busy .rw,.recbar.busy .rnum{opacity:.35;transition:opacity .3s}
+.recbar.busy .rcore i{inset:12px;background:none;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;box-shadow:none;animation:spin .8s linear infinite}
+:root[data-theme=light] .rpill{background:linear-gradient(180deg,#fff,#f4f3fa);box-shadow:inset 0 1px 0 #fff,0 10px 24px -12px rgba(60,50,120,.35)}
+:root[data-theme=light] .rnum b{color:#1d1d24}
+:root[data-theme=light] .inbox .mic{background:radial-gradient(circle at 50% 30%,#fff,#efeef6 70%);box-shadow:inset 0 1px 0 #fff,0 4px 10px -4px rgba(60,50,120,.3)}
+
+/* ---------- 语音通话: a breathing sphere of dots in a blue glow ---------- */
+.callov{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;overflow:hidden;background:#05060d;color:#eef1ff}
+.callov.fade{animation:callIn .6s var(--ease-out) both}
+@keyframes callIn{from{opacity:0;transform:scale(1.03)}to{opacity:1;transform:none}}
+.callov.out{opacity:0;transform:scale(.98);transition:opacity .22s,transform .22s}
+.camb{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 55% at 50% 108%,rgba(110,190,255,.95) 0%,rgba(40,90,255,.75) 22%,rgba(20,40,200,.35) 45%,rgba(5,6,13,0) 70%);transition:filter .6s}
+.s-thinking .camb{filter:hue-rotate(28deg)}
+.s-speaking .camb{filter:hue-rotate(-14deg) brightness(1.12)}
+.muted .camb{filter:grayscale(1) brightness(.6)}
+.callov .ctop{position:relative;height:64px;display:flex;align-items:center;color:rgba(230,235,255,.6);font-size:14px;-webkit-app-region:drag}
+.callov .cmid{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0 32px;width:100%;max-width:760px}
+.chero{margin:0 0 4px;font-size:40px;font-weight:500;letter-spacing:-.5px;text-align:center;background:linear-gradient(90deg,rgba(255,255,255,.45),#fff 35%,#fff 65%,rgba(255,255,255,.45));-webkit-background-clip:text;background-clip:text;color:transparent;animation:enter .8s var(--ease-out) .1s both}
+.chero b{font-weight:600}
+.sphere{--lv:0;position:relative;width:min(42vh,340px);aspect-ratio:1;animation:enter .9s var(--ease-out) .2s both}
+.sphere canvas{width:100%;height:100%;display:block;filter:drop-shadow(0 0 18px rgba(80,140,255,.45))}
+.sphere .core{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:radial-gradient(circle at 50% 35%,#1c2550,#0a0d22 70%);box-shadow:0 0 0 1px rgba(140,170,255,.25),0 0 calc(18px + var(--lv) * 40px) rgba(80,140,255,.55);transform:scale(calc(1 + var(--lv) * .12))}
+.cdyn{display:flex;flex-direction:column;align-items:center;gap:10px;min-height:120px}
+.callov .cst{color:rgba(225,232,255,.7);font-size:15px}
+.callov .cyou{color:rgba(225,232,255,.55);font-size:15px;text-align:center;max-width:560px}
+.callov .cbot{font-size:19px;line-height:1.6;text-align:center;max-width:640px;max-height:24vh;overflow:hidden;white-space:pre-wrap;color:#fff}
+.callov .cask{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 20px;border-radius:16px;background:rgba(10,14,40,.7);border:1px solid rgba(140,170,255,.2);backdrop-filter:blur(10px);max-width:520px;text-align:center}
+.callov .cask span{color:rgba(225,232,255,.7);font-size:14.5px}.callov .cask div{display:flex;gap:10px;margin-top:4px}
+.callov .cbtns{position:relative;display:flex;align-items:center;gap:22px;padding:18px 0 40px}
+.gl{width:56px;height:56px;border-radius:50%;border:0;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.04));box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 10px 24px -10px rgba(0,0,0,.8);backdrop-filter:blur(10px);transition:transform .2s var(--ease-out),background .2s}
+.gl:hover{transform:translateY(-2px)}.gl:active{transform:scale(.94)}
+.gl.on{background:#f2f4ff;color:#111}
+.gl.end{background:linear-gradient(180deg,#ff5a52,#d9302a);box-shadow:0 0 24px rgba(255,70,60,.45),inset 0 1px 0 rgba(255,255,255,.3)}
+.glow{display:flex;align-items:center;gap:10px;height:46px;padding:0 22px;border-radius:23px;border:0;color:#fff;font-size:15px;background:linear-gradient(180deg,#3f7bff,#1f4fe0);box-shadow:0 0 0 1px rgba(150,190,255,.35),0 0 32px rgba(60,120,255,.65),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .2s var(--ease-out),opacity .2s}
+.glow:hover:not(:disabled){transform:translateY(-2px)}
+.glow:disabled{opacity:.75;cursor:default;background:linear-gradient(180deg,rgba(63,123,255,.55),rgba(31,79,224,.45));box-shadow:0 0 0 1px rgba(150,190,255,.25),0 0 18px rgba(60,120,255,.35)}
+.glow .bars{display:flex;gap:2px;align-items:center;height:14px}
+.glow .bars i{width:2.5px;height:100%;border-radius:2px;background:rgba(255,255,255,.85);animation:eq 1s ease-in-out infinite}
+.glow .bars i:nth-child(2){animation-delay:.15s}.glow .bars i:nth-child(3){animation-delay:.3s}.glow .bars i:nth-child(4){animation-delay:.45s}
+@keyframes eq{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+.s-listening .glow .bars i,.muted .glow .bars i{animation-play-state:paused}
+:root[data-theme=light] .callov{background:#eef1fb;color:#141833}
+:root[data-theme=light] .camb{background:radial-gradient(120% 55% at 50% 108%,rgba(120,190,255,.9) 0%,rgba(80,120,255,.55) 25%,rgba(150,170,255,.25) 48%,rgba(238,241,251,0) 72%)}
+:root[data-theme=light] .chero{background:linear-gradient(90deg,rgba(20,24,51,.4),#141833 35%,#141833 65%,rgba(20,24,51,.4));-webkit-background-clip:text;background-clip:text}
+:root[data-theme=light] .callov .cst,:root[data-theme=light] .callov .cyou,:root[data-theme=light] .callov .ctop{color:rgba(20,24,51,.55)}
+:root[data-theme=light] .callov .cbot{color:#141833}
+:root[data-theme=light] .gl:not(.end):not(.on){color:#141833;background:linear-gradient(180deg,#fff,#eceef8)}
