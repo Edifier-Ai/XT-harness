@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>桌面小天</title>
 <style>
-/* 桌面小天: a red ball with 小天's two dash eyes. It sits anywhere on the desktop, watches the mouse,
+/* 桌面小天: a blue-violet ball with 小天's two dash eyes. It sits anywhere on the desktop, watches the mouse,
    and its face shows what 小天 is doing. The window is transparent; only the ball and its bubble catch the mouse. */
 html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;user-select:none}
 :root{--ball:72px}
@@ -83,13 +83,10 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-famil
   <div id="ball">
     <svg viewBox="0 0 100 100" aria-hidden="true">
       <defs>
-        <radialGradient id="g" cx="36%" cy="30%" r="75%">
-          <stop offset="0" stop-color="#ff7a6e"/><stop offset=".45" stop-color="#ec3f3a"/><stop offset="1" stop-color="#b8232a"/>
-        </radialGradient>
+        <radialGradient id="ob" cx="50%" cy="95%" r="95%"><animate attributeName="cy" values="95%;86%;95%" dur="7s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" keyTimes="0;.5;1"/><stop offset="0" stop-color="#f4f1ff"/><stop offset=".25" stop-color="#b3a6ff"/><stop offset=".55" stop-color="#6a4cf0"/><stop offset=".8" stop-color="#3a2bb0"/><stop offset="1" stop-color="#241a7a"/></radialGradient><radialGradient id="ol" cx="12%" cy="72%" r="55%"><animate attributeName="cx" values="12%;30%;12%" dur="9s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" keyTimes="0;.5;1"/><stop offset="0" stop-color="#2a63ff" stop-opacity=".85"/><stop offset="1" stop-color="#2a63ff" stop-opacity="0"/></radialGradient><radialGradient id="or" cx="90%" cy="66%" r="55%"><animate attributeName="cx" values="90%;70%;90%" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" keyTimes="0;.5;1"/><stop offset="0" stop-color="#8a3cff" stop-opacity=".8"/><stop offset="1" stop-color="#8a3cff" stop-opacity="0"/></radialGradient>
       </defs>
       <g class="lean" id="lean">
-        <circle cx="50" cy="50" r="46" fill="url(#g)"/>
-        <ellipse cx="34" cy="24" rx="13" ry="7" fill="#fff" opacity=".22" transform="rotate(-28 34 24)"/>
+        <circle cx="50" cy="50" r="46" fill="url(#ob)"/><circle cx="50" cy="50" r="46" fill="url(#ol)"/><circle cx="50" cy="50" r="46" fill="url(#or)"/><ellipse cx="34" cy="22" rx="13" ry="6" fill="#fff" opacity=".18" transform="rotate(-28 34 22)"/>
         <g class="eyes" id="eyes">
           <g class="eye l" transform="translate(40 47)">
             <rect class="open" x="-4.4" y="-9" width="8.8" height="18" rx="4.4" transform="rotate(-16)" fill="#fff"/>

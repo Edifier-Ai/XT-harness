@@ -15,7 +15,7 @@ svg{display:block;flex:none}
 .app{display:flex;height:100%}
 
 /* ---------- avatars: a character drawn from one simple shape, with eyes; its motion is its state ---------- */
-.orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffb46b 0,#e2502e 30%,#5a2fd0 62%,#141432 85%);display:block;flex:none}
+.orb{width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 14% 72%,rgba(42,99,255,.85),transparent 55%),radial-gradient(circle at 90% 66%,rgba(138,60,255,.8),transparent 55%),radial-gradient(circle at 50% 95%,#f4f1ff 0,#b3a6ff 24%,#6a4cf0 52%,#3a2bb0 78%,#241a7a 98%);display:block;flex:none}
 .av{flex:none;position:relative;display:block}
 .av svg{overflow:visible}
 .av .bd,.av .eyes,.av .pu{transform-box:fill-box;transform-origin:center}

@@ -103,8 +103,12 @@ const SHAPES = Object.keys(SHAPE)
 const OLDSHAPE = { blob: 'bean', egg: 'drop', shield: 'heart', lump: 'cloud', hex: 'hexagon', tri: 'triangle', rect: 'square' }
 const hashNum = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h) }
 const shapeOf = (a) => { const s = OLDSHAPE[a.shape] || a.shape; return SHAPES.includes(s) ? s : a.main ? 'circle' : SHAPES[1 + hashNum(a.id) % (SHAPES.length - 1)] }
-const COLORS = ['#ffffff', '#9a6b43', '#e5484d', '#ea6f30', '#e89b3a', '#57c16f', '#53b8a5', '#3f7fe6', '#8b5cf6', '#e8479a', '#7a7a7a']
-const colorOf = (a) => a.main && (!a.color || a.color === '#e2502e') ? '#f2f2f2' : (a.color || COLORS[1 + hashNum(a.id) % 9])
+// 'tx' is 小天's own blue-violet gradient, the same light as the start-up page; the shared SVG gradients txb/txl/txr live in index.html.
+const COLORS = ['tx', '#ffffff', '#9a6b43', '#e5484d', '#ea6f30', '#e89b3a', '#57c16f', '#53b8a5', '#3f7fe6', '#8b5cf6', '#e8479a', '#7a7a7a']
+const TX_CSS = 'radial-gradient(circle at 14% 72%,rgba(42,99,255,.85),transparent 55%),radial-gradient(circle at 90% 66%,rgba(138,60,255,.8),transparent 55%),radial-gradient(circle at 50% 95%,#f4f1ff 0,#b3a6ff 24%,#6a4cf0 52%,#3a2bb0 78%,#241a7a 98%)'
+const TX_BUBBLE = 'linear-gradient(135deg,#3d5cff 0%,#5b47e6 50%,#8540f5 100%)'
+const swatch = (c) => c === 'tx' ? TX_CSS : c
+const colorOf = (a) => a.main && (!a.color || a.color === '#e2502e') ? 'tx' : (a.color || COLORS[2 + hashNum(a.id) % 9])
 // idle · think (busy, nothing done yet) · work (using tools) · wait (needs you) · done (just finished)
 function stateOf(aid) {
   if (S.approvals.some((x) => x.agent === aid)) return 'wait'
@@ -121,9 +125,14 @@ function avatar(a, size = 36, still = false, badge = true, track = false) {
   if (a.image && /^data:image\/(png|jpeg|webp);base64,/.test(a.image)) return `<span class="av img s-${st}" style="width:${size}px;height:${size}px"><img src="${a.image}" alt="">${b}</span>`
   const own = safePath(a.body) && Array.isArray(a.eyes) && a.eyes.length === 4
   const [body, [x1, y1, x2, y2], w] = own ? [`<path d="${a.body}"/>`, a.eyes.map(Number), 0] : SHAPE[sh]
-  const eye = (x, y) => `<rect x="${x - 4.2}" y="${y - 8.5}" width="8.4" height="17" rx="4.2" transform="rotate(-16 ${x} ${y})" fill="#141414"/>`
-  const c = colorOf(a)
-  return `<span class="av s-${st}${track ? ' track' : ''}" style="width:${size}px;height:${size}px" data-sh="${own ? 'own' : sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><g class="bd" fill="${c}"${w ? ` stroke="${c}" stroke-width="${w}" stroke-linejoin="round"` : ''}>${body}</g><g class="pu"><g class="eyes">${eye(x1, y1)}${eye(x2, y2)}</g></g></svg>${b}</span>`
+  const c = colorOf(a), tx = c === 'tx'
+  const eye = (x, y) => `<rect x="${x - 4.2}" y="${y - 8.5}" width="8.4" height="17" rx="4.2" transform="rotate(-16 ${x} ${y})" fill="${tx ? '#fff' : '#141414'}"/>`
+  // 小天's gradient is three layers of light over the same shape; a plain colour is one fill
+  const layer = (f) => `<g class="bd" fill="${f}"${w ? ` stroke="${f}" stroke-width="${w}" stroke-linejoin="round"` : ''}>${body}</g>`
+  const fill = tx ? layer('url(#txb)') + layer('url(#txl)') + layer('url(#txr)') : layer(c)
+  // on 小天's round body the eyes sit where the desktop ball has them
+  const [e1, f1, e2, f2] = tx && sh === 'circle' && !own ? [40, 47, 61, 45] : [x1, y1, x2, y2]
+  return `<span class="av s-${st}${track ? ' track' : ''}${tx ? ' txball' : ''}" style="width:${size}px;height:${size}px" data-sh="${own ? 'own' : sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}">${fill}<g class="pu"><g class="eyes">${eye(e1, f1)}${eye(e2, f2)}</g></g></svg>${b}</span>`
 }
 // Eyes that follow the pointer: each tracking avatar's eyes move toward it (up to 12% of the face) and its body leans that way.
 let lookRaf = 0, lookAt = null
@@ -312,10 +321,10 @@ function mailHead(t) {
 // Your own messages take the bot's colour (its accent), or black, as chosen in 设置 → 通用.
 function meBubble(el, a) {
   const black = store.get('meBubble', 'bot') === 'black'
-  const c = black ? '#0a0a0b' : colorOf(a)
+  const c0 = black ? '#0a0a0b' : colorOf(a), c = c0 === 'tx' ? '#4f4ae8' : c0
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16) / 255)
   const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
-  el.style.setProperty('--me-bg', c)
+  el.style.setProperty('--me-bg', c0 === 'tx' ? TX_BUBBLE : c)
   el.style.setProperty('--me-tx', lum > 0.62 ? '#141414' : '#ffffff')
   el.style.setProperty('--me-bd', black ? 'rgba(255,255,255,.12)' : 'transparent')
 }
@@ -483,7 +492,7 @@ function renderAve(a) {
   if (aveTab === 'bot') {
     const plain = !a.image && !a.body, sh = shapeOf(a), col = colorOf(a)
     body = `<div class="ave-shapes">${SHAPES.map((x) => `<button data-act="ave-shape" data-v="${x}" class="${plain && x === sh ? 'on' : ''}" title="换成这个形状">${avatar({ ...a, image: '', body: '', shape: x }, 42, true, false)}</button>`).join('')}</div>
-      <div class="ave-colors">${COLORS.map((c) => `<button data-act="ave-color" data-v="${c}" class="${c === col ? 'on' : ''}"><i style="background:${c}"></i></button>`).join('')}</div>`
+      <div class="ave-colors">${COLORS.map((c) => `<button data-act="ave-color" data-v="${c}" class="${c === col ? 'on' : ''}"><i style="background:${swatch(c)}"></i></button>`).join('')}</div>`
   } else if (aveTab === 'gen') {
     body = `<textarea class="ave-q" id="aveQ" placeholder="描述你的头像...">${esc(aveQ)}</textarea>
       <button class="ave-go" data-act="ave-gen" ${aveBusy || !aveQ.trim() ? 'disabled' : ''}>${aveBusy ? '正在生成…' : '生成'}</button>${aveMsg ? `<div class="ave-msg">${esc(aveMsg)}</div>` : ''}`
@@ -766,8 +775,7 @@ function memoryMap() {
     const t = m.text.length > 9 ? m.text.slice(0, 9) + '…' : m.text
     nodes += `<g class="mnode ${memSel === m.id ? 'sel' : ''} ${hl.has(m.id) ? 'hl' : ''}" data-act="mem-pick" data-id="${m.id}"><title>${esc(m.text)}</title>${fresh ? `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r + 5}" fill="${KCOL[k]}" fill-opacity=".15"/>` : ''}<circle class="c" cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r.toFixed(1)}" fill="${KCOL[k]}" fill-opacity="${linked.has(m.id) ? 1 : .8}"/>${labels ? `<text x="${(p[0] + r + 4).toFixed(1)}" y="${(p[1] + 4).toFixed(1)}" font-size="14" fill="#c4c4ca">${esc(t)}</text>` : ''}</g>`
   }
-  const me = `<defs><radialGradient id="og" cx="35%" cy="30%"><stop offset="0" stop-color="#ffb46b"/><stop offset=".3" stop-color="#e2502e"/><stop offset=".62" stop-color="#5a2fd0"/><stop offset=".85" stop-color="#141432"/></radialGradient></defs>
-    <circle cx="${cx}" cy="${cy}" r="46" fill="#fff" fill-opacity=".03"/><circle cx="${cx}" cy="${cy}" r="26" fill="url(#og)"/><text x="${cx}" y="${cy + 46}" text-anchor="middle" font-size="15" fill="#e6e6ea">${esc(S.settings?.callMe || '你')}</text>`
+  const me = `    <circle cx="${cx}" cy="${cy}" r="46" fill="#fff" fill-opacity=".03"/><g transform="translate(${cx - 26} ${cy - 26}) scale(.52)"><circle cx="50" cy="50" r="50" fill="url(#txb)"/><circle cx="50" cy="50" r="50" fill="url(#txl)"/><circle cx="50" cy="50" r="50" fill="url(#txr)"/></g><text x="${cx}" y="${cy + 46}" text-anchor="middle" font-size="15" fill="#e6e6ea">${esc(S.settings?.callMe || '你')}</text>`
   if (!ms.length) return `<svg viewBox="0 0 ${W} ${H}">${me}<text x="${cx}" y="${cy + 80}" text-anchor="middle" font-size="13" fill="#6e6e74">还没有记忆。聊得越多，这里越亮。</text></svg>`
   return `<svg viewBox="0 0 ${W} ${H}">${g}${edges}${me}${nodes}</svg>`
 }
@@ -871,7 +879,7 @@ function pageAgent() {
     <div class="setrow top"><label>描述</label><div class="ctl"><textarea class="inp" id="agIntro" placeholder="它负责什么、怎么做事、说话有什么讲究，越具体越好">${esc(v.intro || '')}</textarea></div></div>
     <div class="setrow"><label>邮箱</label><div class="ctl"><input class="inp" id="agMail" value="${esc(v.emailName || '')}" placeholder="英文名" style="max-width:160px"><span class="hint" style="margin:0">@agent.local</span></div></div>
     <div class="setrow"><label>样子</label><div class="ctl shapes" id="agShape" data-val="${esc(shapeOf({ ...v, id: v.id || 'new' }))}">${SHAPES.map((sh) => `<button type="button" class="${sh === shapeOf({ ...v, id: v.id || 'new' }) ? 'on' : ''}" data-v="${sh}">${avatar({ ...v, id: v.id || 'new', shape: sh }, 34)}</button>`).join('')}</div></div>
-    ${`<div class="setrow"><label>颜色</label><div class="ctl colors" id="agColor" data-val="${esc(colorOf({ ...v, id: v.id || 'new' }))}">${COLORS.map((c) => `<button type="button" class="${c === colorOf({ ...v, id: v.id || 'new' }) ? 'on' : ''}" data-v="${c}" style="background:${c}"></button>`).join('')}</div></div>`}
+    ${`<div class="setrow"><label>颜色</label><div class="ctl colors" id="agColor" data-val="${esc(colorOf({ ...v, id: v.id || 'new' }))}">${COLORS.map((c) => `<button type="button" class="${c === colorOf({ ...v, id: v.id || 'new' }) ? 'on' : ''}" data-v="${c}" style="background:${swatch(c)}"></button>`).join('')}</div></div>`}
     <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button class="btn pri" data-act="agent-save" data-id="${isNew ? '' : a.id}">${isNew ? '创建' : '保存'}</button>${!isNew && !a.main ? `<button class="btn warn" data-act="agent-del" data-id="${a.id}" style="margin-left:auto">删除这个 Bot</button>` : ''}<span class="hint" id="agMsg" style="margin:0"></span></div>
     </div><div class="hint">改动从下一句话开始生效。所有 Bot 共用“我的记忆”和“操作记录”；每个 Bot 有自己的人设、对话、邮箱和日常任务，互相之间可以发邮件分工协作。</div></div>`
   if (isNew) return h + '</div>'

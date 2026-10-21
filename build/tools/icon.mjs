@@ -1,11 +1,22 @@
-import sharp from '/tmp/claude-0/-home-claude/1a7f2990-e239-52a7-b5bd-64bf7feee52f/scratchpad/dsh/rt/node_modules/sharp/dist/index.mjs'
-import fs from 'node:fs'
-const svg = (s) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 100 100"><defs><radialGradient id="g" cx="35%" cy="30%" r="70%"><stop offset="0" stop-color="#ffb46b"/><stop offset=".3" stop-color="#e2502e"/><stop offset=".62" stop-color="#5a2fd0"/><stop offset=".88" stop-color="#141432"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#g)"/></svg>`)
-const sizes = [16, 24, 32, 48, 64, 128, 256]
-const pngs = await Promise.all(sizes.map((s) => sharp(svg(s)).png().toBuffer()))
-fs.writeFileSync('../icon.png', await sharp(svg(256)).png().toBuffer())
-const head = Buffer.alloc(6 + 16 * sizes.length); head.writeUInt16LE(0, 0); head.writeUInt16LE(1, 2); head.writeUInt16LE(sizes.length, 4)
-let off = head.length
-sizes.forEach((s, i) => { const o = 6 + 16 * i; head.writeUInt8(s >= 256 ? 0 : s, o); head.writeUInt8(s >= 256 ? 0 : s, o + 1); head.writeUInt16LE(1, o + 4); head.writeUInt16LE(32, o + 6); head.writeUInt32LE(pngs[i].length, o + 8); head.writeUInt32LE(off, o + 12); off += pngs[i].length })
-fs.writeFileSync('../icon.ico', Buffer.concat([head, ...pngs]))
-console.log('icon ok')
+// node build/tools/icon.mjs <outdir>: renders 小天's icon (blue-violet ball, white eyes) at every .ico size with the bundled Chromium; pack with Pillow (see git log 0.15.2).
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs'
+const D = process.argv[2]
+// small sizes: bigger eyes, no highlight, ball fills the square
+const D2 = `<radialGradient id="ib" cx="50%" cy="95%" r="95%"><stop offset="0" stop-color="#f4f1ff"/><stop offset=".25" stop-color="#b3a6ff"/><stop offset=".55" stop-color="#6a4cf0"/><stop offset=".8" stop-color="#3a2bb0"/><stop offset="1" stop-color="#241a7a"/></radialGradient><radialGradient id="il" cx="12%" cy="72%" r="55%"><stop offset="0" stop-color="#2a63ff" stop-opacity=".85"/><stop offset="1" stop-color="#2a63ff" stop-opacity="0"/></radialGradient><radialGradient id="ir" cx="90%" cy="66%" r="55%"><stop offset="0" stop-color="#8a3cff" stop-opacity=".8"/><stop offset="1" stop-color="#8a3cff" stop-opacity="0"/></radialGradient>`
+const svg = (n) => {
+  const small = n <= 32
+  const r = small ? 49 : 46, ew = small ? 11 : 8.8, eh = small ? 21 : 18
+  const c = (f) => `<circle cx="50" cy="50" r="${r}" fill="url(#${f})"/>`
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${n}" height="${n}"><defs>${D2}</defs>
+${c('ib')}${c('il')}${c('ir')}
+${small ? '' : '<ellipse cx="34" cy="22" rx="13" ry="6" fill="#fff" opacity=".18" transform="rotate(-28 34 22)"/>'}
+<rect x="${40 - ew / 2}" y="${47 - eh / 2}" width="${ew}" height="${eh}" rx="${ew / 2}" transform="rotate(-16 40 47)" fill="#fff"/>
+<rect x="${61 - ew / 2}" y="${45 - eh / 2}" width="${ew}" height="${eh}" rx="${ew / 2}" transform="rotate(-16 61 45)" fill="#fff"/></svg>`
+}
+const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
+for (const n of [16, 20, 24, 32, 40, 48, 64, 128, 256]) {
+  const p = await b.newPage({ viewport: { width: n, height: n } })
+  await p.setContent(`<html><body style="margin:0;background:transparent">${svg(n)}</body></html>`)
+  await p.screenshot({ path: `${D}/${n}.png`, omitBackground: true }); await p.close()
+}
+await b.close()

@@ -51,9 +51,8 @@ html,body{margin:0;height:100%;background:#000;color:#ececec;font-family:"Micros
 <div class="c">
   <div class="ball">
     <svg viewBox="0 0 100 100" aria-hidden="true">
-      <defs><radialGradient id="r" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#ff7a6e"/><stop offset=".45" stop-color="#ec3f3a"/><stop offset="1" stop-color="#b8232a"/></radialGradient></defs>
-      <circle cx="50" cy="50" r="46" fill="url(#r)"/>
-      <ellipse cx="34" cy="24" rx="13" ry="7" fill="#fff" opacity=".22" transform="rotate(-28 34 24)"/>
+      <defs><radialGradient id="kb" cx="50%" cy="95%" r="95%"><animate attributeName="cy" values="95%;86%;95%" dur="7s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" keyTimes="0;.5;1"/><stop offset="0" stop-color="#f4f1ff"/><stop offset=".25" stop-color="#b3a6ff"/><stop offset=".55" stop-color="#6a4cf0"/><stop offset=".8" stop-color="#3a2bb0"/><stop offset="1" stop-color="#241a7a"/></radialGradient><radialGradient id="kl" cx="12%" cy="72%" r="55%"><animate attributeName="cx" values="12%;30%;12%" dur="9s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" keyTimes="0;.5;1"/><stop offset="0" stop-color="#2a63ff" stop-opacity=".85"/><stop offset="1" stop-color="#2a63ff" stop-opacity="0"/></radialGradient><radialGradient id="kr" cx="90%" cy="66%" r="55%"><animate attributeName="cx" values="90%;70%;90%" dur="11s" repeatCount="indefinite" calcMode="spline" keySplines=".45 0 .55 1;.45 0 .55 1" keyTimes="0;.5;1"/><stop offset="0" stop-color="#8a3cff" stop-opacity=".8"/><stop offset="1" stop-color="#8a3cff" stop-opacity="0"/></radialGradient></defs>
+      <circle cx="50" cy="50" r="46" fill="url(#kb)"/><circle cx="50" cy="50" r="46" fill="url(#kl)"/><circle cx="50" cy="50" r="46" fill="url(#kr)"/><ellipse cx="34" cy="22" rx="13" ry="6" fill="#fff" opacity=".18" transform="rotate(-28 34 22)"/>
       <rect class="eye" x="35.6" y="38" width="8.8" height="18" rx="4.4" transform="rotate(-16 40 47)" fill="#fff"/>
       <rect class="eye" x="56.6" y="36" width="8.8" height="18" rx="4.4" transform="rotate(-16 61 45)" fill="#fff"/>
     </svg>

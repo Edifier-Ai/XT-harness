@@ -1,8 +1,8 @@
 {
- "version": "0.15.1",
- "notes": "应用图标换成红色小天（白眼睛）：窗口、任务栏、托盘、桌面和开始菜单快捷方式都会更新；小尺寸单独调过，眼睛更大更清楚",
+ "version": "0.16.0",
+ "notes": "小天换成蓝紫渐变形象，和启动页的光一致，渐变会缓慢流动：桌面小天、启动页、应用图标、App 里的小天头像、我的记忆中心都同步更新；给小天发的消息气泡也用蓝紫渐变；头像颜色里新增「小天渐变」，其他 Bot 也可以选",
  "minBase": "0.4.0",
- "at": "2026-10-21T07:41:57.249Z",
+ "at": "2026-10-21T07:59:33.768Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -26,18 +26,18 @@
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
-   "sha256": "632367331db13cfe821a60884cfeefe7453b7a806fc5aa92a7d2da66d401c2f0",
-   "size": 5731
+   "sha256": "e1af0c85e45177d4d6cb480e0072df91fbd18210794af775786a9e057aff5d2f",
+   "size": 6736
   },
   "app/icon.png": {
    "path": "desktop/icon.png",
-   "sha256": "411bddd06092ae72ff7439b7e53ea8456a57628a09f418c8b9cf149a3ca8d7dd",
-   "size": 31829
+   "sha256": "a642e1f5def9e0619229c0b9de0691cd7d94973f3b715a0b5f13004685766e8e",
+   "size": 40858
   },
   "app/icon.ico": {
    "path": "desktop/icon.ico",
-   "sha256": "c7ea2efe6e9b1256421f5290c7ec9d5000f76a0b4a134b30de200e395d2f91ff",
-   "size": 54134
+   "sha256": "96a34731bb83802b26a5e440836d7fccb2f66e46840dfb204037e113222262f1",
+   "size": 70204
   },
   "app/update.json": {
    "path": "desktop/update.json",
@@ -466,8 +466,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "de71d6653ea9bfed345deeda39009bd7b946bc85c285e50ead6c6606857d3a14",
-   "size": 149246
+   "sha256": "3008c6181d8ba2917ef3c6e4e32171d25690860c7184b90fb7b45a8741882df8",
+   "size": 150211
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
@@ -511,8 +511,8 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "3b157f41ce40fdccf86a55c273e25ad20c77a78973bcda7ed82c4a5f6255b6d2",
-   "size": 8341
+   "sha256": "6c63a45e483f6e037636589895cf5a74b12ebec312d6430021597e50bf63fe67",
+   "size": 9214
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
@@ -526,13 +526,13 @@
   },
   "bundle/web/orb.html": {
    "path": "tianxi/web/orb.html",
-   "sha256": "8fe2351651a2a18e556b0c32cc55091256963e6770dcce41408b9d3c7cceaac6",
-   "size": 16665
+   "sha256": "19e438a6cb54f056e3ed96141e7a14ed762134f7bb13037ac4642d22ceff22a0",
+   "size": 17656
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "8a93c377bc35ad0f77c2bffff96f9c6a1064c19fe029f86c1b13112cbc695859",
-   "size": 85971
+   "sha256": "1b8afe3e4a6542b1e6ac811544241f3e7e592c2d4883858eb0be677eadc26bf5",
+   "size": 86125
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",
