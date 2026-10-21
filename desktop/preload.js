@@ -4,6 +4,11 @@ const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('tianxiApp', {
   win: (cmd) => ipcRenderer.invoke('tianxi:win', cmd),
   show: () => ipcRenderer.invoke('tianxi:show'),
+  // the floating 小天
+  onOrb: (cb) => ipcRenderer.on('tianxi:orb', (e, m) => cb(m)),
+  orbHit: (on) => ipcRenderer.send('tianxi:orbHit', !!on),
+  orbDrag: (on) => ipcRenderer.send('tianxi:orbDrag', !!on),
+  orbMenu: () => ipcRenderer.send('tianxi:orbMenu'),
   getConfig: () => ipcRenderer.invoke('tianxi:getConfig'),
   listModels: (c) => ipcRenderer.invoke('tianxi:listModels', c),
   updateStatus: () => ipcRenderer.invoke('tianxi:updateStatus'),

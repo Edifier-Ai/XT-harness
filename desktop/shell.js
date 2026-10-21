@@ -1,6 +1,6 @@
 // 小天 Bot · Windows client.
 // Runs the DeepSeek Harness runtime (with the dsh-tianxi plugins) as a hidden child process,
-// shows the 小天 window, the 小天之光 status pill, a tray icon, and reports idle time for background work.
+// shows the 小天 window, the floating 小天 orb, a tray icon, and reports idle time for background work.
 'use strict'
 const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, safeStorage, powerMonitor, shell, screen, globalShortcut, dialog, net: enet } = require('electron')
 const { spawn } = require('node:child_process')
@@ -221,19 +221,62 @@ async function loadMain() {
   if (await waitReady()) { await win.loadURL(uiURL()); createPill(); updater.started() }
   else win.webContents.executeJavaScript(`document.getElementById('msg').textContent = '小天 Bot 没能启动。日志在 ${LOGS.replace(/\\/g, '\\\\')}\\\\runtime.log'`)
 }
+// The floating 小天: a red ball that sits anywhere on the desktop. The window is bigger than the ball so its
+// speech bubble fits; only the ball and the bubble catch the mouse (the page says when the pointer is over them).
+const ORB_W = 280, ORB_H = 240, BALL_X = ORB_W / 2, BALL_Y = ORB_H / 2
+let orbTimer = null, orbDrag = null, orbLast = ''
+function orbHome() {
+  const { workArea: a } = screen.getPrimaryDisplay()
+  const p = cfg.orbPos, d = p && screen.getDisplayNearestPoint(p)
+  const at = d && inside(p, d.workArea) ? p : { x: a.x + a.width - 72, y: a.y + a.height - 96 }
+  return { x: Math.round(at.x - BALL_X), y: Math.round(at.y - BALL_Y) }
+}
+const inside = (p, a) => p.x >= a.x && p.y >= a.y && p.x <= a.x + a.width && p.y <= a.y + a.height
 function createPill() {
   if (pill || cfg.pill === false) return
-  const { workArea } = screen.getPrimaryDisplay()
   pill = new BrowserWindow({
-    width: 340, height: 46, x: Math.round(workArea.x + workArea.width / 2 - 170), y: workArea.y, frame: false, transparent: true, resizable: false,
-    alwaysOnTop: true, skipTaskbar: true, focusable: false, hasShadow: false, show: false,
-    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
+    width: ORB_W, height: ORB_H, ...orbHome(), frame: false, transparent: true, resizable: false, movable: false,
+    alwaysOnTop: true, skipTaskbar: true, focusable: false, hasShadow: false, show: false, backgroundColor: '#00000000',
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   })
   pill.setAlwaysOnTop(true, 'screen-saver')
-  pill.loadURL(uiURL('pill.html'))
-  pill.once('ready-to-show', () => pill.showInactive())
-  pill.on('closed', () => { pill = null })
+  pill.setIgnoreMouseEvents(true, { forward: true })
+  pill.loadURL(uiURL('orb.html'))
+  pill.once('ready-to-show', () => { pill.showInactive(); orbTick() })
+  pill.on('closed', () => { pill = null; clearInterval(orbTimer); orbTimer = null })
+  // where the mouse is, relative to the window, so the eyes can follow it across the whole screen
+  orbTimer = setInterval(orbTick, 33)
 }
+function orbTick() {
+  if (!pill || pill.isDestroyed()) return
+  const c = screen.getCursorScreenPoint()
+  if (orbDrag) pill.setPosition(Math.round(c.x - orbDrag.dx), Math.round(c.y - orbDrag.dy))
+  const b = pill.getBounds(), a = screen.getDisplayNearestPoint({ x: b.x + BALL_X, y: b.y + BALL_Y }).workArea
+  const m = { x: c.x - b.x, y: c.y - b.y, top: b.y + BALL_Y - a.y, left: b.x + BALL_X - a.x, right: a.x + a.width - b.x - BALL_X }
+  const k = JSON.stringify(m)
+  if (k !== orbLast) { orbLast = k; pill.webContents.send('tianxi:orb', m) }
+}
+ipcMain.on('tianxi:orbHit', (e, on) => { if (pill && !pill.isDestroyed() && e.sender === pill.webContents) pill.setIgnoreMouseEvents(!on, { forward: true }) })
+ipcMain.on('tianxi:orbDrag', (e, on) => {
+  if (!pill || pill.isDestroyed() || e.sender !== pill.webContents) return
+  const c = screen.getCursorScreenPoint(), b = pill.getBounds()
+  if (on) { orbDrag = { dx: c.x - b.x, dy: c.y - b.y }; return }
+  orbDrag = null
+  // keep the ball itself on a screen, then remember where it was left
+  const ball = { x: b.x + BALL_X, y: b.y + BALL_Y }, a = screen.getDisplayNearestPoint(ball).workArea
+  const x = Math.min(Math.max(ball.x, a.x + 36), a.x + a.width - 36), y = Math.min(Math.max(ball.y, a.y + 36), a.y + a.height - 36)
+  pill.setPosition(Math.round(x - BALL_X), Math.round(y - BALL_Y))
+  cfg.orbPos = { x: Math.round(x), y: Math.round(y) }; saveCfg(cfg)
+})
+ipcMain.on('tianxi:orbMenu', (e) => {
+  if (!pill || e.sender !== pill.webContents) return
+  Menu.buildFromTemplate([
+    { label: '打开小天 Bot', click: showMain },
+    { label: '回到右下角', click: () => { delete cfg.orbPos; saveCfg(cfg); pill.setPosition(orbHome().x, orbHome().y) } },
+    { type: 'separator' },
+    { label: '隐藏桌面小天', click: () => { cfg.pill = false; saveCfg(cfg); pill?.close(); refreshTray() } },
+  ]).popup({ window: pill })
+})
 const showMain = () => { if (!win) return; if (win.isMinimized()) win.restore(); win.show(); win.focus() }
 
 function createTray() {
@@ -241,7 +284,7 @@ function createTray() {
   tray.setToolTip('小天 Bot')
   const menu = () => Menu.buildFromTemplate([
     { label: '打开小天 Bot', click: showMain },
-    { label: '小天之光（屏幕顶部状态）', type: 'checkbox', checked: cfg.pill !== false, click: (m) => { cfg.pill = m.checked; saveCfg(cfg); if (m.checked) createPill(); else pill?.close() } },
+    { label: '桌面小天（悬浮球）', type: 'checkbox', checked: cfg.pill !== false, click: (m) => { cfg.pill = m.checked; saveCfg(cfg); if (m.checked) createPill(); else pill?.close() } },
     { label: '临时模式（不记住这段对话）', type: 'checkbox', checked: false, click: (m) => api('private', { on: m.checked }) },
     { type: 'separator' },
     { label: '打开数据文件夹', click: () => shell.openPath(USER) },

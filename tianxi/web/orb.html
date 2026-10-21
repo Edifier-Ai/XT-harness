@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>桌面小天</title>
+<style>
+/* 桌面小天: a red ball with 小天's two dash eyes. It sits anywhere on the desktop, watches the mouse,
+   and its face shows what 小天 is doing. The window is transparent; only the ball and its bubble catch the mouse. */
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;user-select:none}
+:root{--ball:72px}
+#w{position:absolute;left:50%;top:50%;width:var(--ball);height:var(--ball);margin:calc(var(--ball) / -2) 0 0 calc(var(--ball) / -2)}
+/* the shadow stays on the "floor" while the ball hops */
+.shadow{position:absolute;left:14%;right:14%;bottom:-9px;height:8px;border-radius:50%;background:rgba(0,0,0,.28);filter:blur(3px);transition:transform .4s,opacity .4s}
+#ball{position:absolute;inset:0;cursor:grab;transform-origin:50% 90%;transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
+#ball:active{cursor:grabbing}
+#ball svg{display:block;width:100%;height:100%;overflow:visible}
+.lean{transition:transform .18s ease-out}
+.eye{transform-box:fill-box;transform-origin:50% 50%}
+.eye > *{transition:opacity .16s, transform .22s cubic-bezier(.3,1.4,.5,1);transform-box:fill-box;transform-origin:50% 50%}
+.eye .arc,.eye .shut,.eye .x,.eye .o{opacity:0}
+.eyes{transition:transform .12s ease-out}
+
+/* ---- faces ---- */
+.blink .eye .open{transform:scaleY(.08)}
+.f-happy .eye .open,.f-sleep .eye .open,.f-oops .eye .open,.f-drag .eye .open{opacity:0}
+.f-happy .eye .arc{opacity:1}
+.f-sleep .eye .shut{opacity:1}
+.f-oops .eye .x{opacity:1}
+.f-drag .eye .o{opacity:1}
+.f-focus .eye .open{transform:scaleY(.52)}
+.f-ask .eye .open{transform:scale(1.18)}
+.f-ask .eye.r .open{transform:scale(1.32) translateY(-1px)}
+.f-hover .eye .open{transform:scaleY(.88)}
+
+/* ---- body motion ---- */
+#ball{animation:breathe 4.2s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.025,.985)}}
+.f-think #ball,.f-focus #ball{animation:bob 1.1s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.f-ask #ball{animation:wobble 1.6s ease-in-out infinite}
+@keyframes wobble{0%,60%,100%{transform:rotate(0)}10%{transform:rotate(-7deg)}25%{transform:rotate(6deg)}40%{transform:rotate(-3deg)}}
+.f-happy #ball{animation:hop .62s cubic-bezier(.3,0,.5,1) 3}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1)}12%{transform:translateY(0) scale(1.1,.88)}45%{transform:translateY(-16px) scale(.95,1.06)}80%{transform:translateY(0) scale(1.06,.94)}}
+.f-happy .shadow{animation:shrink .62s cubic-bezier(.3,0,.5,1) 3}
+@keyframes shrink{45%{transform:scaleX(.6);opacity:.5}}
+.f-oops #ball{animation:shake .5s ease-in-out 2}
+@keyframes shake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.f-sleep #ball{animation:breathe 5.5s ease-in-out infinite;filter:saturate(.75) brightness(.92)}
+.f-drag #ball{animation:none}
+.f-hover #ball{transform:scale(1.07)}
+
+/* ---- little marks around the ball ---- */
+.mk{position:absolute;pointer-events:none;opacity:0;transition:opacity .25s}
+.dots{right:-10px;top:-6px;display:flex;gap:3px;padding:5px 7px;border-radius:10px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.dots i{width:4px;height:4px;border-radius:50%;background:#555;animation:dot 1.2s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+@keyframes dot{0%,60%,100%{opacity:.3}30%{opacity:1}}
+.f-think .dots{opacity:1}
+.sweat{left:-3px;top:6px;width:9px;height:12px;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:#bfe3ff;transform:rotate(-20deg)}
+.f-focus.tool-run .sweat{opacity:.9;animation:drip 1.6s ease-in infinite}
+@keyframes drip{0%{transform:translateY(0) rotate(-20deg);opacity:0}20%{opacity:.9}100%{transform:translateY(10px) rotate(-20deg);opacity:0}}
+.bang{right:-6px;top:-14px;width:20px;height:20px;border-radius:50%;background:#ffb020;color:#2a1a00;font:800 14px/20px system-ui;text-align:center}
+.f-ask .bang{opacity:1}
+.zz{right:-10px;top:-16px;color:#3a3a3a;font:800 15px/1 system-ui;text-shadow:0 0 3px #fff,0 0 2px #fff}
+.zz b{display:inline-block;animation:zz 2.4s ease-in-out infinite}.zz b:nth-child(2){font-size:10px;animation-delay:.8s}
+@keyframes zz{0%{transform:translate(0,4px);opacity:0}30%{opacity:1}100%{transform:translate(6px,-10px);opacity:0}}
+.f-sleep .zz{opacity:1}
+.badge{right:-4px;bottom:2px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#141414;color:#fff;border:2px solid #fff;font:700 11px/14px system-ui;text-align:center}
+.has-dec .badge{opacity:1}
+
+/* ---- the speech bubble ---- */
+#bub{position:absolute;left:50%;max-width:250px;padding:7px 12px;border-radius:14px;background:rgba(24,24,24,.95);color:#eee;font-size:12.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.3);border:1px solid #3a3a3a;opacity:0;transform:translate(-50%,6px) scale(.96);transition:opacity .22s,transform .3s cubic-bezier(.3,1.4,.5,1);pointer-events:none;cursor:pointer;box-sizing:border-box}
+#bub.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
+#bub.up{bottom:calc(50% + var(--ball) / 2 + 12px)}
+#bub.down{top:calc(50% + var(--ball) / 2 + 16px)}
+#bub.ask{background:rgba(48,36,16,.97);border-color:#8a6420;color:#ffd7a1}
+#bub b{font-weight:700}
+</style>
+</head>
+<body>
+<div id="w">
+  <div class="shadow"></div>
+  <div id="ball">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <defs>
+        <radialGradient id="g" cx="36%" cy="30%" r="75%">
+          <stop offset="0" stop-color="#ff7a6e"/><stop offset=".45" stop-color="#ec3f3a"/><stop offset="1" stop-color="#b8232a"/>
+        </radialGradient>
+      </defs>
+      <g class="lean" id="lean">
+        <circle cx="50" cy="50" r="46" fill="url(#g)"/>
+        <ellipse cx="34" cy="24" rx="13" ry="7" fill="#fff" opacity=".22" transform="rotate(-28 34 24)"/>
+        <g class="eyes" id="eyes">
+          <g class="eye l" transform="translate(40 47)">
+            <rect class="open" x="-4.4" y="-9" width="8.8" height="18" rx="4.4" transform="rotate(-16)" fill="#141414"/>
+            <path class="arc" d="M-6 3 Q0 -7 6 3" fill="none" stroke="#141414" stroke-width="4" stroke-linecap="round"/>
+            <path class="shut" d="M-6 1 Q0 5 6 1" fill="none" stroke="#141414" stroke-width="3.6" stroke-linecap="round"/>
+            <path class="x" d="M-5 -5 L5 5 M5 -5 L-5 5" fill="none" stroke="#141414" stroke-width="3.6" stroke-linecap="round"/>
+            <circle class="o" r="6" fill="#141414"/>
+          </g>
+          <g class="eye r" transform="translate(61 45)">
+            <rect class="open" x="-4.4" y="-9" width="8.8" height="18" rx="4.4" transform="rotate(-16)" fill="#141414"/>
+            <path class="arc" d="M-6 3 Q0 -7 6 3" fill="none" stroke="#141414" stroke-width="4" stroke-linecap="round"/>
+            <path class="shut" d="M-6 1 Q0 5 6 1" fill="none" stroke="#141414" stroke-width="3.6" stroke-linecap="round"/>
+            <path class="x" d="M-5 -5 L5 5 M5 -5 L-5 5" fill="none" stroke="#141414" stroke-width="3.6" stroke-linecap="round"/>
+            <circle class="o" r="6" fill="#141414"/>
+          </g>
+        </g>
+      </g>
+    </svg>
+  </div>
+  <div class="mk dots"><i></i><i></i><i></i></div>
+  <div class="mk sweat"></div>
+  <div class="mk bang">!</div>
+  <div class="mk zz"><b>z</b><b>z</b></div>
+  <div class="mk badge" id="badge"></div>
+</div>
+<div id="bub" class="up"></div>
+<script>
+const TOKEN = new URLSearchParams(location.search).get('t') || ''
+const host = window.tianxiApp || null
+const L = { calendar_add: '添加日程', calendar_update: '修改日程', calendar_list: '查看日程', todo_add: '添加待办', todo_list: '查看待办', mail_draft: '起草邮件', mail_send: '发送邮件', folder_list: '查看文件夹', file_move: '整理文件', brief_publish: '整理今天', memory_save: '记下来', memory_search: '翻记忆', mail_read: '看邮件', brief_resolve: '处理简报', show_ui: '生成界面', later_add: '记下稍后做', web_search: '搜索网页', web_fetch: '打开网页', read: '读文件', write: '写文件', edit: '改文件', bash: '运行命令' }
+// tools where 小天 looks around (finding things) rather than heads down (making things)
+const LOOK = /search|fetch|list|read|grep|glob|find/
+const $ = (id) => document.getElementById(id)
+const body = document.body, ball = $('ball'), eyes = $('eyes'), lean = $('lean'), bub = $('bub'), badge = $('badge')
+
+let st = { status: 'idle', approvals: [], brief: null, tool: '', toolKind: '' }
+const busyAgents = {}                    // every agent counts: 小天 is busy while any of its agents is
+let flash = null, flashUntil = 0          // a short face after an event: happy when done, oops on an error
+let hover = false, dragging = false, still = 0, lastMouse = null, ptr = null, edge = { top: 999 }
+let sleepy = false
+
+// ---------- what face to show ----------
+function decisions() {
+  const d = new Date(), today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+  return st.brief && st.brief.date === today ? (st.brief.items || []).filter((i) => i.kind === 'decide' && i.status !== 'resolved').length : 0
+}
+function face() {
+  if (dragging) return 'drag'
+  if (st.approvals.length) return 'ask'
+  if (st.tool) return st.toolKind === 'look' ? 'look' : 'focus'
+  if (flash && Date.now() < flashUntil) return flash
+  if (st.status !== 'idle') return 'think'
+  if (sleepy) return 'sleep'
+  if (hover) return 'hover'
+  return 'idle'
+}
+function text(f) {
+  const n = decisions()
+  if (f === 'ask') return { t: '需要你确认：' + (L[st.approvals[0].tool] || st.approvals[0].tool), cls: 'ask' }
+  if (f === 'happy') return { t: '做好了' }
+  if (f === 'oops') return { t: '出了点问题，点我看看' }
+  if (f === 'think') return { t: '小天在想…' }
+  if (f === 'focus' || f === 'look') return { t: '小天在' + (L[st.tool] || '做事') }
+  // decisions waiting show as the badge; the words only when you come close
+  if (f === 'hover') return n ? { h: '今天有 <b>' + n + '</b> 件事等你定，点我看看' } : { t: '点我打开 · 拖我换个地方' }
+  return null
+}
+let lastFace = ''
+function render() {
+  const f = face()
+  body.className = 'f-' + (f === 'look' ? 'focus' : f) + (st.tool ? ' tool-run' : '') + (decisions() ? ' has-dec' : '')
+  badge.textContent = decisions() || ''
+  const m = text(f)
+  if (m) { if (m.h) bub.innerHTML = m.h; else bub.textContent = m.t; bub.className = 'on ' + (edge.top < 130 ? 'down' : 'up') + (m.cls ? ' ' + m.cls : '') }
+  else bub.className = edge.top < 130 ? 'down' : 'up'
+  lastFace = f
+  look()
+}
+
+// ---------- the eyes follow the mouse anywhere on the screen ----------
+let roam = { x: 0, y: 0 }
+function look() {
+  const f = lastFace
+  let dx = 0, dy = 0
+  if (f === 'think') { dx = -4 + roam.x; dy = -6 }                       // looking up, thinking
+  else if (f === 'look') { dx = roam.x * 1.6; dy = 1 }                    // scanning side to side
+  else if (f === 'focus') { dx = 1; dy = 4 }                              // head down, working
+  else if (f === 'sleep' || f === 'happy' || f === 'oops') { dx = 0; dy = 0 }
+  else if (ptr) {
+    // vector from the ball's centre to the pointer, eased so far away still reads as "looking there"
+    const vx = ptr.x - innerWidth / 2, vy = ptr.y - innerHeight / 2, d = Math.hypot(vx, vy) || 1
+    const k = Math.min(1, d / 160) * (f === 'hover' ? .35 : 1)
+    dx = vx / d * 8 * k; dy = vy / d * 7 * k
+  }
+  eyes.style.transform = `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px)`
+  // the body leans a little the same way, so it feels like it turns its head
+  lean.style.transform = `translate(${(dx * .3).toFixed(2)}px, ${(dy * .25).toFixed(2)}px) rotate(${(dx * .6).toFixed(2)}deg)`
+  lean.style.transformOrigin = '50px 60px'
+}
+setInterval(() => { roam.x = lastFace === 'look' ? (roam.x > 0 ? -5 : 5) : (Math.random() * 6 - 3); if (lastFace === 'look' || lastFace === 'think') look() }, 900)
+
+// blink now and then while awake
+function blink() {
+  if (['idle', 'hover', 'focus', 'look', 'think', 'ask'].includes(lastFace)) { body.classList.add('blink'); setTimeout(() => body.classList.remove('blink'), 130) }
+  setTimeout(blink, 2200 + Math.random() * 3800)
+}
+setTimeout(blink, 1800)
+
+// ---------- mouse: hit test, drag, click ----------
+let hit = false
+const overBall = (x, y) => Math.hypot(x - innerWidth / 2, y - innerHeight / 2) <= ball.offsetWidth / 2 + 4
+const overBub = (x, y) => { if (!bub.classList.contains('on')) return false; const r = bub.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom }
+function setHit(on) { if (on !== hit) { hit = on; host?.orbHit(on) } }
+function onPointer(x, y) {
+  ptr = { x, y }
+  const moved = !lastMouse || Math.abs(lastMouse.x - x) + Math.abs(lastMouse.y - y) > 2
+  if (moved) { lastMouse = { x, y }; still = Date.now(); if (sleepy) { sleepy = false; render() } }
+  if (!dragging) {
+    setHit(overBall(x, y) || overBub(x, y))
+    const h = overBall(x, y)
+    if (h !== hover) { hover = h; render() }
+  }
+  look()
+}
+// in the client the main process sends where the mouse is; in a plain browser use the page's own events
+if (host?.onOrb) host.onOrb((m) => { edge = m; onPointer(m.x, m.y) })
+else { addEventListener('pointermove', (e) => onPointer(e.clientX, e.clientY)); edge = { top: 500 } }
+
+let down = null
+ball.addEventListener('pointerdown', (e) => {
+  if (e.button === 2) return
+  ball.setPointerCapture(e.pointerId)
+  down = { x: e.screenX, y: e.screenY, at: Date.now() }
+})
+ball.addEventListener('pointermove', (e) => {
+  if (!down || dragging) return
+  if (Math.hypot(e.screenX - down.x, e.screenY - down.y) > 4) { dragging = true; host?.orbDrag(true); render() }
+})
+let lastX = null
+addEventListener('pointermove', (e) => {
+  if (!dragging) return
+  // squash a bit toward the way it is being pulled
+  if (lastX != null) { const v = Math.max(-12, Math.min(12, e.screenX - lastX)); ball.style.transform = `rotate(${v * 1.2}deg) scale(${1 + Math.abs(v) / 120}, ${1 - Math.abs(v) / 160})` }
+  lastX = e.screenX
+})
+ball.addEventListener('pointerup', (e) => {
+  const wasDrag = dragging
+  down = null; lastX = null
+  if (wasDrag) { dragging = false; host?.orbDrag(false); ball.style.transform = ''; still = Date.now(); render(); return }
+  host?.show()
+})
+ball.addEventListener('contextmenu', (e) => { e.preventDefault(); host?.orbMenu() })
+bub.addEventListener('click', () => host?.show())
+
+// doze off when nothing happens for a while and 小天 has nothing to do
+setInterval(() => {
+  const s = st.status === 'idle' && !st.approvals.length && !hover && !dragging && Date.now() - still > 90000
+  if (s !== sleepy) { sleepy = s; render() }
+}, 3000)
+still = Date.now()
+
+// ---------- what 小天 is doing ----------
+function show(f, ms) { flash = f; flashUntil = Date.now() + ms; render(); setTimeout(render, ms + 30) }
+async function load() {
+  try {
+    const s = await (await fetch('/api/state', { headers: { 'x-tianxi-token': TOKEN } })).json()
+    Object.assign(busyAgents, s.agentStatus || {}); st.status = s.status; st.approvals = s.approvals || []; st.brief = s.brief; render()
+  } catch {}
+}
+const es = new EventSource('/api/events?t=' + encodeURIComponent(TOKEN))
+let errored = false, toolAt = 0, toolOff = 0
+es.onmessage = (e) => {
+  const m = JSON.parse(e.data)
+  if (m.type === 'status') {
+    const was = st.status
+    busyAgents[m.agent] = m.status
+    st.status = Object.values(busyAgents).some((x) => x !== 'idle') ? 'running' : 'idle'
+    if (m.status === 'idle') { if (was !== 'idle') { show(errored ? 'oops' : 'happy', errored ? 2600 : 2000); errored = false } }
+    render()
+  } else if (m.type === 'item' && m.item) {
+    const it = m.item
+    // a quick tool still shows its face for a moment, so you can see what 小天 just did
+    if (it.role === 'tool' && it.state === 'running') { clearTimeout(toolOff); st.tool = it.name; st.toolKind = LOOK.test(it.name) ? 'look' : 'make'; toolAt = Date.now(); render() }
+    else if (it.role === 'tool' && it.state) { clearTimeout(toolOff); toolOff = setTimeout(() => { st.tool = ''; render() }, Math.max(0, 900 - (Date.now() - toolAt))) }
+    else if (it.role === 'error') errored = true
+  } else if (m.type === 'hello' || m.type === 'approval' || m.type === 'approval-gone' || m.type === 'turn-end' || (m.type === 'store' && m.name === 'brief')) load()
+}
+// let a preview drive the face: orb.html?face=happy
+const q = new URLSearchParams(location.search).get('face')
+if (q) { face = () => q }
+load()
+</script>
+</body>
+</html>
