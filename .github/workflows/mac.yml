@@ -1,4 +1,4 @@
-# Builds the Mac app (Apple silicon and Intel) for each new version, starts it once as a check,
+# Builds the Mac app (Apple silicon) for each new version, starts it once as a check,
 # and attaches the .dmg files to the version's GitHub Release (the same release as the Windows installer).
 # Runs when release/manifest.json changes on main, or by hand from the Actions tab.
 name: Mac app
@@ -20,8 +20,7 @@ jobs:
         include:
           - arch: arm64
             runner: macos-15
-          - arch: x64
-            runner: macos-15-intel
+          # Intel Macs are not supported (summer, 2026-10-21); add "- arch: x64 / runner: macos-15-intel" to bring them back
     runs-on: ${{ matrix.runner }}
     # one build per kind of Mac at a time; Apple silicon and Intel never wait for each other
     concurrency:
