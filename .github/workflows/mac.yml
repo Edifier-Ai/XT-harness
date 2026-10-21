@@ -100,10 +100,20 @@ jobs:
       - name: Publish
         if: steps.v.outputs.exists != '1'
         run: |
-          VER=${{ steps.v.outputs.ver }}
+          VER=${{ steps.v.outputs.ver }}; A=${{ matrix.arch }}; KEY=${{ steps.v.outputs.key }}; R=$GITHUB_REPOSITORY
           node build/release-notes.mjs
           gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md || true
           gh release edit "v$VER" --notes-file notes.md
-          # the label (ASCII only: GitHub refuses some Unicode there) says which commit the file was built from
-          A=${{ matrix.arch }}
-          gh release upload "v$VER" "build/out-mac/XiaotianBot-$VER-mac-$A.dmg#Mac $A (build ${{ steps.v.outputs.key }})" --clobber
+          # Replace the .dmg without a gap: upload under a temporary name, then remove the old file and rename.
+          # (--clobber deletes first, so a failed upload would leave the release with no Mac file at all.)
+          # The label (ASCII only: GitHub refuses some Unicode there) says which commit the file was built from.
+          N="XiaotianBot-$VER-mac-$A.dmg"; T="next-$KEY-$N"
+          cp "build/out-mac/$N" "/tmp/$T"
+          gh release upload "v$VER" "/tmp/$T" --clobber
+          asset() { gh api "repos/$R/releases/tags/v$VER" --jq ".assets[] | select(.name==\"$1\") | .id"; }
+          NEW=$(asset "$T"); [ -n "$NEW" ]
+          for old in $(asset "$N"); do gh api -X DELETE "repos/$R/releases/assets/$old"; done
+          gh api -X PATCH "repos/$R/releases/assets/$NEW" -f name="$N" -f label="Mac $A (build $KEY)" --jq '.name + " " + .label'
+          # Intel Macs are not supported: remove any Intel build an older run left behind
+          for x in $(gh api "repos/$R/releases/tags/v$VER" --jq '.assets[] | select(.name | test("mac-x64")) | .id'); do gh api -X DELETE "repos/$R/releases/assets/$x"; done
+          gh release view "v$VER" --json assets --jq '.assets[] | .name + "  " + .label'
