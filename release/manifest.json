@@ -1,13 +1,13 @@
 {
- "version": "0.10.0",
- "notes": "免费模式：借用已登录的 Qoder、WorkBuddy、Codex、Claude（经 Magpie），或注册智谱用免费模型；每个模型可测试，失败显示错误码；对话框里直接选模型和思考深度",
+ "version": "0.11.0",
+ "notes": "免费模式改为直接复用 Magpie 的开源插件：在天禧里登录 Qoder、WorkBuddy 就能用它们的模型，免费模型用 Magpie 的标识，可以只选免费；Bot 头像换成 13 种形状、11 种颜色，支持一句话生成和上传图片，换头像时眼睛跟着鼠标转",
  "minBase": "0.4.0",
- "at": "2026-10-21T04:11:50.815Z",
+ "at": "2026-10-21T05:15:58.466Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "9295faee3701763769d1546ba24cd556a3c890aeb28fa1afea3d0234633ae6a5",
-   "size": 28284
+   "sha256": "1477f9869c512b5284b314c3825b6fc409f2a62385a4db2bd33be4ca78cce678",
+   "size": 29289
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -16,13 +16,13 @@
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
-   "sha256": "7e4e191b08a78d71ef2a7dee0b6e9eba303f179230d5f8cf845174d46d31f6c9",
-   "size": 1218
+   "sha256": "965f2f5c275818ac113448adb3dc5a46e7beea3cc232cc94f05d909ff496b18a",
+   "size": 1427
   },
-  "app/freemode.js": {
-   "path": "desktop/freemode.js",
-   "sha256": "12c768428f8fea9695f04c837ef3b539ef3bb76b0384a22b28807701a5797188",
-   "size": 5469
+  "app/freegate.js": {
+   "path": "desktop/freegate.js",
+   "sha256": "874f1faa0b399e9491ff8f3bc5122725221f527dbc5862d23c30abad1ae3cbe4",
+   "size": 11118
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
@@ -416,8 +416,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "ca04e7702c176e3e33f09339024754028cbecd48486fe5bd6b7ce24590c7493f",
-   "size": 27900
+   "sha256": "395dd393ae977d21fb7dd78a3a40d14fcc0a4a2dea706e2d2c9ad0bc3b38b3d9",
+   "size": 31094
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -439,15 +439,35 @@
    "sha256": "7e317a55a80c3012fac25a02e8bde958d9d15f3113428040ee43e6c4ad8a81c4",
    "size": 1927
   },
+  "bundle/vendor/magpie/LICENSE-CLIProxyAPI": {
+   "path": "tianxi/vendor/magpie/LICENSE-CLIProxyAPI",
+   "sha256": "879792e89cf1bdd6a8d446033ec87e30496f97dcafc4656dc53f641509b346a6",
+   "size": 1116
+  },
+  "bundle/vendor/magpie/README.md": {
+   "path": "tianxi/vendor/magpie/README.md",
+   "sha256": "893fa422ed8bbe71c9ba0c6449c4dbfc32b95d94a1f5b719f581166e6bf6324f",
+   "size": 1062
+  },
+  "bundle/vendor/magpie/qoder-auth.mjs": {
+   "path": "tianxi/vendor/magpie/qoder-auth.mjs",
+   "sha256": "9ca2272203d8a828d45a5e7dd79d174ddc58d3da396668de75788773f1481a9d",
+   "size": 90267
+  },
+  "bundle/vendor/magpie/workbuddy-auth.mjs": {
+   "path": "tianxi/vendor/magpie/workbuddy-auth.mjs",
+   "sha256": "c57af91f77a6b6708079e4b60f3c9868619071a51b5cfbd76d1a75819f04ee32",
+   "size": 78982
+  },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "4fd64417c553867d50b705066f55eacbc15ce4a217c19c4fec27e16699887a59",
-   "size": 134337
+   "sha256": "26d2fb7d9d1d24951cb23b276e2ea86a23573020d9e36f3bc14d6e0f36ac956c",
+   "size": 143241
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
-   "sha256": "906243e13414b617f09b94de35ec38260887c506e60edf565e737895f6fe9155",
-   "size": 1795
+   "sha256": "03d42a0a3610257ccf6c78c668379e17297643378f668c7d2f64dd2d81dc4dce",
+   "size": 2280
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -476,8 +496,8 @@
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "50e8f91cad5ddf713d7cd9eef5b2bc33976c1802db4eb82952d0056478f5c16e",
-   "size": 15336
+   "sha256": "7eec95e58c69b04c7706c27d733dcb4b4cef73a43b8559f514b12fc2f7f4e099",
+   "size": 15867
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
@@ -491,8 +511,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "2262c946ddabbb81a3aa3b47f2732b03b8877af3bbe9d58e9ea90aa526ff4d5f",
-   "size": 69606
+   "sha256": "36732d4d2f06c4d608599966d46fabbfee83b77960f667506a432769249380ef",
+   "size": 72782
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

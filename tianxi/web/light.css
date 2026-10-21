@@ -197,6 +197,13 @@
 :where(:root[data-theme=light]) .fm-sw{border:1px solid #e2e2ea}
 :where(:root[data-theme=light]) .fm-sw .st{background:#ececf2;color:#67676d}
 :where(:root[data-theme=light]) .fm-sw .how{color:#72727a}
+:where(:root[data-theme=light]) .fm-site{border-top:1px solid #e2e2ea}
+:where(:root[data-theme=light]) .fm-site .hd b{color:#46464c}
 :where(:root[data-theme=light]) .fm-res code{background:#ececf2;color:#26262c}
 :where(:root[data-theme=light]) .fm-steps{color:#48484e}
 :where(:root[data-theme=light]) .fm-note{color:#808088}
+:where(:root[data-theme=light]) .ave-shapes button.on{border-color:var(--tx3,#ceced6)}
+:where(:root[data-theme=light]) .ave-colors button.on{border-color:var(--tx3,#ceced6)}
+:where(:root[data-theme=light]) .ave-q{background:var(--s2,#ffffff)}
+:where(:root[data-theme=light]) .ave-q:focus{border-color:var(--tx3,#ceced6)}
+:where(:root[data-theme=light]) .ave-drop.over{background:var(--s2,#ffffff)}

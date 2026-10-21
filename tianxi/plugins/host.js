@@ -323,6 +323,10 @@ export function apply(ctx) {
         cur = { id: aid, createdAt: now() }; list.push(cur)
       }
       for (const k of ['name', 'role', 'style', 'intro', 'color', 'shape', 'tag']) if (a[k] !== undefined) cur[k] = String(a[k]).slice(0, 600)
+      // the avatar: an uploaded picture (a small data URL) or a body the model drew, '' to go back to the shapes
+      if (a.image !== undefined) cur.image = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.image) && a.image.length < 400000 ? a.image : ''
+      if (a.body !== undefined) cur.body = /^[0-9MmLlHhVvCcSsQqTtAaZz .,\-]{4,4000}$/.test(a.body) ? a.body : ''
+      if (a.eyes !== undefined) cur.eyes = Array.isArray(a.eyes) && a.eyes.length === 4 && a.eyes.every((n) => Number.isFinite(+n)) ? a.eyes.map((n) => Math.max(5, Math.min(95, +n))) : null
       if (!cur.name) throw new Error('名字不能空着')
       if (!STYLES.includes(cur.style)) cur.style = STYLES[0]
       const want = slug(a.emailName) || slug(cur.email?.split('@')[0]) || cur.id
@@ -333,6 +337,29 @@ export function apply(ctx) {
       save('agents', list)
       // a changed persona applies from the next turn: the prompt section reads the store each time
       return { ok: true, agent: cur }
+    },
+    // 生成头像: the current model draws one soft body in a 100×100 box, with where its two eyes go.
+    'POST /api/avatar/generate': async (b) => {
+      const prompt = String(b.prompt || '').trim().slice(0, 300)
+      if (!prompt) throw new Error('先描述一下你想要的样子')
+      const routes = (() => { try { return JSON.parse(process.env.TIANXI_ROUTES || '[]') } catch { return [] } })()
+      const pick = pickNow(), r = pick && routes.find((x) => x.id === pick.provider)
+      if (!r) throw new Error('生成头像要在天禧客户端里用')
+      const sys = '你是吉祥物头像设计师。按用户的描述设计一个扁平、可爱的 Bot 头像：一个圆润饱满的单色实心形状，配两只深色竖条小眼睛（眼睛由程序画，你只给位置）。' +
+        '只输出一个 JSON 对象，不要别的文字：{"path":"SVG path 的 d，只用 M L C Q A Z 等命令和数字，画在 0 到 100 的方块里，形状居中、占满 80% 左右、没有尖细的部分","eyes":[左眼x,左眼y,右眼x,右眼y],"color":"#RRGGBB"}。' +
+        '眼睛在形状内部偏右上，两眼相距 14 到 18。颜色从这些里选最贴切的：#ffffff #9a6b43 #e5484d #ea6f30 #e89b3a #57c16f #53b8a5 #3f7fe6 #8b5cf6 #e8479a #7a7a7a。'
+      const res = await fetch(String(r.baseURL).replace(/\/+$/, '') + '/chat/completions', {
+        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (process.env[r.keyEnv] || '') },
+        body: JSON.stringify({ model: pick.model, stream: false, max_tokens: 1200, messages: [{ role: 'system', content: sys }, { role: 'user', content: prompt }] }),
+        signal: AbortSignal.timeout(90000),
+      })
+      const text = await res.text()
+      if (!res.ok) throw new Error(`模型没有回应（HTTP ${res.status}）`)
+      let out = ''; try { out = JSON.parse(text).choices?.[0]?.message?.content || '' } catch { out = text.split('\n').map((l) => { try { return JSON.parse(l.replace(/^data:\s*/, '')).choices?.[0]?.delta?.content || '' } catch { return '' } }).join('') }
+      const m = /\{[\s\S]*\}/.exec(out); let j = {}; try { j = JSON.parse(m ? m[0] : '{}') } catch {}
+      const ok = /^[0-9MmLlHhVvCcSsQqTtAaZz .,\-]{4,4000}$/.test(j.path || '') && Array.isArray(j.eyes) && j.eyes.length === 4 && j.eyes.every((n) => Number.isFinite(+n))
+      if (!ok) throw new Error('这次没画好，换个说法再试一次')
+      return { ok: true, body: j.path, eyes: j.eyes.map((n) => Math.max(5, Math.min(95, +n))), color: /^#[0-9a-f]{6}$/i.test(j.color || '') ? j.color.toLowerCase() : '' }
     },
     'GET /api/apps/catalog': () => ({ catalog: CATALOG.map(({ id, n, c, d, transport, fields, command }) => ({ id, n, c, d, transport, fields, node: command === 'npx' })), builtin: BUILTIN }),
     'POST /api/apps/save': async (b) => ({ ok: true, app: saveApp(b.app || {}) }),

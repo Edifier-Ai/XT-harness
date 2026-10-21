@@ -79,12 +79,32 @@ const agents = () => S.agents.length ? S.agents : [{ id: 'tianxi', name: '天禧
 const agentOf = (aid) => agents().find((a) => a.id === aid) || agents()[0]
 const busy = (aid) => (S.agentStatus[aid] || 'idle') !== 'idle'
 const doneAt = {}                            // agentId -> when it last finished, for the little "done" hop
-const SHAPES = ['circle', 'blob', 'flower', 'egg', 'shield', 'square', 'lump']
-const OLDSHAPE = { hex: 'flower', tri: 'shield', rect: 'square', cloud: 'lump' }
+// 13 soft shapes with two dark dash eyes and 11 colours, like the Grok Bot avatar picker.
+const star = (n, R, r, rot = 0) => { const p = []; for (let i = 0; i < n * 2; i++) { const t = rot + i * Math.PI / n - Math.PI / 2, k = i % 2 ? r : R; p.push((50 + Math.cos(t) * k).toFixed(1) + ' ' + (50 + Math.sin(t) * k).toFixed(1)) } return `<path d="M${p.join('L')}Z"/>` }
+const poly = (n, R, rot = 0) => { const p = []; for (let i = 0; i < n; i++) { const t = rot + i * 2 * Math.PI / n; p.push((50 + Math.cos(t) * R).toFixed(1) + ' ' + (50 + Math.sin(t) * R).toFixed(1)) } return `<path d="M${p.join('L')}Z"/>` }
+const CI = (x, y, r) => `<circle cx="${x}" cy="${y}" r="${r}"/>`
+// shape: [body in a 100×100 box, eyes x1 y1 x2 y2, stroke width that rounds its corners]
+const SHAPE = {
+  circle: [CI(50, 50, 44), [56, 40, 72, 38], 0],
+  bean: [CI(36, 56, 30) + CI(62, 48, 33) + CI(40, 40, 22), [52, 40, 68, 37], 0],
+  square: ['<rect x="16" y="16" width="68" height="68" rx="12" transform="rotate(-22 50 50)"/>', [48, 46, 64, 42], 12],
+  sparkle: ['<path d="M50 6C58 34 66 42 94 50C66 58 58 66 50 94C42 66 34 58 6 50C34 42 42 34 50 6Z" transform="rotate(-12 50 50)"/>', [44, 48, 60, 45], 16],
+  cloud: [CI(34, 44, 22) + CI(60, 34, 22) + CI(68, 60, 22) + CI(40, 66, 20) + CI(50, 50, 22), [46, 46, 62, 43], 0],
+  heart: ['<path d="M50 88C30 78 8 62 8 40C8 24 20 14 34 14C42 14 48 18 52 24C57 16 64 12 73 13C86 15 94 27 92 41C90 61 70 80 50 88Z" transform="rotate(-24 50 50)"/>', [52, 46, 68, 43], 0],
+  flower: [[0, 1, 2, 3, 4, 5, 6, 7].map((i) => { const t = i * Math.PI / 4 + .2; return CI((50 + Math.cos(t) * 30).toFixed(1), (50 + Math.sin(t) * 30).toFixed(1), 17) }).join('') + CI(50, 50, 32), [44, 48, 60, 45], 0],
+  drop: ['<path d="M44 8C50 22 62 34 76 44C92 56 90 82 66 90C42 98 16 86 14 62C12 44 30 30 44 8Z"/>', [52, 52, 68, 49], 0],
+  pill: ['<rect x="6" y="24" width="88" height="54" rx="27" transform="rotate(-10 50 50)"/>', [58, 48, 74, 45], 0],
+  triangle: ['<path d="M18 14L90 56L16 88Z"/>', [44, 46, 58, 52], 22],
+  pentagon: [poly(5, 40, -1.2), [48, 48, 64, 45], 18],
+  burst: [star(8, 46, 30, .2), [44, 48, 60, 45], 12],
+  hexagon: [poly(6, 40, .35), [46, 48, 62, 45], 18],
+}
+const SHAPES = Object.keys(SHAPE)
+const OLDSHAPE = { blob: 'bean', egg: 'drop', shield: 'heart', lump: 'cloud', hex: 'hexagon', tri: 'triangle', rect: 'square' }
 const hashNum = (s) => { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) | 0; return Math.abs(h) }
 const shapeOf = (a) => { const s = OLDSHAPE[a.shape] || a.shape; return SHAPES.includes(s) ? s : a.main ? 'circle' : SHAPES[1 + hashNum(a.id) % (SHAPES.length - 1)] }
-const COLORS = ['#3f7fe6', '#f2902e', '#53b8a5', '#4fc06d', '#e5508f', '#ee6a2b', '#8b6cf0', '#f2f2f2']
-const colorOf = (a) => a.main && (!a.color || a.color === '#e2502e') ? '#f2f2f2' : (a.color || COLORS[hashNum(a.id) % 7])
+const COLORS = ['#ffffff', '#9a6b43', '#e5484d', '#ea6f30', '#e89b3a', '#57c16f', '#53b8a5', '#3f7fe6', '#8b5cf6', '#e8479a', '#7a7a7a']
+const colorOf = (a) => a.main && (!a.color || a.color === '#e2502e') ? '#f2f2f2' : (a.color || COLORS[1 + hashNum(a.id) % 9])
 // idle · think (busy, nothing done yet) · work (using tools) · wait (needs you) · done (just finished)
 function stateOf(aid) {
   if (S.approvals.some((x) => x.agent === aid)) return 'wait'
@@ -92,25 +112,35 @@ function stateOf(aid) {
   const t = turnsOf(aid).filter((x) => x.running).pop()
   return t && toolsOf(t).length ? 'work' : 'think'
 }
-// Each bot is one soft shape with two dark dash eyes, like the Grok Bot roster.
-const BODY = {
-  circle: '<circle cx="50" cy="50" r="46"/>',
-  blob: '<path d="M22 22c14-10 44-12 60-4 14 7 16 22 13 36-3 16-16 26-36 28-22 2-46-4-52-22-5-15 3-29 15-38z"/>',
-  flower: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => { const t = i * Math.PI / 4; return `<circle cx="${(50 + Math.cos(t) * 30).toFixed(1)}" cy="${(50 + Math.sin(t) * 30).toFixed(1)}" r="17"/>` }).join('') + '<circle cx="50" cy="50" r="32"/>',
-  egg: '<ellipse cx="50" cy="52" rx="40" ry="44" transform="rotate(-14 50 52)"/>',
-  shield: '<path d="M30 10c16-6 44 2 56 18 10 14 8 34-2 48-11 15-30 20-46 14C20 84 8 66 8 46 8 28 16 15 30 10z" transform="rotate(-10 50 50)"/>',
-  square: '<rect x="12" y="14" width="76" height="72" rx="22" transform="rotate(-14 50 50)"/>',
-  lump: '<path d="M28 16c8-9 24-10 33-3 11-6 27 2 29 15 10 7 10 24 0 31 1 13-12 23-25 20-9 9-26 8-33-3-13 0-22-13-18-25-9-9-6-25 6-30 1-2 4-4 8-5z"/>',
-}
-const EYES = { circle: [62, 30, 76, 26], blob: [38, 40, 56, 37], flower: [40, 44, 58, 41], egg: [42, 36, 60, 32], shield: [38, 38, 56, 34], square: [40, 42, 58, 38], lump: [38, 38, 56, 35] }
-// still: no state motion or badge (an avatar repeated in a list of steps)
-function avatar(a, size = 36, still = false, badge = true) {
+// A generated body is one path the model drew; anything else in it is dropped.
+const safePath = (d) => /^[0-9MmLlHhVvCcSsQqTtAaZz .,\-]{4,4000}$/.test(String(d || '')) ? d : ''
+// still: no state motion or badge (an avatar repeated in a list of steps); track: the eyes follow the pointer
+function avatar(a, size = 36, still = false, badge = true, track = false) {
   const st = still ? 'idle' : stateOf(a.id), sh = shapeOf(a)
-  const [x1, y1, x2, y2] = EYES[sh]
-  const eye = (x, y) => `<rect x="${x - 4.2}" y="${y - 8.5}" width="8.4" height="17" rx="4.2" transform="rotate(-16 ${x} ${y})" fill="#141414"/>`
   const b = !badge || still ? '' : st === 'wait' ? '<i class="abadge w">?</i>' : st === 'done' ? `<i class="abadge d">${CHECK}</i>` : a.main && size <= 48 ? '<i class="abadge p" title="主 Bot"><svg width="8" height="8" viewBox="0 0 10 10"><path d="M5 .8l1.2 2.7 2.9.3-2.2 1.9.7 2.9L5 7.1 2.4 8.6l.7-2.9L.9 3.8l2.9-.3z" fill="#fff"/></svg></i>' : ''
-  return `<span class="av s-${st}" style="width:${size}px;height:${size}px" data-sh="${sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><g class="bd" fill="${colorOf(a)}">${BODY[sh]}</g><g class="pu"><g class="eyes">${eye(x1, y1)}${eye(x2, y2)}</g></g></svg>${b}</span>`
+  if (a.image && /^data:image\/(png|jpeg|webp);base64,/.test(a.image)) return `<span class="av img s-${st}" style="width:${size}px;height:${size}px"><img src="${a.image}" alt="">${b}</span>`
+  const own = safePath(a.body) && Array.isArray(a.eyes) && a.eyes.length === 4
+  const [body, [x1, y1, x2, y2], w] = own ? [`<path d="${a.body}"/>`, a.eyes.map(Number), 0] : SHAPE[sh]
+  const eye = (x, y) => `<rect x="${x - 4.2}" y="${y - 8.5}" width="8.4" height="17" rx="4.2" transform="rotate(-16 ${x} ${y})" fill="#141414"/>`
+  const c = colorOf(a)
+  return `<span class="av s-${st}${track ? ' track' : ''}" style="width:${size}px;height:${size}px" data-sh="${own ? 'own' : sh}"><svg viewBox="0 0 100 100" width="${size}" height="${size}"><g class="bd" fill="${c}"${w ? ` stroke="${c}" stroke-width="${w}" stroke-linejoin="round"` : ''}>${body}</g><g class="pu"><g class="eyes">${eye(x1, y1)}${eye(x2, y2)}</g></g></svg>${b}</span>`
 }
+// Eyes that follow the pointer: each tracking avatar's eyes move toward it (up to 12% of the face) and its body leans that way.
+let lookRaf = 0, lookAt = null
+addEventListener('pointermove', (e) => {
+  lookAt = [e.clientX, e.clientY]
+  if (lookRaf) return
+  lookRaf = requestAnimationFrame(() => {
+    lookRaf = 0
+    for (const el of document.querySelectorAll('.av.track')) {
+      const r = el.getBoundingClientRect(), dx = lookAt[0] - (r.left + r.width / 2), dy = lookAt[1] - (r.top + r.height / 2)
+      const d = Math.hypot(dx, dy) || 1, near = Math.min(1, d / (r.width * 2)), k = near * 12
+      const pu = el.querySelector('.pu'); if (pu) pu.style.transform = `translate(${(dx / d * k).toFixed(2)}px,${(dy / d * k * .85).toFixed(2)}px)`
+      // the whole bot leans a little toward the pointer
+      const sv = el.querySelector('svg'); if (sv) sv.style.transform = `rotate(${(dx / d * near * 6).toFixed(2)}deg) translate(${(dx / d * near * 3).toFixed(1)}px,${(dy / d * near * 2).toFixed(1)}px)`
+    }
+  })
+}, { passive: true })
 const userInitial = () => (S.settings?.callMe || '你').trim().slice(0, 1).toUpperCase()
 const transcript = (aid) => S.transcripts[aid] || []
 
@@ -379,12 +409,62 @@ function procTarget() {
   return [...turnsOf(cur)].reverse().find((t) => !t.internal && (toolsOf(t).length || t.running)) || null
 }
 let tagEdit = false
+// 头像: the big avatar opens the Grok-style picker in the panel (shapes and colours, 生成, 上传); its eyes follow the pointer meanwhile.
+let avEdit = false, aveTab = 'bot', aveBusy = false, aveMsg = '', aveQ = ''
+function renderAve(a) {
+  const tabs = [['bot', 'Bot'], ['gen', '生成'], ['up', '上传']].map(([k, l]) => `<button data-act="ave-tab" data-t="${k}" class="${aveTab === k ? 'on' : ''}">${l}</button>`).join('')
+  let body = ''
+  if (aveTab === 'bot') {
+    const plain = !a.image && !a.body, sh = shapeOf(a), col = colorOf(a)
+    body = `<div class="ave-shapes">${SHAPES.map((x) => `<button data-act="ave-shape" data-v="${x}" class="${plain && x === sh ? 'on' : ''}" title="换成这个形状">${avatar({ ...a, image: '', body: '', shape: x }, 42, true, false)}</button>`).join('')}</div>
+      <div class="ave-colors">${COLORS.map((c) => `<button data-act="ave-color" data-v="${c}" class="${c === col ? 'on' : ''}"><i style="background:${c}"></i></button>`).join('')}</div>`
+  } else if (aveTab === 'gen') {
+    body = `<textarea class="ave-q" id="aveQ" placeholder="描述你的头像...">${esc(aveQ)}</textarea>
+      <button class="ave-go" data-act="ave-gen" ${aveBusy || !aveQ.trim() ? 'disabled' : ''}>${aveBusy ? '正在生成…' : '生成'}</button>${aveMsg ? `<div class="ave-msg">${esc(aveMsg)}</div>` : ''}`
+  } else {
+    body = `<label class="ave-drop" id="aveDrop"><span>拖拽或粘贴图片</span><span class="or">或</span><span class="ave-pick">选择本地图片</span><input type="file" accept="image/png,image/jpeg,image/webp" id="aveFile" hidden></label>${aveMsg ? `<div class="ave-msg">${esc(aveMsg)}</div>` : ''}`
+  }
+  return `<div class="ave"><div class="ave-tabs">${tabs}<button class="ave-reset" data-act="ave-reset">重置</button></div><div class="ave-body">${body}</div></div>`
+}
+document.addEventListener('paste', (e) => { if (avEdit && aveTab === 'up') { const f = [...(e.clipboardData?.files || [])][0]; if (f) { e.preventDefault(); aveUpload(f) } } })
+const aveSave = async (patch) => {
+  const a = agentOf(cur)
+  const r = await api('agents/save', { agent: { id: a.id, ...patch } })
+  if (r.error) { aveMsg = r.error; renderProc(); return }
+  const x = S.agents.find((y) => y.id === a.id); if (x) Object.assign(x, r.agent)
+  renderProc(); renderRail(); refresh()
+}
+// An uploaded picture becomes a 256 px square, cut from the middle, so it stays small in the agent list.
+function aveUpload(file) {
+  if (!file || !/^image\/(png|jpeg|webp)$/.test(file.type)) { aveMsg = '只支持 PNG、JPG、WebP 图片'; renderProc(); return }
+  const img = new Image(), url = URL.createObjectURL(file)
+  img.onload = () => {
+    const n = Math.min(img.width, img.height), cv = document.createElement('canvas'); cv.width = cv.height = 256
+    cv.getContext('2d').drawImage(img, (img.width - n) / 2, (img.height - n) / 2, n, n, 0, 0, 256, 256)
+    URL.revokeObjectURL(url); aveMsg = ''
+    aveSave({ image: cv.toDataURL('image/jpeg', .88), body: '', eyes: null })
+  }
+  img.onerror = () => { aveMsg = '这张图片打不开'; renderProc() }
+  img.src = url
+}
 function renderProc() {
   $('#app').classList.toggle('procon', panelOn())
   if (!panelOn()) return
   const a = agentOf(cur), B = $('#procBody')
   const tabs = [['detail', '详情'], ['files', '资料库'], ['computer', '电脑']]
-  let h = `<div class="pf"><button class="pav" data-act="agent-profile" title="Bot 设置">${avatar(a, 76, false, false)}</button><button class="pnm" data-act="agent-profile">${esc(a.name)}</button>
+  if (avEdit && a.id !== avEdit) avEdit = false
+  if (avEdit) {
+    // live updates re-render the panel often: leave the picker alone (and the text being typed) unless what it shows changed
+    const sig = 'ave:' + JSON.stringify([a.shape, a.color, (a.image || '').length, a.body, aveTab, aveBusy, aveMsg])
+    if (B.dataset.sig === sig) return
+    B.innerHTML = `<div class="pf ave-on"><button class="pav" data-act="ave-toggle" title="完成">${avatar(a, 96, true, false, true)}</button></div>${renderAve(a)}`
+    B.dataset.sig = sig
+    const q = $('#aveQ'); if (q) { q.oninput = () => { aveQ = q.value; const g = B.querySelector('.ave-go'); if (g && !aveBusy) g.disabled = !aveQ.trim() } }
+    const f = $('#aveFile'); if (f) f.onchange = () => aveUpload(f.files[0])
+    const d = $('#aveDrop'); if (d) { d.ondragover = (e) => { e.preventDefault(); d.classList.add('over') }; d.ondragleave = () => d.classList.remove('over'); d.ondrop = (e) => { e.preventDefault(); d.classList.remove('over'); aveUpload(e.dataTransfer.files[0]) } }
+    return
+  }
+  let h = `<div class="pf"><button class="pav" data-act="ave-toggle" title="换头像">${avatar(a, 76, false, false)}</button><button class="pnm" data-act="agent-profile">${esc(a.name)}</button>
     ${tagEdit ? `<input class="ptag-in" id="tagIn" value="${esc(a.tag || '')}" placeholder="比如：生活、工作" maxlength="12">` : `<button class="ptag" data-act="tag-edit">${a.tag ? esc(a.tag) : '添加标签'}</button>`}
     <div class="ptabs" id="ptabs">${tabs.map(([k, l]) => `<button data-act="ptab" data-t="${k}" class="${procTab === k ? 'on' : ''}">${l}${k === 'computer' && busy(a.id) ? '<i class="live"></i>' : ''}</button>`).join('')}</div></div>`
   h += `<div class="pcont">${procTab === 'files' ? renderFiles(a) : procTab === 'computer' ? renderComputer() : renderDetail(a)}</div>`
@@ -716,7 +796,7 @@ function pageAgent() {
   if (!isNew) draftAgent = null
   const v = isNew ? a : { ...a, emailName: (a.email || '').split('@')[0] }
   let h = phead(isNew ? '新建 Bot' : 'Bot 设置', isNew ? '' : esc(a.name), isNew ? '' : `<button class="btn" data-act="agent-open" data-id="${a.id}">去聊天</button>`)
-  if (!isNew) h += `<div class="prof">${avatar(a, 72)}<div><div class="nm">${esc(a.name)}</div><div class="rl2">${esc(a.role || '')} · ${esc(a.style || '')}</div><div class="ml"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>${esc(a.email || '')}</div></div></div>`
+  if (!isNew) h += `<div class="prof">${avatar(a, 72, true, false, true)}<div><div class="nm">${esc(a.name)}</div><div class="rl2">${esc(a.role || '')} · ${esc(a.style || '')}</div><div class="ml"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.5 7l8.5 6 8.5-6"/></svg>${esc(a.email || '')}</div></div></div>`
   h += `<div class="two"><div><div class="sec" style="margin-top:0">身份和人设</div><div class="panel">`
   if (isNew) h += `<div class="tpl">${TEMPLATES.map((t, i) => `<button class="chip" data-act="agent-tpl" data-i="${i}">${esc(t.name)}</button>`).join('')}</div>`
   h += `<div class="setrow"><label>名字</label><div class="ctl"><input class="inp" id="agName" value="${esc(v.name)}" placeholder="比如：出差助理"></div></div>
@@ -739,7 +819,7 @@ function pageAgent() {
   return h
 }
 
-// 免费模式 (Electron only): borrow a signed-in app through Magpie, or sign up for 智谱's free models.
+// 免费模式 (Electron only): sign in to Qoder / WorkBuddy with Magpie's plugins, or sign up for 智谱's free models.
 let freeTab = 'apps'
 const freeRes = (r) => r.ok ? `<div class="fm-res ok">测试通过 · ${(r.ms / 1000).toFixed(1)} 秒，可以用</div>`
   : `<div class="fm-res bad">没通过 · ${r.status ? `<code>HTTP ${r.status}</code> ` : ''}${r.code ? `<code>${esc(r.code)}</code> ` : ''}${esc(r.message || '')}</div>`
@@ -750,7 +830,7 @@ async function renderFree(el, first) {
   if (!APP || !APP.freeScan) { el.innerHTML = '<div class="hint" style="margin:0">免费模式要在天禧客户端里设置。</div>'; return }
   const cfg = await APP.getConfig()
   const zp = (cfg.free?.cloud || [])[0]
-  el.innerHTML = `<div class="fm-tabs"><button data-ft="apps" class="${freeTab === 'apps' ? 'on' : ''}"><b>借用已安装的软件</b>Qoder、WorkBuddy、Codex、Claude</button><button data-ft="cloud" class="${freeTab === 'cloud' ? 'on' : ''}"><b>云端注册${zp ? '（' + esc(zp.name) + '）' : ''}</b>手机号注册，免费模型</button></div><div class="fm-body"><div class="hint">正在查看这台电脑…</div></div>`
+  el.innerHTML = `<div class="fm-tabs"><button data-ft="apps" class="${freeTab === 'apps' ? 'on' : ''}"><b>借用已登录的软件</b>Qoder、WorkBuddy</button><button data-ft="cloud" class="${freeTab === 'cloud' ? 'on' : ''}"><b>云端注册${zp ? '（' + esc(zp.name) + '）' : ''}</b>手机号注册，免费模型</button></div><div class="fm-body"><div class="hint">正在查看这台电脑…</div></div>`
   el.querySelector('.fm-tabs').onclick = (e) => { const b = e.target.closest('[data-ft]'); if (b) { freeTab = b.dataset.ft; renderFree(el, first) } }
   const body = el.querySelector('.fm-body')
   const use = async (c, out) => {
@@ -781,35 +861,48 @@ async function renderFree(el, first) {
     keyEl.addEventListener('paste', () => setTimeout(() => { if (zp.keyPattern && keyEl.value.trim() && !new RegExp(zp.keyPattern).test(keyEl.value.trim())) out.innerHTML = '<div class="fm-res bad">这串看起来不像智谱的 Key，确认一下有没有复制完整</div>'; else out.innerHTML = '' }, 0))
     return
   }
-  const r = await APP.freeScan()
-  if (!r.magpie.ok) {
-    body.innerHTML = `<div class="fm-sw"><div class="hd"><b>需要 Magpie</b><span class="st">${esc(r.magpie.error || '没找到')}</span></div>
-      <div class="how">借用这些软件要靠 Magpie 在本机转接：它会找到你已登录的 Qoder、WorkBuddy、Codex、Claude，把它们的模型交给天禧用。先安装并打开 Magpie，再回来点“重新检测”。</div>
-      <div class="row"><button class="btn pri" data-fa="dl" style="flex:none">下载 Magpie</button><button class="btn" data-fa="rescan" style="flex:none">重新检测</button></div></div>
-      ${r.software.map((s) => `<div class="fm-sw"><div class="hd"><b>${esc(s.name)}</b><span class="st">待识别</span></div><div class="how">${esc(s.how)}</div></div>`).join('')}`
-    body.onclick = (e) => { const a = e.target.closest('[data-fa]')?.dataset.fa; if (a === 'dl') APP.open('https://usemagpie.ai/zh/'); else if (a === 'rescan') renderFree(el, first) }
-    return
+  const apps = await APP.freeScan()
+  const on = cfg.free?.sites || {}
+  const site = (st) => {
+    const lst = (st.models || []).filter((m) => on[st.id]?.freeOnly === false || !st.models.some((x) => x.free) || m.free)
+    const sel = (lst.find((m) => m.free) || lst[0] || {})
+    if (!st.account) return `<div class="fm-site" data-site="${st.id}"><div class="hd"><b>${esc(st.name)}</b><span class="st">未登录</span></div>
+      ${st.desktop ? `<div class="row"><button class="btn pri" data-fa="desktop" style="flex:none">用桌面版已登录的账号（${esc(st.desktop)}）</button></div>` : ''}
+      <div class="row"><button class="btn ${st.desktop ? '' : 'pri'}" data-fa="signin" style="flex:none">在浏览器里登录</button>${st.error ? `<span class="hint">${esc(st.error)}</span>` : ''}</div><div class="fm-out"></div></div>`
+    return `<div class="fm-site" data-site="${st.id}"><div class="hd"><b>${esc(st.name)}</b><span class="st ok">${esc(st.account)}</span>${on[st.id]?.on ? '<span class="st ok">正在用</span>' : ''}${st.models.some((m) => m.free) ? `<span class="st ok">${st.models.filter((m) => m.free).length} 个免费</span>` : ''}</div>
+      ${st.models.length ? `<div class="row"><select class="inp fm-model">${modelOpts(lst, sel.id)}</select>${effortOpts(sel.efforts || [])}<button class="btn" data-fa="test" style="flex:none">测试</button><button class="btn pri" data-fa="use" style="flex:none">用这个</button></div>
+      ${st.models.some((m) => m.free) && st.models.some((m) => !m.free) ? `<label class="fm-note fm-fo"><input type="checkbox" class="fm-freeonly" ${on[st.id]?.freeOnly === false ? '' : 'checked'}> 只选免费（${st.models.filter((m) => m.free).length}/${st.models.length}）</label>` : ''}`
+      : '<div class="how">这个账号下暂时没有可用的模型。</div>'}
+      <div class="row"><a href="#" data-fa="signout" class="hint">退出登录</a></div><div class="fm-out"></div></div>`
   }
-  body.innerHTML = `<div class="hint" style="margin:0 0 8px">已连上本机 Magpie ${esc(r.magpie.version || '')}。${cfg.free.magpie ? '借用模式已开启，模型可以在对话框里直接切换。' : ''} <a href="#" data-fa="rescan">重新检测</a></div>`
-    + r.software.map((s) => s.models.length ? `<div class="fm-sw" data-sw="${s.id}"><div class="hd"><b>${esc(s.name)}</b><span class="st ok">已识别 ${s.models.length} 个模型</span>${s.models.some((m) => m.free) ? '<span class="st ok">有免费</span>' : ''}</div>
-        <div class="row"><select class="inp fm-model">${modelOpts(s.models, (s.models.find((m) => m.free) || s.models[0]).id)}</select>${effortOpts((s.models.find((m) => m.free) || s.models[0]).efforts)}<button class="btn" data-fa="test" style="flex:none">测试</button><button class="btn pri" data-fa="use" style="flex:none">用这个</button></div><div class="fm-out"></div></div>`
-      : `<div class="fm-sw"><div class="hd"><b>${esc(s.name)}</b><span class="st">没识别到</span></div><div class="how">${esc(s.how)}</div></div>`).join('')
-    + (r.others.length ? `<label class="fm-note" style="display:flex;gap:8px;align-items:center"><input type="checkbox" class="fm-others" ${cfg.free.others ? 'checked' : ''}> 对话里也列出 Magpie 里的其他 ${r.others.length} 个模型</label>` : '')
-    + `<div class="fm-note">借用不是这些软件官方开放的用法，可能被平台限制甚至封号，请自己决定是否开启。所有借用的模型都会出现在对话框的模型菜单里。</div>`
+  body.innerHTML = apps.map((a) => a.off ? `<div class="fm-sw"><div class="hd"><b>${esc(a.name)}</b><span class="st">暂不支持</span></div><div class="how">${esc(a.off)}</div></div>`
+    : `<div class="fm-sw" data-app="${a.id}"><div class="hd"><b>${esc(a.name)}</b>${a.sites.some((x) => x.account) ? '<span class="st ok">已登录</span>' : ''}</div><div class="how">${esc(a.how)}</div>${a.sites.map(site).join('')}</div>`).join('')
+    + `<div class="fm-note">登录和"哪些模型免费"用的是 Magpie 的开源插件。借用不是这些软件官方开放的用法，可能被平台限制甚至封号，请自己决定是否开启。用上的模型都会出现在对话框的模型菜单里。</div>`
+  const stOf = (id) => apps.flatMap((a) => a.sites).find((x) => x.id === id)
   body.onchange = (e) => {
-    const card = e.target.closest('[data-sw]'); if (!card || !e.target.classList.contains('fm-model')) return
-    const s = r.software.find((x) => x.id === card.dataset.sw), m = s.models.find((x) => x.id === e.target.value)
-    const old = card.querySelector('.fm-eff'); const nx = effortOpts(m.efforts)
+    const card = e.target.closest('[data-site]'); if (!card) return
+    const st = stOf(card.dataset.site)
+    if (e.target.classList.contains('fm-freeonly')) { on[st.id] = { ...(on[st.id] || {}), freeOnly: e.target.checked }; const box = card; box.outerHTML = site(st); return }
+    if (!e.target.classList.contains('fm-model')) return
+    const m = st.models.find((x) => x.id === e.target.value)
+    const old = card.querySelector('.fm-eff'); const nx = effortOpts(m.efforts || [])
     if (old) old.outerHTML = nx || ''; else if (nx) e.target.insertAdjacentHTML('afterend', nx)
   }
   body.onclick = async (e) => {
     const a = e.target.closest('[data-fa]')?.dataset.fa; if (!a) return
     e.preventDefault()
-    if (a === 'rescan') { renderFree(el, first); return }
-    const card = e.target.closest('[data-sw]'), out = card.querySelector('.fm-out')
-    const c = { route: 'magpie', model: card.querySelector('.fm-model').value, effort: card.querySelector('.fm-eff')?.value, others: !!body.querySelector('.fm-others')?.checked }
-    if (a === 'test') { out.innerHTML = '<div class="fm-res">正在测试…</div>'; out.innerHTML = freeRes(await APP.freeTest(c)) }
-    else if (a === 'use') use(c, out)
+    const card = e.target.closest('[data-site]'), out = card.querySelector('.fm-out'), id = card.dataset.site
+    if (a === 'signin' || a === 'desktop') {
+      out.innerHTML = a === 'signin' ? '<div class="fm-res">已在浏览器打开登录页，登录并授权后会自动回到这里… <a href="#" data-fa="reopen">没看到页面？再打开一次</a></div>' : '<div class="fm-res">正在读取桌面版的登录…</div>'
+      const r = await APP.freeSignIn({ site: id, how: a === 'desktop' ? 'desktop' : 'browser' })
+      if (r.ok) renderFree(el, first); else out.innerHTML = freeRes(r)
+    } else if (a === 'reopen') APP.freeReopen(id)
+    else if (a === 'signout') { await APP.freeSignOut(id); renderFree(el, first) }
+    else {
+      const c = { route: id, model: card.querySelector('.fm-model').value, effort: card.querySelector('.fm-eff')?.value, freeOnly: card.querySelector('.fm-freeonly') ? card.querySelector('.fm-freeonly').checked : true }
+      if (a === 'test') { out.innerHTML = '<div class="fm-res">正在测试…</div>'; out.innerHTML = freeRes(await APP.freeTest(c)) }
+      else if (a === 'use') use(c, out)
+    }
   }
 }
 
@@ -1258,7 +1351,7 @@ $('#bPriv').onclick = () => { plusMenu.hidden = true; api('private', { on: !S.pr
 $('#pmBadge').onclick = () => api('private', { on: false })
 $('#bUndo').onclick = async () => { plusMenu.hidden = true; const r = await api('undo-last', {}); toastText(r.entry ? '已撤回：' + r.entry.title : '没有可以撤回的事') }
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { if (modal) return closeModal(); if (!$('#umenu').hidden) return toggleMenu(false); if (!$('#searchBox').hidden) return searchOn(false); if (view !== 'chat') setView(MINE.includes(view) && view !== 'me' ? 'me' : 'chat') }
+  if (e.key === 'Escape') { if (modal) return closeModal(); if (avEdit) { avEdit = false; return renderProc() } if (!$('#umenu').hidden) return toggleMenu(false); if (!$('#searchBox').hidden) return searchOn(false); if (view !== 'chat') setView(MINE.includes(view) && view !== 'me' ? 'me' : 'chat') }
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); searchOn(true) }
 })
 
@@ -1301,6 +1394,19 @@ document.addEventListener('click', async (e) => {
   else if (act === 'set-toggle' || act === 'rt-toggle') { const k = el.dataset.key, on = !el.classList.contains('on'); el.classList.toggle('on', on); await api('settings', { [k]: on }); soon() }
   else if (act === 'panel-toggle') panelOn() ? closeProc() : openProc(null, 'detail')
   else if (act === 'tag-edit') { tagEdit = true; renderProc() }
+  else if (act === 'ave-toggle') { avEdit = avEdit ? false : cur; aveMsg = ''; renderProc() }
+  else if (act === 'ave-tab') { aveTab = el.dataset.t; aveMsg = ''; renderProc() }
+  else if (act === 'ave-shape') aveSave({ shape: el.dataset.v, image: '', body: '', eyes: null })
+  else if (act === 'ave-color') aveSave({ color: el.dataset.v, image: '' })
+  else if (act === 'ave-reset') { aveMsg = ''; aveSave({ shape: '', color: '', image: '', body: '', eyes: null }) }
+  else if (act === 'ave-gen') {
+    if (aveBusy || !aveQ.trim()) return
+    aveBusy = true; aveMsg = ''; renderProc()
+    const r = await api('avatar/generate', { prompt: aveQ }).catch((err) => ({ error: err.message }))
+    aveBusy = false
+    if (r.error || !r.ok) { aveMsg = r.error || '没生成出来'; renderProc(); return }
+    aveSave({ body: r.body, eyes: r.eyes, image: '', ...(r.color ? { color: r.color } : {}) })
+  }
   else if (act === 'file-open') window.open(fileUrl(el.dataset.p), '_blank')
   else if (act === 'share') shareChat()
   else if (act === 'copy') copyText(el.dataset.v || '')

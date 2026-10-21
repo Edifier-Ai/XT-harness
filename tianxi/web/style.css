@@ -937,6 +937,10 @@ button:focus:not(:focus-visible){outline:none}
 .fm-sw .how{font-size:13px;color:#8a8a92;margin-top:6px;line-height:1.6}
 .fm-sw .row{display:flex;gap:8px;align-items:center;margin-top:10px}
 .fm-sw .row select{flex:1;min-width:0}
+.fm-site{border-top:1px solid #2a2a30;margin-top:12px;padding-top:10px}
+.fm-site .hd b{font-size:13px;font-weight:500;color:#c8c8ce}
+.fm-site .fm-fo{display:flex;gap:8px;align-items:center;margin:8px 0 0}
+.fm-site a.hint{text-decoration:none}
 .fm-res{font-size:13px;margin-top:8px;line-height:1.6;overflow-wrap:anywhere}
 .fm-res.ok{color:#5fd39a}
 .fm-res.bad{color:#f08a8a}
@@ -944,3 +948,39 @@ button:focus:not(:focus-visible){outline:none}
 .fm-steps{margin:8px 0 4px;padding-left:20px;color:#c5c5cc;font-size:14px;line-height:1.9}
 .fm-note{font-size:12px;color:#7c7c85;margin-top:10px;line-height:1.6}
 .composer:has(#pickMenu:not([hidden])){position:relative;z-index:45}
+/* 头像 picker in the right panel, after Grok Bot's */
+.pf.ave-on{padding:6px 0 14px}
+.pf.ave-on .pav{animation:aveIn .35s var(--ease-out,ease-out)}
+@keyframes aveIn{from{transform:scale(.8)}to{transform:none}}
+.av.track .pu{transition:transform .14s ease-out}
+.av.track svg{transition:transform .3s cubic-bezier(.2,.8,.3,1.2)}
+.ave{background:var(--s1);border:1px solid var(--line);border-radius:18px;overflow:hidden;animation:aveUp .3s var(--ease-out,ease-out)}
+@keyframes aveUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ave-tabs{display:flex;align-items:center;gap:4px;padding:8px;border-bottom:1px solid var(--line)}
+.ave-tabs button{border:0;background:none;color:var(--tx2);font-size:15px;padding:6px 12px;border-radius:14px}
+.ave-tabs button:hover{color:var(--tx)}
+.ave-tabs button.on{background:var(--s3);color:var(--tx)}
+.ave-tabs .ave-reset{margin-left:auto}
+.ave-body{padding:14px 8px 18px}
+.ave-shapes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px 0;justify-items:center}
+.ave-shapes button{border:1.5px solid transparent;background:none;border-radius:14px;padding:5px;transition:transform .15s var(--ease-out,ease-out),border-color .15s}
+.ave-shapes button:hover{transform:scale(1.08)}
+.ave-shapes button.on{border-color:var(--tx3,#5a5a60)}
+.ave-shapes .av svg{overflow:visible}
+.ave-colors{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 6px;margin-top:20px;padding:0 10px}
+.ave-colors button{border:1.5px solid transparent;background:none;border-radius:50%;padding:3px;transition:transform .15s var(--ease-out,ease-out)}
+.ave-colors button:hover{transform:scale(1.08)}
+.ave-colors button.on{border-color:var(--tx3,#5a5a60)}
+.ave-colors i{display:block;width:30px;height:30px;border-radius:50%}
+.ave-colors::before{content:'';flex-basis:100%;order:1}
+.ave-colors button:nth-child(n+7){order:2}
+.ave-q{width:100%;box-sizing:border-box;height:200px;resize:none;background:var(--s2,#1f1f22);border:1px solid var(--line);border-radius:14px;padding:12px 14px;color:var(--tx);font:inherit;font-size:15px;line-height:1.6;outline:none}
+.ave-q:focus{border-color:var(--tx3,#5a5a60)}
+.ave-go{width:100%;margin-top:14px;border:0;border-radius:14px;padding:11px;font-size:15px;background:var(--tx);color:var(--bg);transition:opacity .15s}
+.ave-go:disabled{opacity:.55}
+.ave-msg{font-size:13px;color:var(--tx2);margin-top:10px;text-align:center}
+.ave-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;height:260px;border:1.5px dashed var(--line2);border-radius:14px;color:var(--tx2);font-size:15px;cursor:pointer;transition:border-color .15s,background .15s}
+.ave-drop.over{border-color:var(--tx2);background:var(--s2,#1f1f22)}
+.ave-drop .or{font-size:13px}
+.ave-pick{background:var(--s3);color:var(--tx);border-radius:12px;padding:8px 18px}
+.av.img img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}

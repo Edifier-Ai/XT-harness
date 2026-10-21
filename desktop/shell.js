@@ -30,7 +30,7 @@ const RUNTIME = app.isPackaged ? path.join(process.resourcesPath, 'runtime') : (
 const BOOT = global.TIANXI_BOOT || { version: app.getVersion(), shipped: app.getVersion(), appDir: __dirname, bundleDir: null }
 const SHIPPED_BUNDLE = path.join(RUNTIME, 'node_modules', 'dsh-tianxi')
 const BUNDLE = BOOT.bundleDir || SHIPPED_BUNDLE
-const free = require('./freemode.js')
+const free = require('./freegate.js')
 const PLUGINS = path.join(BUNDLE, 'plugins')
 const ICON = path.join(__dirname, 'icon.png')
 // Windows takes the taskbar and shortcut icon from an .ico; keep a copy at a path that survives updates.
@@ -64,6 +64,7 @@ const putKey = (c, k) => {
 const encrypt = (k) => safeStorage.isEncryptionAvailable() ? { v: safeStorage.encryptString(k).toString('base64'), enc: true } : { v: Buffer.from(k, 'utf8').toString('base64'), enc: false }
 const decrypt = (v, enc) => { try { return enc ? safeStorage.decryptString(Buffer.from(v, 'base64')) : Buffer.from(v, 'base64').toString('utf8') } catch { return '' } }
 let cfg = loadCfg()
+const gate = free.createGate({ bundleDir: BUNDLE, userDir: USER, encrypt, decrypt, openExternal: (u) => shell.openExternal(u) })
 
 // ---------- runtime (DeepSeek Harness + 天禧 plugins) ----------
 const TOKEN = crypto.randomBytes(18).toString('hex')
@@ -74,7 +75,7 @@ let quitting = false
 let restarts = 0
 
 const yamlStr = (s) => JSON.stringify(String(s))
-// Every model 天禧 may switch to in a chat: the user's own key, plus the free ones (Magpie, 智谱).
+// Every model 天禧 may switch to in a chat: the user's own key, plus the free ones (signed-in software, 智谱).
 // Each route is a provider in the patch; the chat's model picker chooses among them without a restart.
 function routes() {
   const out = []
@@ -83,9 +84,14 @@ function routes() {
     const p = PRESETS.find((x) => x.id === cfg.provider)
     out.push({ id: 'tianxi', name: p ? p.name : '我的模型', baseURL: cfg.baseURL, keyEnv: 'TIANXI_API_KEY', key: getKey(cfg), models: [{ id: cfg.model, label: cfg.model, group: p ? p.name : '我的 Key', efforts: [] }] })
   }
-  const m = cfg.free?.magpie
-  if (m?.on && m.models?.length) {
-    out.push({ id: 'magpie', name: 'Magpie', baseURL: (m.base || free.magpieBase()) + '/v1', keyEnv: 'TIANXI_KEY_MAGPIE', key: free.MAGPIE_KEY, thinkingFormat: 'openai', models: m.models })
+  // signed-in software (Magpie's plugins), through the local gateway
+  for (const s of gate.sites()) {
+    const f = cfg.free?.[s.id]
+    if (!f?.on || !f.models?.length || !gate.getAuth(s.id)) continue
+    const freeOnes = f.models.filter((x) => x.free)
+    const ms = f.freeOnly !== false && freeOnes.length ? freeOnes : f.models
+    out.push({ id: s.id, name: s.appName, baseURL: gate.baseURL(s.id), keyEnv: 'TIANXI_KEY_GATE', key: gate.KEY, thinkingFormat: 'openai',
+      models: ms.map((x) => ({ ...x, group: s.appName + (s.id.endsWith('-ai') || s.id === 'qoder' ? ' 国际版' : '') })) })
   }
   for (const c of free.cloud(BUNDLE)) {
     const k = cfg.free?.[c.id]
@@ -137,14 +143,12 @@ ${prov || `      tianxi:
 `
   fs.writeFileSync(target, yml)
 }
-// Magpie's models change as the user signs in and out; pick them up at every start.
-async function refreshMagpie() {
-  if (!cfg.free?.magpie?.on) return
-  try {
-    const r = await free.scan(BUNDLE); if (!r.magpie.ok) return
-    const ms = [...r.software.flatMap((s) => s.models.map((x) => ({ ...x, group: s.name }))), ...(cfg.free.magpie.others ? r.others.map((x) => ({ ...x, group: 'Magpie 里的其他模型' })) : [])]
-    if (ms.length) { cfg.free.magpie.models = ms; cfg.free.magpie.base = r.magpie.base; saveCfg(cfg) }
-  } catch {}
+// A signed-in account's models change (Qoder's free ones, WorkBuddy's plan); pick them up at every start.
+async function refreshFree() {
+  for (const s of gate.sites()) {
+    if (!cfg.free?.[s.id]?.on || !gate.getAuth(s.id)) continue
+    try { const ms = await gate.models(s.id); if (ms.length) { cfg.free[s.id].models = ms; saveCfg(cfg) } } catch {}
+  }
 }
 const routeEnv = () => Object.fromEntries(routes().map((r) => [r.keyEnv, r.key || 'none']))
 
@@ -155,14 +159,15 @@ const freePort = (pref) => new Promise((resolve) => {
 
 async function startRuntime() {
   if (child) return
-  await refreshMagpie()
+  await gate.start(3460).catch(() => {})
+  await refreshFree()
   writePatch()
   PORT = PORT || await freePort(3090)
   const log = fs.createWriteStream(path.join(LOGS, 'runtime.log'), { flags: 'a' })
   log.write(`\n===== ${new Date().toISOString()} start =====\n`)
   child = spawn(process.execPath, [DSH_ENTRY, '--profile', 'web', '--patch', PATCH_FILE, '--no-open', '--port', '0'], {
     cwd: os.homedir(), windowsHide: true,
-    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME, TIANXI_HOME, TIANXI_PORT: String(PORT), TIANXI_TOKEN: TOKEN, TIANXI_API_KEY: getKey(cfg) || 'none', ...routeEnv(), TIANXI_MODELS: JSON.stringify(catalog()), TIANXI_PICK: JSON.stringify({ ...currentPick(), at: cfg.currentAt || 0 }) },
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', DSH_HOME, TIANXI_HOME, TIANXI_PORT: String(PORT), TIANXI_TOKEN: TOKEN, TIANXI_API_KEY: getKey(cfg) || 'none', ...routeEnv(), TIANXI_MODELS: JSON.stringify(catalog()), TIANXI_ROUTES: JSON.stringify(routes().map((r) => ({ id: r.id, baseURL: r.baseURL, keyEnv: r.keyEnv }))), TIANXI_PICK: JSON.stringify({ ...currentPick(), at: cfg.currentAt || 0 }) },
   })
   child.stdout.pipe(log); child.stderr.pipe(log)
   const me = child
@@ -256,7 +261,7 @@ ipcMain.handle('tianxi:win', (e, cmd) => {
 ipcMain.handle('tianxi:show', () => showMain())
 ipcMain.handle('tianxi:getConfig', () => ({
   provider: cfg.provider || 'deepseek', model: cfg.model || '', baseURL: cfg.baseURL || '', hasKey: !!getKey(cfg), configured: configured(),
-  free: { magpie: !!cfg.free?.magpie?.on, others: !!cfg.free?.magpie?.others, cloud: free.cloud(BUNDLE).map((c) => ({ ...c, on: !!cfg.free?.[c.id]?.on, hasKey: !!cfg.free?.[c.id]?.key })) }, current: currentPick(),
+  free: { sites: Object.fromEntries(gate.sites().map((s) => [s.id, { on: !!cfg.free?.[s.id]?.on, freeOnly: cfg.free?.[s.id]?.freeOnly !== false }])), cloud: free.cloud(BUNDLE).map((c) => ({ ...c, on: !!cfg.free?.[c.id]?.on, hasKey: !!cfg.free?.[c.id]?.key })) }, current: currentPick(),
   autoLaunch: app.getLoginItemSettings().openAtLogin, presets: PRESETS,
 }))
 // Ask an OpenAI-compatible endpoint which models it serves (Magpie and Ollama list theirs here).
@@ -293,11 +298,21 @@ ipcMain.handle('tianxi:saveConfig', async (e, c) => {
 
 // ---------- 免费模式 ----------
 const restartRuntime = () => setTimeout(async () => { restarting = true; await stopRuntime(); restarting = false; restarts = 0; await loadMain() }, 300)
-ipcMain.handle('tianxi:freeScan', () => free.scan(BUNDLE))
+ipcMain.handle('tianxi:freeScan', () => gate.scan())
+ipcMain.handle('tianxi:freeSignIn', (e, c = {}) => gate.signIn(c.site, c.how))
+ipcMain.handle('tianxi:freeReopen', (e, site) => gate.reopen(site))
+ipcMain.handle('tianxi:freeSignOut', (e, site) => {
+  gate.signOut(site)
+  if (cfg.free?.[site]?.on) { cfg.free[site].on = false; saveCfg(cfg); restartRuntime() }
+  return { ok: true }
+})
 ipcMain.handle('tianxi:open', (e, url) => { if (/^https:\/\//.test(String(url))) shell.openExternal(url) })
-// Test one model: { route: 'magpie' | 'zhipu' | ..., model, effort, apiKey? }
+// Test one model: { route: a signed-in site ('qoder-cn', 'workbuddy', ...) | 'zhipu', model, effort, apiKey? }
 ipcMain.handle('tianxi:freeTest', async (e, c = {}) => {
-  if (c.route === 'magpie') return free.test({ baseURL: (cfg.free?.magpie?.base || free.magpieBase()) + '/v1', key: free.MAGPIE_KEY, model: c.model, effort: c.effort })
+  if (gate.siteOf(c.route)) {
+    await gate.start(3460)
+    return free.test({ baseURL: gate.baseURL(c.route), key: gate.KEY, model: c.model, effort: c.effort, stream: true })
+  }
   const cl = free.cloud(BUNDLE).find((x) => x.id === c.route)
   if (!cl) return { ok: false, status: 0, code: 'UNKNOWN_ROUTE', message: '不认识的来源' }
   const saved = cfg.free?.[cl.id]?.key ? decrypt(cfg.free[cl.id].key, cfg.free[cl.id].enc) : ''
@@ -305,17 +320,20 @@ ipcMain.handle('tianxi:freeTest', async (e, c = {}) => {
   if (!key) return { ok: false, status: 0, code: 'NO_KEY', message: '还没填 API Key' }
   return free.test({ baseURL: cl.baseURL, key, model: c.model })
 })
-// Turn a source on (and make one of its models the current one) or off: { route, on, model, effort, apiKey?, others? }
+// Turn a source on (and make one of its models the current one) or off: { route, on, model, effort, apiKey?, freeOnly? }
 ipcMain.handle('tianxi:freeSave', async (e, c = {}) => {
   cfg.free = cfg.free || {}
-  if (c.route === 'magpie') {
+  if (gate.siteOf(c.route)) {
+    const prev = cfg.free[c.route] || {}
     if (c.on) {
-      const r = await free.scan(BUNDLE)
-      if (!r.magpie.ok) return { ok: false, code: 'NO_MAGPIE', message: r.magpie.error || '没找到 Magpie' }
-      const ms = [...r.software.flatMap((s) => s.models.map((x) => ({ ...x, group: s.name }))), ...(c.others ? r.others.map((x) => ({ ...x, group: 'Magpie 里的其他模型' })) : [])]
-      if (!ms.length) return { ok: false, code: 'NO_MODELS', message: 'Magpie 里还没有这几个软件的模型' }
-      cfg.free.magpie = { on: true, base: r.magpie.base, others: !!c.others, models: ms }
-    } else cfg.free.magpie = { ...(cfg.free.magpie || {}), on: false }
+      if (!gate.getAuth(c.route)) return { ok: false, code: 'NOT_SIGNED_IN', message: '还没登录' }
+      let ms = []; try { ms = await gate.models(c.route) } catch (err) { return { ok: false, code: 'NO_MODELS', message: err.message } }
+      if (!ms.length) return { ok: false, code: 'NO_MODELS', message: '这个账号下没有可用的模型' }
+      await gate.start(3460)
+      const t = await free.test({ baseURL: gate.baseURL(c.route), key: gate.KEY, model: c.model || ms[0].id, effort: c.effort, stream: true })
+      if (!t.ok) return t
+      cfg.free[c.route] = { on: true, freeOnly: c.freeOnly !== false, models: ms }
+    } else cfg.free[c.route] = { ...prev, on: false }
   } else {
     const cl = free.cloud(BUNDLE).find((x) => x.id === c.route)
     if (!cl) return { ok: false, code: 'UNKNOWN_ROUTE', message: '不认识的来源' }

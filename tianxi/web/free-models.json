@@ -1,12 +1,25 @@
 {
-  "_": "免费模式的数据：哪些服务商算哪个软件、哪些模型免费。改这里随差分更新下发。free 是匹配模型 id 或名字的正则。",
+  "_": "免费模式的数据，随差分更新下发。software 用 Magpie 社区插件登录（vendor/magpie），哪些模型免费由插件给出；cloud 是注册拿 Key 的平台。",
   "software": [
-    { "id": "qoder", "name": "Qoder", "providers": ["^qoder"], "free": ["free", "lite"], "how": "装好 Qoder 后，在 Magpie 的「服务商」里登录 Qoder（国内账号选 Qoder CN）。" },
-    { "id": "workbuddy", "name": "WorkBuddy", "providers": ["^workbuddy"], "free": ["free"], "how": "装好 WorkBuddy 后，在 Magpie 的「插件」里添加 WorkBuddy，再用腾讯账号登录。" },
-    { "id": "codex", "name": "Codex", "providers": ["^codex$", "^chatgpt"], "tag": "订阅内", "free": [], "how": "在这台电脑上装好 Codex，用 ChatGPT 账号登录，Magpie 会自动识别。" },
-    { "id": "claude", "name": "Claude", "providers": ["^claude$"], "tag": "订阅内", "free": [], "how": "在这台电脑上装好 Claude Code 并登录，Magpie 会自动识别。" }
+    {
+      "id": "qoder", "name": "Qoder",
+      "sites": [
+        { "id": "qoder-cn", "name": "国内版（qoder.cn）", "file": "qoder-auth.mjs", "export": "QoderCNAuthPlugin" },
+        { "id": "qoder", "name": "国际版（qoder.com）", "file": "qoder-auth.mjs", "export": "QoderAuthPlugin" }
+      ],
+      "how": "用 Qoder 账号在浏览器里登录并授权这台设备，不需要装 Qoder。"
+    },
+    {
+      "id": "workbuddy", "name": "WorkBuddy",
+      "sites": [
+        { "id": "workbuddy", "name": "国内版（CodeBuddy）", "file": "workbuddy-auth.mjs", "export": "WorkBuddyAuthPlugin" },
+        { "id": "workbuddy-ai", "name": "国际版（WorkBuddy AI）", "file": "workbuddy-auth.mjs", "export": "WorkBuddyAIAuthPlugin" }
+      ],
+      "how": "用腾讯账号在浏览器里登录；这台电脑上的 WorkBuddy 已登录时也可以直接用它的账号（5.6 以前的版本）。"
+    },
+    { "id": "codex", "name": "Codex", "off": "OpenAI 只允许 ChatGPT 订阅在 Codex 里用，这一版不接。有 OpenAI 的 API Key 可以在「我有 API Key」里填。" },
+    { "id": "claude", "name": "Claude", "off": "Anthropic 的条款不允许把 Claude 订阅登录用在别的软件里，这一版不接。有 Anthropic 的 API Key 可以在「我有 API Key」里填。" }
   ],
-  "freeAnywhere": [":free$", "-free$", "\\bfree\\b"],
   "cloud": [
     {
       "id": "zhipu", "name": "智谱", "full": "智谱 BigModel 开放平台",
