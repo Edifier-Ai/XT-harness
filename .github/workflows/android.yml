@@ -73,9 +73,11 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
-          target: google_apis
+          # no Google services, like most phones sold in China (and Google services dying on the emulator took the App with it)
+          target: default
           arch: x86_64
           profile: pixel_6
+          ram-size: 4096M
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
           script: adb install -r android/app/build/outputs/apk/debug/app-debug.apk && node dev/phone-e2e/android.mjs "$RUNNER_TEMP/shots" android/fakeuu/build/outputs/apk/debug/fakeuu-debug.apk || { tail -40 "$RUNNER_TEMP/e2e-host.log"; tail -40 "$RUNNER_TEMP/e2e/runtime.log"; exit 1; }
