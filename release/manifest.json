@@ -2,7 +2,7 @@
  "version": "0.18.0",
  "notes": "新增 Mac 版（Apple 芯片和 Intel）：窗口左上角是 Mac 的红绿灯按钮，有顶部菜单和拷贝粘贴快捷键，点 Dock 图标回到窗口，菜单栏有小天图标；呼出快捷键 ⌘⇧空格。Windows 版功能不变。",
  "minBase": "0.4.0",
- "at": "2026-10-21T14:35:57.740Z",
+ "at": "2026-10-21T14:53:26.827Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
