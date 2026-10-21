@@ -55,7 +55,8 @@ cp runtime-mac/package.json "$RES/runtime/"
 rm -rf "$RES/runtime/node_modules/dsh-tianxi" && cp -R $ROOT/tianxi "$RES/runtime/node_modules/dsh-tianxi"
 # slim, as on Windows
 R="$RES/runtime/node_modules"
-rm -rf "$R/@deepseek-ai/libreoffice-kit-wasm" "$R"/node-pty/prebuilds/win32-* "$R"/node-pty/prebuilds/linux-*
+OTHER=$([ "$ARCH" = arm64 ] && echo x64 || echo arm64)
+rm -rf "$R/@deepseek-ai/libreoffice-kit-wasm" "$R"/node-pty/prebuilds/win32-* "$R"/node-pty/prebuilds/linux-* "$R"/node-pty/prebuilds/darwin-$OTHER
 find "$R" \( -name '*.map' -o -name '*.d.ts' -o -name '*.d.mts' -o -name '*.d.cts' -o -name '*.tsbuildinfo' \) -type f -delete
 # keep only Chinese and English UI strings
 find "$RES" -maxdepth 1 -name '*.lproj' ! -name 'zh_CN.lproj' ! -name 'en.lproj' -exec rm -rf {} +
@@ -83,12 +84,25 @@ codesign --force --deep --sign - "$APP"
 codesign --verify --deep --strict "$APP" && echo signed
 echo assembled; du -sm "$APP"
 
-# the disk image: drag 小天 Bot into Applications (LZMA, macOS 10.15 and later)
-STAGE="$OUT/dmg"; mkdir -p "$STAGE"; ditto "$APP" "$STAGE/$NAME.app"; ln -s /Applications "$STAGE/应用程序"
-# hdiutil sometimes fails with "Resource busy" on build machines while the system scans new files: try again
-for i in 1 2 3 4 5 6; do
-  hdiutil create -volname "$NAME" -srcfolder "$STAGE" -ov -format ULMO "$OUT/XiaotianBot-$VER-mac-$ARCH.dmg" && break
-  [ $i = 6 ] && exit 1; echo "hdiutil failed, retry $i"; sleep $((i * 10))
+# the disk image: drag 小天 Bot into Applications. Built in steps (empty image → copy in → detach → compress) because on
+# build machines a one-step "hdiutil create -srcfolder" often ends in "Resource busy" while the system scans the new files.
+DMG="$OUT/XiaotianBot-$VER-mac-$ARCH.dmg"; RW="$OUT/rw.dmg"; MNT=/tmp/xt-dmg-build
+MB=$(( $(du -sm "$APP" | cut -f1) + 300 ))
+calm() { sudo -n pkill -9 XProtect 2>/dev/null || true; sync; sleep 2; }
+rm -f "$RW" "$DMG"
+hdiutil create -size ${MB}m -fs HFS+ -volname "$NAME" -type UDIF -layout SPUD "$RW"
+hdiutil attach "$RW" -nobrowse -noverify -noautoopen -mountpoint "$MNT"
+ditto "$APP" "$MNT/$NAME.app"; ln -s /Applications "$MNT/应用程序"
+calm
+for i in 1 2 3 4 5 6 7 8 9 10; do
+  hdiutil detach "$MNT" && break
+  echo "detach busy, retry $i"; sleep $((i * 3)); calm
+  [ $i = 10 ] && hdiutil detach -force "$MNT"
 done
-rm -rf "$STAGE"
+for i in 1 2 3 4 5; do
+  hdiutil convert "$RW" -format ULMO -o "$DMG" && break
+  [ $i = 5 ] && exit 1; echo "convert failed, retry $i"; rm -f "$DMG"; sleep $((i * 10)); calm
+done
+rm -f "$RW"
+hdiutil verify "$DMG"
 ls -la "$OUT"
