@@ -1213,3 +1213,28 @@ button:focus:not(:focus-visible){outline:none}
 .tu-in .wave i:nth-child(2){animation-delay:.15s}.tu-in .wave i:nth-child(3){animation-delay:.3s}.tu-in .wave i:nth-child(4){animation-delay:.45s}
 @keyframes twv{50%{height:14px}}
 @media (max-width:760px){.tpic{display:none}}
+.tp-ui{width:260px;padding:14px;border-radius:16px;background:rgba(20,18,40,.72);border:1px solid rgba(255,255,255,.12);backdrop-filter:blur(10px);color:#eceaf8}
+.tu-h{font-size:13.5px;font-weight:700;margin-bottom:10px}
+.tu-opts{display:flex;gap:8px}
+.tu-opts span{flex:1;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.14);display:flex;flex-direction:column;gap:2px}
+.tu-opts span.on{border-color:#b3a6ff;background:rgba(179,166,255,.16)}
+.tu-opts b{font-size:12.5px}.tu-opts small{font-size:11px;color:#a9a4c8}
+.tu-bars{display:flex;align-items:flex-end;gap:8px;height:56px;margin:12px 2px}
+.tu-bars i{flex:1;border-radius:4px 4px 0 0;background:linear-gradient(#b3a6ff,#5b47e6);transform-origin:bottom;animation:tgrow .7s var(--ease-out) both;animation-delay:calc(var(--i) * .07s)}
+@keyframes tgrow{from{transform:scaleY(0)}}
+.tu-go{display:flex;justify-content:flex-end}.tu-go .tchip{height:28px;font-size:12.5px}
+.tp-plug{display:grid;grid-template-columns:repeat(4,52px);gap:14px}
+.tp-plug span{position:relative;animation:tpop .5s var(--ease-out) both;animation-delay:calc(var(--i) * .05s)}
+.tp-plug b{display:flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:14px;font-size:18px;font-weight:700;box-shadow:0 6px 16px rgba(0,0,0,.3)}
+.tp-plug span > i{position:absolute;right:-5px;bottom:-5px;width:22px;height:13px;border-radius:7px;background:#4a4760;border:2px solid #0b0a18}
+.tp-plug span > i::after{content:'';position:absolute;left:2px;top:2px;width:9px;height:9px;border-radius:50%;background:#fff;transition:transform .2s}
+.tp-plug span > i.on{background:#6a4cf0}.tp-plug span > i.on::after{transform:translateX(9px)}
+.tp-flow{position:relative;width:240px;height:220px}
+.tp-flow .fl{position:absolute;inset:0;width:100%;height:100%}
+.tp-flow .fl path{stroke:rgba(179,166,255,.45);stroke-width:1.5;stroke-dasharray:4 5;fill:none;animation:tdash 1.2s linear infinite}
+@keyframes tdash{to{stroke-dashoffset:-18}}
+.tp-flow .core{position:absolute;left:120px;top:110px;transform:translate(-50%,-50%)}
+.tp-flow .sat{position:absolute;transform:translate(-50%,-50%)}
+.tp-flow .pk{position:absolute;left:120px;top:110px;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:#f4f1ff;box-shadow:0 0 10px #b3a6ff;animation:tpk 2.4s ease-in-out infinite;animation-delay:calc(var(--i) * -.6s)}
+.tp-flow .pk:nth-of-type(1){--x:-80px;--y:-70px}.tp-flow .pk:nth-of-type(2){--x:80px;--y:-66px}.tp-flow .pk:nth-of-type(3){--x:88px;--y:66px}.tp-flow .pk:nth-of-type(4){--x:-86px;--y:62px}
+@keyframes tpk{0%{transform:translate(0,0);opacity:0}15%{opacity:1}85%{opacity:1}100%{transform:translate(var(--x),var(--y));opacity:0}}

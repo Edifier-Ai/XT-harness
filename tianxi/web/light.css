@@ -250,3 +250,7 @@
 :where(:root[data-theme=light]) .tb-r i{background:rgba(20,20,40,0.162)}
 :where(:root[data-theme=light]) .tu-in{border:1px solid rgba(20,20,40,0.126)}
 :where(:root[data-theme=light]) .tu-in .mic{background:rgba(20,20,40,0.090)}
+:where(:root[data-theme=light]) .tp-ui{border:1px solid rgba(20,20,40,0.108)}
+:where(:root[data-theme=light]) .tu-opts span{border:1px solid rgba(20,20,40,0.126)}
+:where(:root[data-theme=light]) .tp-plug b{box-shadow:0 6px 16px rgba(80,70,120,0.105)}
+:where(:root[data-theme=light]) .tp-plug span > i::after{background:#1c1c22}

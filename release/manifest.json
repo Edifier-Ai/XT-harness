@@ -1,8 +1,8 @@
 {
- "version": "0.17.0",
- "notes": "首次启动显示功能介绍浮层（5 页，菜单里可再打开）；Bot 交接在对话里默认折叠成一行，点开看详情；菜单去掉“我的”，新增系统感知和功能介绍；临时模式改名隐私模式，隐私模式下的对话也不会进入反思；Bot 眼睛随主题变色：深色黑眼睛、浅色白眼睛，桌面小天同步",
+ "version": "0.17.1",
+ "notes": "功能介绍改成 5 页：一群有个性的 Bot / 生成式 UI / 系统感知与主动服务 / 一切皆插件 / 让记忆流转起来，配图同步更新",
  "minBase": "0.4.0",
- "at": "2026-10-21T08:28:50.433Z",
+ "at": "2026-10-21T08:38:19.402Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -516,8 +516,8 @@
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "c28e2ea9feeffab4e0995cf4ea2f131d85ee7f55d3bfd12fa923b60edff1d468",
-   "size": 20011
+   "sha256": "4a35af1543048c6361267086e6c74f4d0c2262beba8b3c2fb7b4bcdf1ac817ad",
+   "size": 20339
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
@@ -531,8 +531,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "15fa9dc082f9ff5dec164ffd7cde3efa0d3b6931c6382c0405c876e0c5a73bd9",
-   "size": 92629
+   "sha256": "37ca572a5e56e36ab695eb70be7c50f358376b9031a7c673e48558c9ae2f2ac0",
+   "size": 95320
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",
@@ -541,8 +541,8 @@
   },
   "bundle/web/tour.js": {
    "path": "tianxi/web/tour.js",
-   "sha256": "4746d132b494d3b37cb1613309a37e54d4cf197aef4f95e4fd3e86e739294680",
-   "size": 5747
+   "sha256": "5577b4ee9dca9f296de47ca05ad720675ab7034e9d62d82ffd6cdaef9924f017",
+   "size": 6546
   },
   "bundle/web/voice.js": {
    "path": "tianxi/web/voice.js",
