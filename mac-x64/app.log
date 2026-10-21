@@ -1,0 +1,30 @@
+
+DevTools listening on ws://127.0.0.1:9223/devtools/browser/82468a90-c39d-469f-b592-b748372f9bbe
+[10492:1021/155805.035463:ERROR:ui/gl/gl_display.cc:665] Initialization of all (1) EGL display types failed.
+[10492:1021/155805.036492:ERROR:ui/gl/init/gl_initializer_mac.cc:127] GLDisplayEGL::Initialize failed.
+[10492:1021/155805.036559:ERROR:ui/gl/gl_display.cc:665] Initialization of all (1) EGL display types failed.
+[10492:1021/155805.036579:ERROR:ui/gl/init/gl_initializer_mac.cc:127] GLDisplayEGL::Initialize failed.
+[10492:1021/155805.118910:ERROR:components/viz/service/main/viz_main_impl.cc:190] Exiting GPU process due to errors during initialization
+2026-10-21 15:58:07.485 小天 Bot Helper[10493:30816] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:58:07.486 小天 Bot Helper[10493:30819] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:58:07.491 小天 Bot Helper[10493:30816] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+[10504:1021/155807.659222:ERROR:ui/gl/gl_display.cc:665] Initialization of all (1) EGL display types failed.
+[10504:1021/155807.660076:ERROR:ui/gl/init/gl_initializer_mac.cc:127] GLDisplayEGL::Initialize failed.
+[10504:1021/155807.660116:ERROR:ui/gl/gl_display.cc:665] Initialization of all (1) EGL display types failed.
+[10504:1021/155807.660139:ERROR:ui/gl/init/gl_initializer_mac.cc:127] GLDisplayEGL::Initialize failed.
+[10504:1021/155807.760036:ERROR:components/viz/service/main/viz_main_impl.cc:190] Exiting GPU process due to errors during initialization
+[10506:1021/155807.936772:ERROR:ui/gl/gl_display.cc:665] Initialization of all (1) EGL display types failed.
+[10506:1021/155807.937253:ERROR:ui/gl/init/gl_initializer_mac.cc:127] GLDisplayEGL::Initialize failed.
+[10506:1021/155807.937278:ERROR:ui/gl/gl_display.cc:665] Initialization of all (1) EGL display types failed.
+[10506:1021/155807.937290:ERROR:ui/gl/init/gl_initializer_mac.cc:127] GLDisplayEGL::Initialize failed.
+[10506:1021/155807.985976:ERROR:components/viz/service/main/viz_main_impl.cc:190] Exiting GPU process due to errors during initialization
+2026-10-21 15:58:08.182 小天 Bot Helper[10493:30816] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:58:08.185 小天 Bot Helper[10493:30816] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:58:08.187 小天 Bot Helper[10493:30816] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+[10507:1021/155820.874248:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[10507:1021/155820.875570:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[10507:1021/155820.875608:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[10507:1021/155820.875632:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[10507:1021/155820.875662:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[10507:1021/155820.875681:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
+[10507:1021/155827.779048:ERROR:gpu/command_buffer/service/shared_image/shared_image_manager.cc:395] SharedImageManager::ProduceMemory: Trying to Produce a Memory representation from a non-existent mailbox.
