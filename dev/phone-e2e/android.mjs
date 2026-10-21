@@ -3,7 +3,7 @@
 // (played by the fakeuu app) and hand it back, reopen the App, lose the computer and find it again, unpair.
 // Taps and reads go through the WebView's DevTools socket; screenshots are the emulator's whole screen.
 // Usage: node dev/phone-e2e/android.mjs <out dir> <fakeuu.apk>   (writes NN-name.png and results.json)
-import { chromium } from 'playwright-core'
+import { _android } from 'playwright-core'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -35,28 +35,18 @@ const top = () => (adb('shell', 'dumpsys', 'activity', 'activities').match(/topR
 const back = () => adb('shell', 'input', 'keyevent', 'KEYCODE_BACK')
 const launch = () => adb('shell', 'am', 'start', '-W', '-n', `${APP}/.MainActivity`)
 
-let browser, browserPid
-// the App's WebView, through its DevTools socket (on in debug builds only); one connection per App process
+let device, view, pg0
+// the App's WebView, through its DevTools socket (on in debug builds only), as Playwright's Android support reaches it
 async function page(want = () => true) {
+  device ||= (await _android.devices({ omitDriverInstall: true }))[0]
+  if (!device) throw new Error('no Android device')
   const pid = await until(() => adb('shell', 'pidof', APP).trim(), 20000)
-  if (!browser || pid !== browserPid || !browser.isConnected()) {
-    try { adb('forward', '--remove', 'tcp:9333') } catch {}
-    adb('forward', 'tcp:9333', `localabstract:webview_devtools_remote_${pid}`)
-    const errs = []
-    // the WebView's /json/version carries no browser WebSocket address, so connect to it directly
-    browser = await until(async () => {
-      try { return await chromium.connectOverCDP('ws://127.0.0.1:9333/devtools/browser') } catch (e) { errs.push(String(e.message).split('\n')[0]); return null }
-    }, 30000, 1000)
-    if (!browser) {
-      let info = ''
-      try { info = await (await fetch('http://127.0.0.1:9333/json/version')).text() } catch (e) { info = e.message }
-      throw new Error(`no DevTools connection to the WebView (pid ${pid}): ${errs.slice(-2).join(' / ')} :: ${info} :: ${adb('shell', 'cat', '/proc/net/unix').split('\n').filter((l) => l.includes('devtools')).join(' ')}`)
-    }
-    browserPid = pid
+  if (!view || String(view.pid()) !== pid || !pg0 || pg0.isClosed()) {
+    view = await device.webView({ socketName: `webview_devtools_remote_${pid}` }, { timeout: 30000 })
+    pg0 = await view.page()
   }
-  const pg = await until(() => browser.contexts().flatMap((c) => c.pages()).find((p) => !p.isClosed() && !p.url().startsWith('about:') && want(p.url())), 20000)
-  if (!pg) throw new Error('no page in the WebView matching ' + want)
-  return pg
+  if (!(await until(() => want(pg0.url()), 20000))) throw new Error('the WebView shows ' + pg0.url() + ', not ' + want)
+  return pg0
 }
 const toastText = (pg) => pg.evaluate(() => [...document.querySelectorAll('.toast')].map((t) => t.innerText).join(' | '))
 
@@ -222,6 +212,7 @@ try {
   check(false, 'test run', String(e && e.stack || e))
   try { shot('crash') } catch {}
 }
+try { await device?.close() } catch {}
 fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results, null, 1))
 const bad = results.filter((r) => !r.ok)
 console.log(`${results.length - bad.length}/${results.length} passed`)
