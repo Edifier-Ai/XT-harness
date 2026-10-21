@@ -34,8 +34,16 @@ const free = require('./freegate.js')
 const PLUGINS = path.join(BUNDLE, 'plugins')
 const ICON = path.join(__dirname, 'icon.png')
 // Windows takes the taskbar and shortcut icon from an .ico; keep a copy at a path that survives updates.
-const ICO = path.join(app.getPath('userData'), 'icon.ico')
-try { const src = path.join(__dirname, 'icon.ico'); if (fs.existsSync(src) && (!fs.existsSync(ICO) || fs.statSync(ICO).size !== fs.statSync(src).size)) fs.copyFileSync(src, ICO) } catch {}
+// The .ico is copied out under a name that changes with its content: Windows caches icons by path,
+// so a new name is what makes the taskbar and the shortcuts pick up a new icon after an update.
+const ICO_SRC = path.join(__dirname, 'icon.ico')
+const ICO = (() => {
+  try {
+    const f = path.join(app.getPath('userData'), `icon-${crypto.createHash('md5').update(fs.readFileSync(ICO_SRC)).digest('hex').slice(0, 8)}.ico`)
+    if (!fs.existsSync(f)) fs.copyFileSync(ICO_SRC, f)
+    return f
+  } catch { return path.join(app.getPath('userData'), 'icon.ico') }
+})()
 const WIN_ICON = process.platform === 'win32' && fs.existsSync(ICO) ? ICO : ICON
 for (const d of [DSH_HOME, TIANXI_HOME, LOGS]) fs.mkdirSync(d, { recursive: true })
 
@@ -292,7 +300,8 @@ ipcMain.on('tianxi:orbMenu', (e) => {
 const showMain = () => { if (!win) return; if (win.isMinimized()) win.restore(); win.show(); win.focus() }
 
 function createTray() {
-  tray = new Tray(nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 }))
+  // the .ico carries a hand-tuned 16 px picture; a 256 px png shrunk down blurs the eyes
+  tray = new Tray(process.platform === 'win32' && fs.existsSync(ICO) ? nativeImage.createFromPath(ICO) : nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 }))
   tray.setToolTip('小天 Bot')
   const menu = () => Menu.buildFromTemplate([
     { label: '打开小天 Bot', click: showMain },

@@ -1,13 +1,13 @@
 {
- "version": "0.15.0",
- "notes": "新启动页：黑底上蓝紫氛围光从底部升起、缓慢流动变换，小天在中间醒来；加载完成后光向上铺满整个窗口，再淡入首页",
+ "version": "0.15.1",
+ "notes": "应用图标换成红色小天（白眼睛）：窗口、任务栏、托盘、桌面和开始菜单快捷方式都会更新；小尺寸单独调过，眼睛更大更清楚",
  "minBase": "0.4.0",
- "at": "2026-10-21T07:38:27.545Z",
+ "at": "2026-10-21T07:41:57.249Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "c5817a448670a4a306ca3ae725d94b8402a3121544a6617f67c398bb1089342b",
-   "size": 33248
+   "sha256": "ab3ed3d8133476a5c158116ebcae5798950efa89ceb60b6b1bd1a186fbdfd927",
+   "size": 33741
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -31,13 +31,13 @@
   },
   "app/icon.png": {
    "path": "desktop/icon.png",
-   "sha256": "90987bfce1773a0687e47f19605f1b307e1a8e191cff07edbd8d95e40e451a61",
-   "size": 32996
+   "sha256": "411bddd06092ae72ff7439b7e53ea8456a57628a09f418c8b9cf149a3ca8d7dd",
+   "size": 31829
   },
   "app/icon.ico": {
    "path": "desktop/icon.ico",
-   "sha256": "57fa70d4b33f5025da2f1c9e4ab6d0542693f68f66e01b953c4bb11d8fe7965a",
-   "size": 369214
+   "sha256": "c7ea2efe6e9b1256421f5290c7ec9d5000f76a0b4a134b30de200e395d2f91ff",
+   "size": 54134
   },
   "app/update.json": {
    "path": "desktop/update.json",
