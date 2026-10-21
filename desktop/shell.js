@@ -196,14 +196,24 @@ function stopRuntime() {
     setTimeout(resolve, 5000)
   })
 }
-async function waitReady(ms = 60000) {
+// Waits for the runtime to answer. Right after an update Windows may scan the new files first, so a start
+// can take minutes: keep waiting while the runtime process is alive, and say so on the start-up page.
+async function waitReady(ms = 300000) {
   const t0 = Date.now()
+  let said = 0, n = 0
   while (Date.now() - t0 < ms) {
-    try { const r = await fetch(`http://127.0.0.1:${PORT}/api/ping`, { headers: { 'x-tianxi-token': TOKEN } }); if (r.ok) return true } catch {}
+    // every other try goes through Chromium's network stack, in case Node's is the one that cannot get through
+    const get = n++ % 2 ? (u, o) => enet.fetch(u, o) : fetch
+    try { const r = await get(`http://127.0.0.1:${PORT}/api/ping`, { headers: { 'x-tianxi-token': TOKEN }, signal: AbortSignal.timeout(3000) }); if (r.ok) return true } catch {}
+    const waited = Date.now() - t0
+    if (waited > 15000 && said < 1) { said = 1; loadingSay('这次启动久一点，小天还在醒来') }
+    if (waited > 60000 && said < 2) { said = 2; loadingSay('还在准备，刚更新完第一次会慢些') }
+    if (!child && waited > 20000 && restarts >= 5) return false   // it keeps exiting: stop waiting
     await new Promise((r) => setTimeout(r, 400))
   }
   return false
 }
+const loadingSay = (t) => win?.webContents.executeJavaScript(`(m => m && (m.textContent = ${JSON.stringify(t)}))(document.getElementById('msg'))`).catch(() => {})
 const uiURL = (page = '') => `http://127.0.0.1:${PORT}/${page}?t=${TOKEN}`
 const api = (p, body) => fetch(`http://127.0.0.1:${PORT}/api/${p}`, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', 'x-tianxi-token': TOKEN }, body: body ? JSON.stringify(body) : undefined }).then((r) => r.json()).catch(() => null)
 
@@ -213,7 +223,7 @@ let win = null, pill = null, tray = null, refreshTray = () => {}
 // The home page's background (dark or light theme), so the start-up page can hand over without a flash next time.
 function rememberHomeBg() {
   if (!win || win.isDestroyed() || !/^http/.test(win.webContents.getURL())) return
-  win.webContents.executeJavaScript('getComputedStyle(document.body).backgroundColor').then((c) => { if (c && c !== cfg.homeBg) { cfg.homeBg = c; saveCfg(cfg) } }).catch(() => {})
+  win.webContents.executeJavaScript("getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || getComputedStyle(document.body).backgroundColor").then((c) => { if (c && !/rgba\(.*,\s*0\)$/.test(c) && c !== cfg.homeBg) { cfg.homeBg = c; saveCfg(cfg) } }).catch(() => {})
 }
 function createWindow(hidden) {
   win = new BrowserWindow({
@@ -234,12 +244,16 @@ async function loadMain() {
   await startRuntime()
   if (await waitReady()) {
     // the start-up light floods the window, then the home page takes over on the same background colour
-    const home = cfg.homeBg || '#121212'
+    const home = /^#|^rgb\(/.test(cfg.homeBg || '') ? cfg.homeBg : '#121212'
     await win.webContents.executeJavaScript(`window.finish ? window.finish(${JSON.stringify(home)}) : 0`).catch(() => {})
     win.setBackgroundColor(home)
     await win.loadURL(uiURL()); createPill(); updater.started()
   }
-  else win.webContents.executeJavaScript(`document.getElementById('msg').textContent = '小天 Bot 没能启动。日志在 ${LOGS.replace(/\\/g, '\\\\')}\\\\runtime.log'`)
+  else {
+    loadingSay(`小天 Bot 没能启动。日志在 ${path.join(LOGS, 'runtime.log')}`)
+    // keep checking: if it does come up later, go on to the home page by itself
+    if (await waitReady(600000)) loadMain()
+  }
 }
 // The floating 小天: a red ball that sits anywhere on the desktop. The window is bigger than the ball so its
 // speech bubble fits; only the ball and the bubble catch the mouse (the page says when the pointer is over them).

@@ -1,13 +1,13 @@
 {
- "version": "0.17.1",
- "notes": "功能介绍改成 5 页：一群有个性的 Bot / 生成式 UI / 系统感知与主动服务 / 一切皆插件 / 让记忆流转起来，配图同步更新",
+ "version": "0.17.2",
+ "notes": "启动更稳：小天启动慢时不再 60 秒就报“没能启动”，会一直等到它醒来并提示进度；就算显示了失败，之后醒来也会自动进入首页",
  "minBase": "0.4.0",
- "at": "2026-10-21T08:38:19.402Z",
+ "at": "2026-10-21T08:45:14.798Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "69a13c2c803778003b1e8fd698c96109d2a47ba8ada5f75dda12651c64aad719",
-   "size": 33741
+   "sha256": "1f9cfbc58ed82fc6a8542867fd96539357239e0feee4f1903fdc379cfaca747e",
+   "size": 34893
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
