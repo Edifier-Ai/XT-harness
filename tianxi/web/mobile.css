@@ -1,0 +1,199 @@
+/* 小天 Bot on a phone (html.mob, see mobile.js): one screen at a time, four tabs at the bottom, the steps as a sheet. */
+.mtabs,.mhost,.mme,.mtitle,.mback,.mpcb,.mdoing,.mshade,.munpaired{display:none}
+html.mob{--mt:env(safe-area-inset-top,0px);--mb:env(safe-area-inset-bottom,0px);--tabh:62px}
+.mob body{-webkit-tap-highlight-color:transparent;overscroll-behavior:none;-webkit-text-size-adjust:100%}
+.mob .app{display:block;position:fixed;inset:0;height:auto}
+
+/* what only makes sense on a desktop */
+.mob .wctl,.mob #bTheme,.mob .rtop .drag,.mob .rfoot .mebtn,.mob .rfoot .updb,.mob .umenu,.mob #bMic,.mob #mpicks,.mob .proc .ph .vsep,.mob .proc .ph .drag,.mob .macts,.mob .phead .r .rb[data-act=theme-flip]{display:none!important}
+.mob .ag:hover,.mob .ag.on,html.mob[data-theme] .ag:hover,html.mob[data-theme] .ag.on{background:none}
+.mob .ag:active,.mob .mrow2:active,.mob .mhost:active{background:var(--s2)}
+
+/* ---------- the tab bar ---------- */
+.mob .mtabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(var(--tabh) + var(--mb));padding:6px 8px var(--mb);background:var(--rail);border-top:1px solid var(--line)}
+.mob.m-chat .mtabs,.mob.m-sub .mtabs{display:none}
+.mtabs button{position:relative;border:0;background:none;color:var(--tx3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;padding:0}
+.mtabs button.on{color:var(--tx)}
+.mdot{position:absolute;top:4px;left:calc(50% + 7px);width:8px;height:8px;border-radius:50%;background:var(--warn);font-style:normal}
+.mdot.live{background:var(--blue2,#5f97f5);animation:pulse 1.4s infinite}
+
+/* ---------- screens ---------- */
+.mob .rail{position:absolute;inset:0;width:auto;border:0;padding:var(--mt) 0 calc(var(--tabh) + var(--mb))}
+.mob .main{position:absolute;inset:0;display:none;padding-top:var(--mt)}
+.mob.m-chat .main,.mob.m-page .main{display:flex}
+.mob.m-chat .rail,.mob.m-page .rail{display:none}
+.mob.m-page:not(.m-sub) .main{padding-bottom:calc(var(--tabh) + var(--mb))}
+.mob.m-chat .main{padding-bottom:var(--mb)}
+.mob.m-chat .main,.mob.m-page .main,.mob.m-bots .rail{animation:mslide .28s var(--ease-out,ease-out) both}
+@keyframes mslide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+
+/* ---------- Bot: the list ---------- */
+.mob .rtop{height:60px;padding:0 14px;gap:10px}
+.mob .mme{display:block;position:relative;border:0;background:none;padding:0;width:40px;height:40px;border-radius:50%;flex:none}
+.mme .n{position:absolute;right:-5px;top:-4px;min-width:18px;height:18px;border-radius:9px;background:var(--warn);color:#1b1100;font-size:11px;font-weight:700;font-style:normal;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid var(--rail)}
+.mob .mtitle{display:block;flex:1;text-align:center;font-size:18px;font-weight:700;padding-left:50px}
+.mob .search{margin:0 14px 8px}
+.mob .mhost{display:flex;align-items:center;gap:12px;margin:2px 14px 6px;padding:11px 14px;border-radius:16px;background:var(--s1);border:1px solid var(--line2);text-align:left;color:var(--tx);flex:none}
+.mhost .mi,.mrow2 .mi{width:36px;height:36px;border-radius:10px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--tx2);flex:none}
+.mhost .mt{flex:1;min-width:0}
+.mhost b{display:block;font-size:15px;font-weight:600}
+.mhost small{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2);margin-top:2px;min-width:0}
+.mhost small span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mhost small i,.mon i{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.mhost small i.off{background:var(--bad)}.mhost small i.warn{background:var(--warn)}
+.mhost>svg{color:var(--tx3)}
+.mob .agents{padding:0 8px 8px}
+.mob .ag{height:68px}
+.mob .rfoot{padding:8px 14px 10px}
+.mob .connect{height:46px;border-radius:23px}
+
+/* ---------- a chat ---------- */
+.mob .chead{height:56px;padding:0 60px!important;justify-content:center;gap:8px}
+.mob .mback,.mob .mpcb{display:flex;position:absolute;top:8px}
+.mob .mback{left:10px}
+.mob .mpcb{right:10px}
+.mpcb .mdot{top:7px;left:auto;right:7px}
+.mob .who{height:40px;max-width:100%;min-width:0}
+.mob .who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mob .chead .pm{position:static;flex:none}
+.mob .col{max-width:none;padding:4px 14px 18px}
+.mob .mrow .body{max-width:90%}
+.mob .mrow .side{width:30px}
+.mob .bub{font-size:16px;line-height:1.65;padding:10px 14px}
+.mob .qcard,.mob .mailcard{border-radius:18px}
+.mob .composer{padding:0 10px 8px}
+.mob .inbox{min-height:50px;border-radius:25px}
+.mob #inp{font-size:16px}
+.mob .send .wave{display:none}.mob .send .arrow{display:block}.mob .send.stop svg{display:none}
+.mob .send:not(.hot):not(.stop){background:var(--s3);color:var(--tx3)}
+.mob .plusmenu{left:0}
+.mob .mdoing{display:flex;align-items:center;gap:10px;margin:0 10px 8px;padding:9px 10px 9px 14px;border-radius:18px;border:1px solid var(--line2);background:var(--s1);text-align:left;color:var(--tx);flex:none}
+.mob .mdoing[hidden]{display:none}
+.mdoing .eq{display:flex;gap:3px;align-items:flex-end;height:16px;flex:none}
+.mdoing .eq i{width:3px;height:14px;border-radius:2px;background:var(--blue2,#5f97f5);transform-origin:bottom;animation:meq 1s ease-in-out infinite}
+.mdoing .eq i:nth-child(2){animation-delay:.18s}.mdoing .eq i:nth-child(3){animation-delay:.36s}
+@keyframes meq{0%,100%{transform:scaleY(.45)}50%{transform:scaleY(1)}}
+.mdoing .m{flex:1;min-width:0}
+.mdoing b{display:block;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mdoing small{display:block;font-size:12px;color:var(--tx3);margin-top:1px}
+.mdoing .go{flex:none;height:32px;padding:0 14px;border-radius:16px;background:var(--tx);color:var(--bg);font-size:13px;font-weight:600;display:flex;align-items:center}
+
+/* the bot's details and a task's steps: a sheet from the bottom */
+.mob .proc{position:fixed;left:0;right:0;bottom:0;width:auto!important;height:min(82vh,720px);z-index:41;border:0!important;border-radius:22px 22px 0 0;background:var(--s1);transform:translateY(103%);transition:transform .34s cubic-bezier(.2,.9,.25,1);padding-bottom:var(--mb);box-shadow:0 -20px 60px rgba(0,0,0,.4)}
+.mob .app.procon .proc{transform:none}
+.mob .app:not(.procon) .chead{padding-left:60px;padding-right:60px}
+.mob .proc .ph{height:50px;padding:0 10px!important;justify-content:flex-end;position:relative}
+.mob .proc .ph::before{content:"";position:absolute;left:50%;top:8px;width:38px;height:4px;border-radius:2px;background:var(--line2);margin-left:-19px}
+.mob .proc .pb{min-width:0!important;padding:0 16px 24px}
+.mob .mshade{display:block;position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:opacity .25s}
+.mob .mshade.on{opacity:1;pointer-events:auto}
+.mob .mshade.top{z-index:61}
+
+/* ---------- pages: 简报, 电脑, 我的 and what opens from them ---------- */
+.mob .pg{padding:6px 16px 28px;max-width:none}
+.mob .phead{height:auto;min-height:56px;padding:8px 0 4px;flex-wrap:wrap;row-gap:4px}
+.mob .phead .mback2{margin-right:2px}
+.mob .phead .r{margin-left:0;width:100%;flex-wrap:wrap}
+.mob .bgrid,.mob .two,.mob .mapwrap,.mob .megrid,.mob .plgrid{grid-template-columns:1fr!important;gap:12px}
+.mob .bcard,.mob .bcard.l,.mob .bcard.s{grid-column:span 1!important}
+.mob .bcard:hover{transform:none;box-shadow:none}
+.mob .panel{padding:12px 14px;border-radius:16px}
+.mob .intro{font-size:14px}
+.mh{display:flex;align-items:center;justify-content:space-between;min-height:56px;padding:8px 0 4px}
+.mh h2{margin:0;font-size:22px}
+.msec{font-size:13px;color:var(--tx3);margin:22px 4px 8px}
+.mlist{background:var(--s1);border-radius:18px;padding:4px;margin-top:12px;display:flex;flex-direction:column}
+.mrow2{display:flex;align-items:center;gap:12px;padding:10px 10px;border:0;background:none;border-radius:14px;text-align:left;color:var(--tx);width:100%;min-height:56px}
+.mrow2 .m{flex:1;min-width:0}
+.mrow2 .m b{display:block;font-size:15.5px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow2 .m small{display:block;font-size:13px;color:var(--tx2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mrow2 .m small.warn{color:#e8b866}
+.mrow2 em{font-style:normal;font-size:13.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:46%}
+.mrow2>svg{color:var(--tx3)}
+.mrow2 .dot{width:8px;height:8px;border-radius:50%;background:var(--tx3);margin:0 14px;flex:none}
+.mrow2.red{color:var(--bad)}.mrow2.red .mi{color:var(--bad)}
+.mrow2 .tg{flex:none}
+.mfine{font-size:12.5px;color:var(--tx3);line-height:1.7;text-align:center;margin:22px 12px 8px}
+
+/* 电脑: the computer, its screen through UU 远程, and taking over */
+.mpc{background:var(--s1);border:1px solid var(--line);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.mpc-h{display:flex;align-items:center;gap:12px;padding:2px 4px}
+.mpc-h .m{flex:1;min-width:0}
+.mpc-h b{display:block;font-size:17px;font-weight:700}
+.mpc-h span{font-size:13px;color:var(--tx2)}
+.mon{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--bad)!important;flex:none}
+.mon i{background:var(--bad)}
+.mon.on{color:var(--ok)!important}.mon.on i{background:var(--ok)}
+.mscr{position:relative;height:198px;border-radius:16px;border:0;overflow:hidden;background:#20263a center/cover no-repeat;padding:0;text-align:left;color:#fff}
+.mscr.wall-morning{background-image:linear-gradient(rgba(10,10,14,.25),rgba(10,10,14,.5)),url(img/wall-morning.jpg)}
+.mscr.wall-noon{background-image:linear-gradient(rgba(10,10,14,.25),rgba(10,10,14,.5)),url(img/wall-noon.jpg)}
+.mscr.wall-evening{background-image:linear-gradient(rgba(10,10,14,.25),rgba(10,10,14,.5)),url(img/wall-evening.jpg)}
+.mscr.wall-night{background-image:linear-gradient(rgba(10,10,14,.25),rgba(10,10,14,.5)),url(img/wall-night.jpg)}
+.mscr .win{position:absolute;left:18px;top:16px;width:58%;height:92px;border-radius:10px;background:rgba(246,246,248,.94);box-shadow:0 10px 30px rgba(0,0,0,.35);padding:22px 12px 0;display:flex;flex-direction:column;gap:8px}
+.mscr .win .bar{position:absolute;left:10px;top:8px;display:flex;gap:4px}
+.mscr .win .bar i{width:6px;height:6px;border-radius:50%;background:#c9c9cf}
+.mscr .win .ln{height:6px;border-radius:3px;background:#d7d9e0;width:86%}
+.mscr .win .ln.s{width:58%}
+.mscr .mw{position:absolute;left:14px;right:14px;bottom:46px;display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600;text-shadow:0 1px 8px rgba(0,0,0,.6)}
+.mscr .mw>span:last-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mscr .tag{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;background:rgba(0,0,0,.5);font-size:12px;backdrop-filter:blur(6px)}
+.mscr .tag i{width:6px;height:6px;border-radius:50%;background:#ff5b5b;animation:pulse 1.6s infinite}
+.mscr.take{box-shadow:inset 0 0 0 2px var(--warn)}
+.mpc-b{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mpc-b button{height:46px;border-radius:23px;border:0;background:var(--s3);color:var(--tx);font-size:15px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px}
+.mpc-b button.pri{background:var(--tx);color:var(--bg)}
+.mtake{display:flex;align-items:center;gap:12px;padding:12px 12px 12px 14px;border-radius:16px;background:#2b2111;border:1px solid #4a3a1c}
+.mtake .m{flex:1;min-width:0}
+.mtake b{display:block;font-size:15px;color:#ffd79a}
+.mtake small{display:block;font-size:13px;color:#e6dcc8;margin-top:2px}
+.mnote{font-size:13px;color:var(--tx2);line-height:1.6;padding:0 4px}
+.mnote .lk{margin-left:6px}
+
+/* 我的 */
+.mme-h{display:flex;align-items:center;gap:14px;padding:20px 6px 6px}
+.mme-h .m{min-width:0}
+.mme-h b{display:block;font-size:20px;font-weight:700}
+.mme-h small{display:block;font-size:13.5px;color:var(--tx2);margin-top:3px}
+
+/* a sheet of choices (the model) */
+.msheet{position:fixed;left:0;right:0;bottom:0;z-index:62;max-height:76vh;overflow-y:auto;background:var(--s1);border-radius:22px 22px 0 0;padding:10px 12px calc(16px + var(--mb,0px));animation:msheet .3s var(--ease-out,ease-out) both}
+@keyframes msheet{from{transform:translateY(100%)}}
+.msheet .grab{width:38px;height:4px;border-radius:2px;background:var(--line2);margin:0 auto 10px}
+.msheet .t{display:block;font-size:17px;padding:4px 8px 6px}
+.msheet .pg{font-size:12.5px;color:var(--tx3);padding:12px 10px 4px;margin:0;width:auto}
+.msheet button{display:flex;align-items:center;gap:8px;width:100%;min-height:48px;padding:0 10px;border:0;background:none;border-radius:12px;color:var(--tx);font-size:15.5px;text-align:left}
+.msheet button span{flex:1}
+.msheet button.on{background:var(--s2)}
+
+/* not paired */
+.mob .munpaired{display:flex;position:fixed;inset:0;z-index:90;background:var(--bg);align-items:center;justify-content:center;padding:24px}
+.mob .munpaired[hidden]{display:none}
+.munpaired .box{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;max-width:320px}
+.munpaired .big{width:72px;height:72px;border-radius:22px;background:var(--s2);display:flex;align-items:center;justify-content:center;color:var(--tx2)}
+.munpaired b{font-size:20px}
+.munpaired span{font-size:14.5px;color:var(--tx2);line-height:1.7}
+.munpaired .pbtn{margin-top:10px;height:46px;padding:0 24px;border-radius:23px;display:flex;align-items:center;gap:8px;font-size:15px}
+
+/* dialogs take the whole screen */
+.mob .modal{padding:0;align-items:stretch}
+.mob .mbox,.mob .mbox.apps,.mob .mbox.settings{width:100%;height:100%;max-height:none;border-radius:0;border:0;padding-top:var(--mt)}
+.mob .mbox.apps{padding:calc(var(--mt) + 16px) 16px 0}
+.mob .mbox.settings{flex-direction:column}
+.mob .snav{width:auto;flex-direction:row;border-right:0;border-bottom:1px solid var(--line);padding:10px 60px 10px 12px;overflow-x:auto}
+.mob .snav button{flex:none}
+.mob .sbody{padding:18px 16px 40px}
+.mob .srow{flex-wrap:wrap;gap:10px}
+.mob .mx{top:calc(var(--mt) + 8px);right:8px}
+.mob .toasts{bottom:calc(var(--tabh) + var(--mb) + 14px);width:calc(100% - 32px)}
+.mob.m-chat .toasts{bottom:calc(var(--mb) + 84px)}
+.mob .toast{max-width:100%}
+/* one at a time on a phone: the newest covers the older ones */
+.mob .toasts .toast:not(:last-child){display:none}
+.mob .tour{padding:0}
+.mob .tbox{flex-direction:column;height:100%;border-radius:0}
+.mob .agf,.mob .setrow{flex-wrap:wrap}
+
+/* the light theme */
+html.mob[data-theme=light] .mtake{background:#fff6e6;border-color:#f0d9a8}
+html.mob[data-theme=light] .mtake b{color:#8a5a00}
+html.mob[data-theme=light] .mtake small{color:#6b5a3a}

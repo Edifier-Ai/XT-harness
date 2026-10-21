@@ -29,4 +29,10 @@ contextBridge.exposeInMainWorld('tianxiApp', {
   evalStop: () => ipcRenderer.invoke('tianxi:evalStop'),
   evalStatus: () => ipcRenderer.invoke('tianxi:evalStatus'),
   evalOpen: (dir) => ipcRenderer.invoke('tianxi:evalOpen', dir),
+  // 手机: pairing a phone on the same Wi-Fi
+  phoneState: () => ipcRenderer.invoke('tianxi:phoneState'),
+  phoneOn: (on) => ipcRenderer.invoke('tianxi:phoneOn', on),
+  phoneRenew: () => ipcRenderer.invoke('tianxi:phoneRenew'),
+  phoneForget: (id) => ipcRenderer.invoke('tianxi:phoneForget', id),
+  onPhone: (cb) => ipcRenderer.on('tianxi:phone', (e, ev) => cb(ev)),
 })

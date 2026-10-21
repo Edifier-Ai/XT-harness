@@ -145,6 +145,7 @@ function decisions() {
 }
 function face() {
   if (dragging) return 'drag'
+  if (st.takeover && st.takeover.how === 'full') return 'yield'
   if (st.approvals.length) return 'ask'
   if (st.tool) return st.toolKind === 'look' ? 'look' : 'focus'
   if (flash && Date.now() < flashUntil) return flash
@@ -156,6 +157,7 @@ function face() {
 function text(f) {
   const n = decisions()
   if (f === 'ask') return { t: '需要你确认：' + (L[st.approvals[0].tool] || st.approvals[0].tool), cls: 'ask' }
+  if (f === 'yield') return { t: '你在用手机操作，小天先停下' }
   if (f === 'happy') return { t: '做好了' }
   if (f === 'oops') return { t: '出了点问题，点我看看' }
   if (f === 'think') return { t: '小天在想…' }
@@ -167,7 +169,7 @@ function text(f) {
 let lastFace = ''
 function render() {
   const f = face()
-  body.className = 'f-' + (f === 'look' ? 'focus' : f) + (st.tool ? ' tool-run' : '') + (decisions() ? ' has-dec' : '')
+  body.className = 'f-' + (f === 'look' ? 'focus' : f === 'yield' ? 'hover' : f) + (st.tool ? ' tool-run' : '') + (decisions() ? ' has-dec' : '')
   badge.textContent = decisions() || ''
   const m = text(f)
   if (m) { if (m.h) bub.innerHTML = m.h; else bub.textContent = m.t; bub.className = 'on ' + (edge.top < 130 ? 'down' : 'up') + (m.cls ? ' ' + m.cls : '') }
@@ -263,7 +265,7 @@ function show(f, ms) { flash = f; flashUntil = Date.now() + ms; render(); setTim
 async function load() {
   try {
     const s = await (await fetch('/api/state', { headers: { 'x-tianxi-token': TOKEN } })).json()
-    Object.assign(busyAgents, s.agentStatus || {}); st.status = s.status; st.approvals = s.approvals || []; st.brief = s.brief; render()
+    Object.assign(busyAgents, s.agentStatus || {}); st.status = s.status; st.approvals = s.approvals || []; st.brief = s.brief; st.takeover = s.takeover || null; render()
   } catch {}
 }
 const es = new EventSource('/api/events?t=' + encodeURIComponent(TOKEN))
@@ -282,6 +284,7 @@ es.onmessage = (e) => {
     if (it.role === 'tool' && it.state === 'running') { clearTimeout(toolOff); st.tool = it.name; st.toolKind = LOOK.test(it.name) ? 'look' : 'make'; toolAt = Date.now(); render() }
     else if (it.role === 'tool' && it.state) { clearTimeout(toolOff); toolOff = setTimeout(() => { st.tool = ''; render() }, Math.max(0, 900 - (Date.now() - toolAt))) }
     else if (it.role === 'error') errored = true
+  } else if (m.type === 'takeover') { st.takeover = m.takeover || null; render()
   } else if (m.type === 'hello' || m.type === 'approval' || m.type === 'approval-gone' || m.type === 'turn-end' || (m.type === 'store' && m.name === 'brief')) load()
 }
 // let a preview drive the face: orb.html?face=happy
