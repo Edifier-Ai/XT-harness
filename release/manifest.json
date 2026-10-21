@@ -1,8 +1,8 @@
 {
- "version": "0.19.0",
- "notes": "手机版来了：电脑上打开 设置 › 手机 › 允许手机连接，手机扫码就能和电脑上的 Bot 聊天、替它点确认、看简报和操作记录。新增安卓 App：除了这些，还能通过 UU 远程小窗看着电脑、全屏接手，你接手时 Bot 先停下等你，回到 App 自动交还。目前手机和电脑要在同一个 Wi-Fi 下。",
+ "version": "0.19.1",
+ "notes": "手机接手电脑更稳：第一次在 UU 远程里选好电脑后，不会在你还在看电脑屏幕时就把电脑交还给 Bot；UU 远程没打开时，Bot 自己接着做。",
  "minBase": "0.4.0",
- "at": "2026-10-21T21:15:25.393Z",
+ "at": "2026-10-21T22:33:17.648Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -531,8 +531,8 @@
   },
   "bundle/web/mobile.js": {
    "path": "tianxi/web/mobile.js",
-   "sha256": "7c1905a607824f7b745ace5d08779d6897f50dffb1737e9dcaa687802503ef9d",
-   "size": 26937
+   "sha256": "22623860e5698b0f28171664e58f574ff431e1c2b603ab28038d1e49774b8c06",
+   "size": 27605
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",

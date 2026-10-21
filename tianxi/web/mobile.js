@@ -141,7 +141,9 @@
     pip_unsupported: '这台手机不支持小窗，换成全屏接手。', login_timeout: 'UU 远程登录超时了。', network_unavailable: '手机没有网络。', not_allowed: 'UU 远程不允许这次操作。',
     connect_timeout: '连接超时了，再试一次。', connect_failed: '没连上电脑，再试一次。', invalid_request: '请求不对，更新一下小天 App。',
   }
-  let wantOpen = null, taking = false
+  // taking: 'opening' from asking UU 远程 for full screen until the App goes to the background, then 'away';
+  // only coming back from 'away' hands the computer back (the App also comes forward between binding and opening)
+  let wantOpen = null, taking = false, opens = 0
   const uuId = () => store.get('uuDevice', '')
   function uuOpen(how) {
     if (!NATIVE) { toastText('看屏幕和接手要用小天 App', ['下载', () => window.open(APK, '_blank')]); return }
@@ -149,8 +151,12 @@
     const id = uuId()
     if (!id) { wantOpen = how; return uuBind() }
     const url = `uuremote://external/device/control?anonymous_device_id=${encodeURIComponent(id)}&window_type=${how === 'pip' ? 1 : 0}` + (how === 'pip' ? '&callback=' + encodeURIComponent('xiaotian://uu/control') : '')
-    if (how === 'full') { taking = true; api('phone/takeover', { on: true, how: 'full' }).catch(() => {}) }
-    if (!nat(() => NATIVE.openUrl(url), false)) { taking = false; toastText('没能打开 UU 远程') }
+    if (how === 'full') {
+      const n = ++opens
+      taking = 'opening'; api('phone/takeover', { on: true, how: 'full' }).catch(() => {})
+      setTimeout(() => { if (n === opens && taking === 'opening' && !document.hidden) { handBack(true); toastText('UU 远程没有打开，Bot 接着做') } }, 8000)
+    }
+    if (!nat(() => NATIVE.openUrl(url), false)) { if (taking) handBack(true); toastText('没能打开 UU 远程') }
   }
   function uuBind() {
     const nonce = Math.random().toString(36).slice(2, 12)
@@ -185,9 +191,14 @@
     await api('phone/takeover', { on: false }).catch(() => {})
     if (!quiet) toastText(`交还给${agentOf(S.mainId).name}了，它接着做`)
   }
-  const resumed = () => { if (taking || S.takeover?.how === 'full') handBack() }
+  const away = () => { if (taking === 'opening') taking = 'away' }
+  const resumed = () => { if (taking === 'away' || (!taking && S.takeover?.how === 'full')) handBack() }
+  window.onXiaotianPause = away
   window.onXiaotianResume = resumed
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && taking) setTimeout(resumed, 400) })
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) away()
+    else if (taking === 'away') setTimeout(() => { if (!document.hidden && taking === 'away') handBack() }, 400)
+  })
 
   // ---------- 电脑 ----------
   const wall = () => { const hr = new Date().getHours(); return hr < 6 || hr >= 20 ? 'night' : hr < 11 ? 'morning' : hr < 17 ? 'noon' : 'evening' }

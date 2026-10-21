@@ -150,6 +150,7 @@ async function main() {
   shot('uu-full')
   check(/fakeuu/.test(top()), 'UU 远程 opens full screen on the bound computer', top())
   check(took, 'taking over pauses the Bots on the computer')
+  check((await ctl('takeover'))?.how === 'full', 'while UU 远程 is in front, the Bots stay paused', (await ctl('events')).map((e) => e.type + (e.on !== undefined ? ':' + e.on : '')))
   check(await pg.evaluate(() => (localStorage.getItem('tx.uuDevice') || '').includes('fake-pc-1')), 'the computer is bound in UU 远程 (anonymous_device_id kept)')
   back()
   pg = await page((u) => u.startsWith(HOST))

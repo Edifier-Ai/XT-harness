@@ -65,6 +65,9 @@ jobs:
           cat "$RUNNER_TEMP/e2e-host.log"
           if ! curl -sf http://127.0.0.1:3092/state; then tail -60 "$RUNNER_TEMP/e2e/runtime.log"; tail -20 "$RUNNER_TEMP/e2e/fake-llm.log"; exit 1; fi
 
+      - name: Take-over timing in the phone page
+        run: node dev/phone-e2e/takeover.mjs "$(command -v google-chrome || command -v chromium)"
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules

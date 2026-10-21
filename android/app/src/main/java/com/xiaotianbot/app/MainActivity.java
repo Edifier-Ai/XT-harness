@@ -221,6 +221,8 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onPause() {
+        // UU 远程 (or anything else) came to the front: the page knows a take-over has really started
+        if (ready) js("window.onXiaotianPause&&window.onXiaotianPause()");
         web.onPause();
         super.onPause();
     }
