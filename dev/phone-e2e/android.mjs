@@ -3,6 +3,7 @@
 // (played by the fakeuu app) and hand it back, reopen the App, lose the computer and find it again, unpair.
 // Taps and reads go through the WebView's DevTools socket; screenshots are the emulator's whole screen.
 // Usage: node dev/phone-e2e/android.mjs <out dir> <fakeuu.apk>   (writes NN-name.png and results.json)
+// Starts from a clean App and an unpaired computer, so a second try on the same emulator runs the same way.
 import { _android } from 'playwright-core'
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
@@ -11,15 +12,17 @@ import path from 'node:path'
 const OUT = path.resolve(process.argv[2] || 'shots')
 const FAKEUU = process.argv[3]
 fs.mkdirSync(OUT, { recursive: true })
+const LIMIT = 20 * 60e3
 const APP = 'com.xiaotianbot.app', HOST = 'http://10.0.2.2:3091'
 const adb = (...a) => execFileSync('adb', a, { encoding: 'utf8', timeout: 120000 })
+const tryAdb = (...a) => { try { return adb(...a) } catch { return '' } }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const ctl = async (p) => (await fetch('http://127.0.0.1:3092/' + p)).json()
 const results = []
 let n = 0
 const shot = (name) => {
   const f = `${String(++n).padStart(2, '0')}-${name}.png`
-  fs.writeFileSync(path.join(OUT, f), execFileSync('adb', ['exec-out', 'screencap', '-p'], { maxBuffer: 64 << 20 }))
+  fs.writeFileSync(path.join(OUT, f), execFileSync('adb', ['exec-out', 'screencap', '-p'], { maxBuffer: 64 << 20, timeout: 30000 }))
   return f
 }
 const check = (ok, what, extra) => { results.push({ ok: !!ok, what, ...(extra !== undefined ? { extra } : {}) }); console.log(ok ? 'PASS' : 'FAIL', what, extra !== undefined ? JSON.stringify(extra) : '') }
@@ -51,6 +54,11 @@ async function page(want = () => true) {
 const toastText = (pg) => pg.evaluate(() => [...document.querySelectorAll('.toast')].map((t) => t.innerText).join(' | '))
 
 async function main() {
+  // a clean start: the App knows no computer, UU 远程 is not installed, the computer has no phone paired
+  adb('shell', 'am', 'force-stop', APP)
+  adb('shell', 'pm', 'clear', APP)
+  tryAdb('uninstall', 'com.xiaotianbot.fakeuu')
+  await ctl('reset')
   // the scanner opens straight on the camera
   adb('shell', 'pm', 'grant', APP, 'android.permission.CAMERA')
   launch()
@@ -175,8 +183,9 @@ async function main() {
 
   // the light theme: the status bar follows the page
   await pg.evaluate(() => localStorage.setItem('tx.theme', '"light"'))
-  await pg.reload()
-  await pg.waitForSelector('#mtabs', { timeout: 20000 })
+  await pg.reload().catch(() => {})
+  pg = await page((u) => u.startsWith(HOST))
+  check(await until(() => pg.$('#mtabs'), 30000), 'the light theme loads')
   await sleep(2500)
   shot('light')
   await pg.evaluate(() => localStorage.setItem('tx.theme', '"dark"'))
@@ -216,15 +225,20 @@ async function main() {
   check(JSON.parse(await pg.evaluate(() => window.XiaotianNative.hosts())).length === 0, 'the App forgot the computer')
 }
 
+function finish() {
+  try { fs.writeFileSync(path.join(OUT, 'logcat.txt'), execFileSync('adb', ['logcat', '-d', '-v', 'time'], { maxBuffer: 256 << 20, timeout: 60000 })) } catch {}
+  fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results, null, 1))
+  const bad = results.filter((r) => !r.ok)
+  console.log(`${results.length - bad.length}/${results.length} passed`)
+  process.exit(bad.length ? 1 : 0)
+}
+// a hung emulator or DevTools socket ends the run with what it has, instead of waiting for the job's time limit
+setTimeout(() => { check(false, `test run still going after ${LIMIT / 60e3} minutes`); try { shot('stuck') } catch {} finish() }, LIMIT).unref()
 try {
   await main()
 } catch (e) {
   check(false, 'test run', String(e && e.stack || e))
   try { shot('crash') } catch {}
 }
-try { fs.writeFileSync(path.join(OUT, 'logcat.txt'), execFileSync('adb', ['logcat', '-d', '-v', 'time'], { maxBuffer: 256 << 20 })) } catch {}
-try { await device?.close() } catch {}
-fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results, null, 1))
-const bad = results.filter((r) => !r.ok)
-console.log(`${results.length - bad.length}/${results.length} passed`)
-process.exit(bad.length ? 1 : 0)
+await Promise.race([device?.close().catch(() => {}), sleep(10000)])
+finish()

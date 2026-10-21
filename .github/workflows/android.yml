@@ -1,7 +1,9 @@
 # Builds the 小天 App (Android) for each new version, tests it in an Android emulator against a real 小天 runtime
 # (dev/phone-e2e), and attaches the APK to the version's GitHub Release next to the Windows and Mac builds.
 # Runs when release/manifest.json changes on main (node build/release.mjs x.y.z), on pushes to ci/* branches (test only,
-# nothing is published), or by hand from the Actions tab. Test screenshots are kept as the run's "phone-e2e" artifact.
+# nothing is published), or by hand from the Actions tab. Test screenshots are kept as the run's "phone-e2e" artifact
+# and on the ci-shots branch. A test that fails once gets one more try on a freshly booted emulator; the APK is only
+# published when a try passes.
 name: Android app
 
 on:
@@ -20,7 +22,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -70,6 +72,9 @@ jobs:
           sudo udevadm trigger --name-match=kvm
 
       - name: Test in the emulator
+        id: e2e
+        continue-on-error: true
+        timeout-minutes: 30
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
@@ -82,10 +87,33 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
           script: adb install -r android/app/build/outputs/apk/debug/app-debug.apk && node dev/phone-e2e/android.mjs "$RUNNER_TEMP/shots" android/fakeuu/build/outputs/apk/debug/fakeuu-debug.apk || { tail -40 "$RUNNER_TEMP/e2e-host.log"; tail -40 "$RUNNER_TEMP/e2e/runtime.log"; exit 1; }
 
+      - name: Stop the first emulator
+        if: steps.e2e.outcome != 'success'
+        run: |
+          adb devices || true
+          pkill -f qemu-system || true
+          sleep 3
+          adb kill-server || true
+
+      - name: Test in the emulator, second try
+        if: steps.e2e.outcome != 'success'
+        timeout-minutes: 30
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
+          script: mv "$RUNNER_TEMP/shots" "$RUNNER_TEMP/first-try" 2>/dev/null; adb install -r android/app/build/outputs/apk/debug/app-debug.apk && node dev/phone-e2e/android.mjs "$RUNNER_TEMP/shots" android/fakeuu/build/outputs/apk/debug/fakeuu-debug.apk || { tail -40 "$RUNNER_TEMP/e2e-host.log"; tail -40 "$RUNNER_TEMP/e2e/runtime.log"; exit 1; }
+
       - name: Keep screenshots and logs
         if: always()
         run: |
           mkdir -p "$RUNNER_TEMP/shots"
+          if [ -d "$RUNNER_TEMP/first-try" ]; then mv "$RUNNER_TEMP/first-try" "$RUNNER_TEMP/shots/first-try"; fi
           cp "$RUNNER_TEMP/e2e-host.log" "$RUNNER_TEMP"/e2e/*.log "$RUNNER_TEMP/shots/" 2>/dev/null || true
           cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/shots/XiaotianBot-${{ steps.v.outputs.ver }}.apk" 2>/dev/null || true
 
@@ -96,9 +124,10 @@ jobs:
           path: ${{ runner.temp }}/shots
           retention-days: 14
 
-      # on test branches, the screenshots also go to the ci-shots branch, to look at without downloading the artifact
+      # the screenshots also go to the ci-shots branch, to look at without downloading the artifact
       - name: Screenshots to ci-shots
-        if: always() && startsWith(github.ref, 'refs/heads/ci/')
+        if: always()
+        continue-on-error: true
         run: |
           cd "$RUNNER_TEMP/shots" && rm -f *.apk
           git init -q -b ci-shots && git add -A

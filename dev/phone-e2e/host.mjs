@@ -1,6 +1,7 @@
 // The computer side for the phone tests: the scripted model (dev/fake), the 小天 runtime on :3090 and the phone
 // connection (desktop/phone.js) on 0.0.0.0:3091, with "允许手机连接" turned on. :3092 answers what the Electron
-// shell would: GET /state (incl. the pairing code), /renew, /on?v=0|1, /events, /takeover (the runtime's takeover state).
+// shell would: GET /state (incl. the pairing code), /renew, /on?v=0|1, /events, /takeover (the runtime's takeover state),
+// /reset (no phones paired, a fresh code, connection on: for a second try of the test).
 // Needs build/runtime installed (see .github/workflows/android.yml). Usage: node dev/phone-e2e/host.mjs <work dir>
 import fs from 'node:fs'
 import path from 'node:path'
@@ -97,6 +98,13 @@ http.createServer(async (req, res) => {
     else if (u.pathname === '/on') r = await phone.setOn(u.searchParams.get('v') === '1')
     else if (u.pathname === '/events') r = events
     else if (u.pathname === '/takeover') r = (await (await api('state')).json()).takeover ?? null
+    else if (u.pathname === '/reset') {
+      for (const d of (await phone.state()).devices || []) phone.forget(d.id)
+      events.length = 0
+      await api('takeover', { on: false })
+      await phone.setOn(true)
+      r = await phone.renew()
+    }
     else { res.writeHead(404); return res.end() }
   } catch (e) { r = { error: e.message } }
   res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' })
