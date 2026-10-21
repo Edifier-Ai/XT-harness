@@ -1,8 +1,8 @@
 
-DevTools listening on ws://127.0.0.1:9223/devtools/browser/944e438c-b5c5-4efe-b535-37e1df61532d
-2026-10-21 15:52:59.763 小天 Bot Helper[3498:13168] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
-2026-10-21 15:52:59.763 小天 Bot Helper[3498:13162] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
-2026-10-21 15:52:59.768 小天 Bot Helper[3498:13162] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
-2026-10-21 15:53:00.923 小天 Bot Helper[3498:13162] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
-2026-10-21 15:53:00.924 小天 Bot Helper[3498:13162] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
-2026-10-21 15:53:00.925 小天 Bot Helper[3498:13162] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+DevTools listening on ws://127.0.0.1:9223/devtools/browser/d4d19040-2fb0-48c0-b43b-3b97e0d24c78
+2026-10-21 15:55:02.654 小天 Bot Helper[10862:32263] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:55:02.654 小天 Bot Helper[10862:32267] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:55:02.658 小天 Bot Helper[10862:32263] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:55:03.642 小天 Bot Helper[10862:32263] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:55:03.647 小天 Bot Helper[10862:32263] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
+2026-10-21 15:55:03.659 小天 Bot Helper[10862:32263] XPC error for connection com.apple.backupd.sandbox.xpc: Connection invalid
