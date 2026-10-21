@@ -889,3 +889,44 @@ button:focus:not(:focus-visible){outline:none}
 .form2 .pempty{text-align:left;margin:0;line-height:1.6}
 .facts{display:flex;align-items:center;gap:10px;padding:14px 0 20px;border-top:1px solid #2a2a2a}
 .facts .hint{color:var(--tx2);font-size:14px}
+/* 0.8 — 语音 */
+#vChat{position:relative}
+.inbox.rec > :not(.recbar):not(.plusmenu){visibility:hidden}
+.inbox.rec{position:relative}
+.recbar{position:absolute;inset:0;display:flex;align-items:center;gap:12px;padding:0 10px 0 8px;animation:fadeIn .18s ease}
+.recbar .rcx,.recbar .rok{flex:none;width:38px;height:38px;border-radius:50%;border:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.recbar .rcx{background:#2a2a2a;color:#ddd}.recbar .rcx:hover{background:#343434}
+.recbar .rok{background:#f2f2f2;color:#111;font-weight:700}.recbar .rok:hover{background:#fff}
+.recbar .rw{flex:1;min-width:0;height:30px;display:flex;align-items:center;justify-content:flex-end;gap:3px;overflow:hidden}
+.recbar .rw i{flex:none;width:3px;border-radius:2px;background:#d8d8d8;transition:height .08s linear}
+.recbar .rtm{flex:none;font-variant-numeric:tabular-nums;color:var(--tx2);font-size:14px;width:38px;text-align:right}
+.recbar .rbusy{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--tx2);font-size:15px}
+.mbox.voice{width:min(520px,100%);background:var(--s2);flex-direction:column;padding:30px 32px 26px}
+.vhead{display:flex;align-items:center;gap:14px}.vhead h2{margin:0;font-size:21px}
+.vic{width:48px;height:48px;border-radius:14px;background:#2c2c2c;display:flex;align-items:center;justify-content:center;color:#eee}
+.vsub{color:var(--tx2);font-size:14.5px;line-height:1.65;margin:16px 0 6px}
+.vtx{font-size:15px;margin:14px 0 10px}.vtx.bad{color:#f07a6a}
+.vbar{height:6px;border-radius:3px;background:#2c2c2c;overflow:hidden}.vbar i{display:block;height:100%;background:var(--blue2);border-radius:3px;transition:width .3s ease}
+.facts2{display:flex;align-items:center;gap:12px;margin-top:18px}.facts2 .hint{color:var(--tx3);font-size:13px}
+.callov{position:absolute;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;align-items:center;animation:fadeIn .25s ease}
+.callov.out{opacity:0;transition:opacity .2s ease}
+.callov .ctop{height:64px;display:flex;align-items:center;color:var(--tx2);font-size:14.5px}
+.callov .cmid{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:0 32px;max-width:720px;width:100%;box-sizing:border-box}
+.orb{--lv:0;position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+.orb::before{content:'';position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.10),rgba(255,255,255,0) 70%);transform:scale(calc(.8 + var(--lv) * .55));transition:transform .09s linear}
+.orb > *{position:relative;transform:scale(calc(1 + var(--lv) * .08));transition:transform .09s linear}
+.s-thinking .orb > *{animation:breathe 1.4s ease-in-out infinite}
+.s-hearing .orb > *{animation:breathe .8s ease-in-out infinite}
+@keyframes breathe{50%{transform:scale(1.05)}}
+.callov .cst{color:var(--tx2);font-size:15px}
+.callov .cyou{color:var(--tx3);font-size:15px;text-align:center;max-width:560px}
+.callov .cbot{font-size:19px;line-height:1.6;text-align:center;max-width:620px;max-height:30vh;overflow:hidden;white-space:pre-wrap}
+.cask{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 20px;border-radius:16px;background:#1f1f1f;max-width:520px;text-align:center}
+.cask span{color:var(--tx2);font-size:14.5px}.cask div{display:flex;gap:10px;margin-top:4px}
+.callov .cbtns{display:flex;gap:28px;padding:22px 0 34px}
+.cb{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;color:#eee;font-size:13px}
+.cb svg{width:60px;height:60px;padding:19px;box-sizing:border-box;border-radius:50%;background:#262626}
+.cb:hover svg{background:#303030}.cb.on svg{background:#f2f2f2;color:#111}
+.cb:disabled{opacity:.35}
+.cb.end svg{background:#d9433f;color:#fff}.cb.end:hover svg{background:#e44d49}
+.cb small{color:var(--tx2);font-size:13px}

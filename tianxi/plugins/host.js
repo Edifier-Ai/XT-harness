@@ -238,6 +238,7 @@ export function apply(ctx) {
       approvals: [...approvals.values()].map(({ resolve, ...a }) => a), settings: settings(), home: HOME, device: os.hostname(), user: os.userInfo().username,
       model: ctx.agentDefaultModel.currentSelection(),
       apps: bus.appsState?.() || { apps: [], disabled: [] },
+      voice: bus.voice?.state() || { available: false, phase: 'missing' },
     }
   }
 
@@ -297,6 +298,13 @@ export function apply(ctx) {
     'POST /api/apps/save': async (b) => ({ ok: true, app: saveApp(b.app || {}) }),
     'POST /api/apps/remove': async (b) => { removeApp(b.id); return { ok: true } },
     'POST /api/apps/toggle': async (b) => { toggleApp(b.id, b.on); return { ok: true } },
+    'GET /api/voice': () => bus.voice?.state() || { available: false, phase: 'missing' },
+    'POST /api/voice/prepare': async () => { if (!bus.voice) throw new Error('这台电脑上没有语音识别组件'); bus.voice.prepare(); return { ok: true } },
+    'POST /api/voice/cancel': async () => { await bus.voice?.cancel(); return { ok: true } },
+    'POST /api/voice/transcribe': async (b) => {
+      if (!bus.voice) throw new Error('这台电脑上没有语音识别组件')
+      return { ok: true, ...await bus.voice.transcribe(Buffer.from(String(b.wav || ''), 'base64'), b.language || 'auto') }
+    },
     'POST /api/apps/builtin': async (b) => { toggleBuiltin(b.id, b.on); return { ok: true } },
     'POST /api/agents/remove': async (b) => {
       if (b.id === MAIN) throw new Error('主智能体不能删')

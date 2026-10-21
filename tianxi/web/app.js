@@ -1091,6 +1091,7 @@ function connect() {
     else if (m.type === 'approval-gone') { S.approvals = S.approvals.filter((a) => a.id !== m.id); renderAll(true) }
     else if (m.type === 'private') { S.privateMode = m.on; renderAll(true) }
     else if (m.type === 'mail') soon()
+    else if (m.type === 'voice') voiceChanged(m.state)
     else if (m.type === 'turn-end' || m.type === 'store') soon()
   }
   es.onerror = () => { $('#cSub').textContent = '正在重新连接…' }
@@ -1107,8 +1108,6 @@ async function send() {
   if (!v) { if (busy(cur)) api('cancel', { agent: cur }); return }
   inp.value = ''; grow(); await say(v)
 }
-$('#send').onclick = () => { if (busy(cur) && !inp.value.trim()) api('cancel', { agent: cur }); else if (!inp.value.trim()) toastText('语音对话还没接上，先打字吧'); else send() }
-$('#bMic').onclick = () => toastText('语音输入还没接上，先打字吧')
 const plusMenu = $('#plusMenu')
 $('#bPlus').onclick = (e) => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; if (!plusMenu.hidden) replay(plusMenu, 'in') }
 document.addEventListener('click', (e) => {

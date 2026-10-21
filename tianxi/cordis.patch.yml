@@ -9,6 +9,17 @@
       name: dsh-tianxi/plugins/ambient.js
     - id: tianxi-apps
       name: dsh-tianxi/plugins/apps.js
+    - id: speech-to-text
+      name: '@deepseek-ai/dsh-experimental-speech-to-text'
+      config:
+        defaultProvider: sensevoice-local
+    - id: speech-to-text-sensevoice
+      name: '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice'
+      config:
+        dataRoot: !!js dshHomePath('speech-to-text', 'sensevoice')
+        modelOrigins: ['https://hf-mirror.com', 'https://huggingface.co']
+    - id: tianxi-voice
+      name: dsh-tianxi/plugins/voice.js
     - id: tianxi-host
       name: dsh-tianxi/plugins/host.js
     - id: tianxi-eval

@@ -1,8 +1,8 @@
 {
- "version": "0.7.0",
- "notes": "连接应用变成真的插件管理：内置工具可开关；高德、百度地图、飞书、GitHub、Notion、浏览器等可直接连接，也能添加任何自定义 MCP 应用；修复需要你确认的操作不弹窗的问题",
+ "version": "0.8.0",
+ "notes": "语音输入和语音通话：点麦克风说话自动转成文字；输入框空着时点声波按钮和 Bot 语音通话，说完自动识别、回复并朗读，可静音、打断、在通话里确认。识别在本机运行，第一次用要下载约 230 MB 模型",
  "minBase": "0.4.0",
- "at": "2026-10-21T02:37:42.022Z",
+ "at": "2026-10-21T02:47:11.572Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -36,8 +36,8 @@
   },
   "bundle/cordis.patch.yml": {
    "path": "tianxi/cordis.patch.yml",
-   "sha256": "5f19ba62bf5ccb71554e22f0691115f9e118869dfb1fef5d08cc8f13530c7284",
-   "size": 2078
+   "sha256": "d523082026f19be280925c35b96d4d82135a6ed1fa52e53050777fb5e58cea11",
+   "size": 2542
   },
   "bundle/eval/fixtures/01/下载/IMG_0012.jpg": {
    "path": "tianxi/eval/fixtures/01/下载/IMG_0012.jpg",
@@ -406,8 +406,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "c3e6f7bdda2ac79728f03d7f9d4be5221045afe944bb05fcb3a71e63bb16b3b6",
-   "size": 24387
+   "sha256": "8286a017fb0434f51b7223a752b9d723b1f2cf2c8ea3d0e0be332680868a5985",
+   "size": 25071
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -424,10 +424,15 @@
    "sha256": "18fdef5fc1d252afa17967fe25718ca2b3e48d50e2ec3a0ed5210d6694a56fef",
    "size": 3549
   },
+  "bundle/plugins/voice.js": {
+   "path": "tianxi/plugins/voice.js",
+   "sha256": "7e317a55a80c3012fac25a02e8bde958d9d15f3113428040ee43e6c4ad8a81c4",
+   "size": 1927
+  },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "44b8928f4c9fc2f6f7f0f3946d976f343a1542d83eea53ad17a67a71c5468113",
-   "size": 121620
+   "sha256": "aee4674a353aa3da3979c6025c0325525476930fb2c6a55f0af23e0662c55be8",
+   "size": 121403
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -451,8 +456,8 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "9999225f98ca6b2c6f2057aec720ac83492ab4cbe9a9b26f0232f7c663d30804",
-   "size": 6930
+   "sha256": "2877b19835d6706fd84548acd18df176f45a2d4e46a53501d62b1605085de2bb",
+   "size": 6963
   },
   "bundle/web/pill.html": {
    "path": "tianxi/web/pill.html",
@@ -461,8 +466,13 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "a7ea9497eb37e327c587a57277630cd24383b9d9f072771ea984f763dde846f8",
-   "size": 65095
+   "sha256": "227b90403d433fc2723a8e6f42ad473d3cfe79cf89b5385addd1ecc2c4835948",
+   "size": 69008
+  },
+  "bundle/web/voice.js": {
+   "path": "tianxi/web/voice.js",
+   "sha256": "075fd8120e1b488adf5d1119c8d7a82d8f86d9434e3fa61546f46acd50f0fbc9",
+   "size": 16135
   }
  }
 }
