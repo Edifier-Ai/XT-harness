@@ -12,10 +12,6 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: mac-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build:
     strategy:
@@ -27,6 +23,10 @@ jobs:
           - arch: x64
             runner: macos-15-intel
     runs-on: ${{ matrix.runner }}
+    # one build per kind of Mac at a time; Apple silicon and Intel never wait for each other
+    concurrency:
+      group: mac-${{ matrix.arch }}
+      cancel-in-progress: true
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
