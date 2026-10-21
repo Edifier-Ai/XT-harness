@@ -32,6 +32,10 @@ const SHIPPED_BUNDLE = path.join(RUNTIME, 'node_modules', 'dsh-tianxi')
 const BUNDLE = BOOT.bundleDir || SHIPPED_BUNDLE
 const PLUGINS = path.join(BUNDLE, 'plugins')
 const ICON = path.join(__dirname, 'icon.png')
+// Windows takes the taskbar and shortcut icon from an .ico; keep a copy at a path that survives updates.
+const ICO = path.join(app.getPath('userData'), 'icon.ico')
+try { const src = path.join(__dirname, 'icon.ico'); if (fs.existsSync(src) && (!fs.existsSync(ICO) || fs.statSync(ICO).size !== fs.statSync(src).size)) fs.copyFileSync(src, ICO) } catch {}
+const WIN_ICON = process.platform === 'win32' && fs.existsSync(ICO) ? ICO : ICON
 for (const d of [DSH_HOME, TIANXI_HOME, LOGS]) fs.mkdirSync(d, { recursive: true })
 
 // ---------- third-party model presets (all OpenAI-compatible chat completions) ----------
@@ -148,8 +152,11 @@ let win = null, pill = null, tray = null, refreshTray = () => {}
 function createWindow(hidden) {
   win = new BrowserWindow({
     width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, frame: false, backgroundColor: '#212121',
-    title: '天禧AI', icon: ICON, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
+    title: '天禧AI', icon: WIN_ICON, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
   })
+  if (process.platform === 'win32' && WIN_ICON === ICO) {
+    try { win.setAppDetails({ appId: APP_ID, appIconPath: ICO, appIconIndex: 0, relaunchCommand: `"${process.execPath}"`, relaunchDisplayName: '天禧AI 概念版' }) } catch {}
+  }
   win.on('close', (e) => { if (!quitting) { e.preventDefault(); win.hide() } })
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   win.once('ready-to-show', () => { if (!hidden) win.show() })
@@ -331,15 +338,15 @@ app.on('window-all-closed', () => {})
 
 app.whenReady().then(async () => {
   const hidden = process.argv.includes('--hidden')
-  // First run: put a shortcut on the desktop and in the Start menu.
-  if (app.isPackaged && process.platform === 'win32' && !cfg.shortcuts) {
-    try {
-      const opts = { target: process.execPath, icon: process.execPath, iconIndex: 0, appUserModelId: APP_ID, description: '天禧AI 概念版' }
-      shell.writeShortcutLink(path.join(app.getPath('desktop'), '天禧AI 概念版.lnk'), opts)
-      const sm = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs')
-      shell.writeShortcutLink(path.join(sm, '天禧AI 概念版.lnk'), opts)
-      cfg.shortcuts = true; saveCfg(cfg)
-    } catch {}
+  // First run: put a shortcut on the desktop and in the Start menu. Later runs only refresh the icon of the ones still there.
+  if (app.isPackaged && process.platform === 'win32' && (!cfg.shortcuts || cfg.shortcutIcon !== WIN_ICON)) {
+    const icon = WIN_ICON === ICO ? { icon: ICO, iconIndex: 0 } : { icon: process.execPath, iconIndex: 0 }
+    const opts = { target: process.execPath, ...icon, appUserModelId: APP_ID, description: '天禧AI 概念版' }
+    const sm = path.join(app.getPath('appData'), 'Microsoft', 'Windows', 'Start Menu', 'Programs')
+    for (const lnk of [path.join(app.getPath('desktop'), '天禧AI 概念版.lnk'), path.join(sm, '天禧AI 概念版.lnk')]) {
+      try { if (!cfg.shortcuts) shell.writeShortcutLink(lnk, opts); else if (fs.existsSync(lnk)) shell.writeShortcutLink(lnk, 'update', icon) } catch {}
+    }
+    cfg.shortcuts = true; cfg.shortcutIcon = WIN_ICON; saveCfg(cfg)
   }
   createWindow(hidden)
   createTray()

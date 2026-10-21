@@ -1,13 +1,13 @@
 {
- "version": "0.9.2",
- "notes": "修复：示例文件里的 zip 没传上仓库，导致检查更新报 404",
+ "version": "0.9.3",
+ "notes": "修复任务栏和快捷方式图标显示成空白",
  "minBase": "0.4.0",
- "at": "2026-10-21T03:27:04.230Z",
+ "at": "2026-10-21T03:36:32.202Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "f760716a7c7c4cd8c76bd2d33faf105c6b2b3bf520d275bd048872ff59810265",
-   "size": 20690
+   "sha256": "8a226dac98308db7910553ced96c74d87584b93244a1590a946f6658a3c8ba27",
+   "size": 21651
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -28,6 +28,11 @@
    "path": "desktop/icon.png",
    "sha256": "90987bfce1773a0687e47f19605f1b307e1a8e191cff07edbd8d95e40e451a61",
    "size": 32996
+  },
+  "app/icon.ico": {
+   "path": "desktop/icon.ico",
+   "sha256": "57fa70d4b33f5025da2f1c9e4ab6d0542693f68f66e01b953c4bb11d8fe7965a",
+   "size": 369214
   },
   "app/update.json": {
    "path": "desktop/update.json",
