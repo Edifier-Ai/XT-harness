@@ -1,13 +1,13 @@
 {
- "version": "0.17.3",
- "notes": "生成式界面有颜色了：饼图、柱状图、折线图、条形图用小天的蓝紫为首的 6 色，关键数字左侧带色条；深色和浅色主题各调一套",
+ "version": "0.18.0",
+ "notes": "新增 Mac 版（Apple 芯片和 Intel）：窗口左上角是 Mac 的红绿灯按钮，有顶部菜单和拷贝粘贴快捷键，点 Dock 图标回到窗口，菜单栏有小天图标；呼出快捷键 ⌘⇧空格。Windows 版功能不变。",
  "minBase": "0.4.0",
- "at": "2026-10-21T09:48:45.440Z",
+ "at": "2026-10-21T14:35:57.740Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "1f9cfbc58ed82fc6a8542867fd96539357239e0feee4f1903fdc379cfaca747e",
-   "size": 34893
+   "sha256": "a8c31fadcb4453c370eaef20b4517fef45ca4e006567652f9c365579b2abed5e",
+   "size": 36922
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -16,8 +16,8 @@
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
-   "sha256": "b67b74b7c1ecedd76300723f0acb49a192b85cbbdb444963654bc2338a550ba8",
-   "size": 1689
+   "sha256": "3f538e2fc3dee008c62fa70a9851f52ab0c58aff7b3c3651bd5ed4583f1767a5",
+   "size": 1719
   },
   "app/freegate.js": {
    "path": "desktop/freegate.js",
@@ -26,8 +26,8 @@
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
-   "sha256": "e1af0c85e45177d4d6cb480e0072df91fbd18210794af775786a9e057aff5d2f",
-   "size": 6736
+   "sha256": "a5f929bd4f3fedec80918e0bf99fe001d4c639122c88ae588fb5db80f3afe185",
+   "size": 6750
   },
   "app/icon.png": {
    "path": "desktop/icon.png",
@@ -466,8 +466,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "689a26c10a5b4136134330eb6f1c4eb242980486654987ce01ad85e9fb425aa5",
-   "size": 149010
+   "sha256": "65baad5519f34124f25d30924cbafa2bfe87fc042b2252934e86584ee0b4af63",
+   "size": 149192
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
@@ -521,13 +521,13 @@
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
-   "sha256": "161f386f2b446452108d8b176fc6fe5c339f6f57f5d92cb38b42e64661980b96",
-   "size": 14425
+   "sha256": "90b924164eac19924e92d8c89501f34b61c008ee1c9b3c5a5ee8ac9d36fdbf8a",
+   "size": 14763
   },
   "bundle/web/orb.html": {
    "path": "tianxi/web/orb.html",
-   "sha256": "4a2cfcea85ba4a2d59ac9f7259ccef6db5f9e33e1b705dd75f3689aedec409f1",
-   "size": 18361
+   "sha256": "fe460fa9a7d171c8a75089338a7e64c50fd45ae31ba3b1c0fe0fd6540e9fafe3",
+   "size": 18375
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",

@@ -1556,7 +1556,9 @@ document.addEventListener('input', (e) => { if (e.target.type === 'range') { con
 // ---------- boot ----------
 ;(async () => {
   if (APP) {
-    $('#wctl').hidden = false
+    // Mac keeps its own traffic lights (top-left); Windows gets the page's buttons (top-right)
+    if (APP.platform === 'darwin') document.documentElement.classList.add('mac')
+    else $('#wctl').hidden = false
     document.querySelectorAll('[data-win]').forEach((b) => { b.onclick = () => APP.win(b.dataset.win) })
     const cfg = await APP.getConfig()
     if (!cfg.configured) {

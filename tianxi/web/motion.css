@@ -135,3 +135,9 @@
 .ou-stats .metric{padding-left:12px;box-shadow:inset 3px 0 0 var(--c0)}
 .ou-stats .metric:nth-child(2){box-shadow:inset 3px 0 0 var(--c1)}.ou-stats .metric:nth-child(3){box-shadow:inset 3px 0 0 var(--c2)}.ou-stats .metric:nth-child(4){box-shadow:inset 3px 0 0 var(--c3)}
 :root[data-theme=light] .ou-hb .tr i.s0{background:var(--c0)}:root[data-theme=light] .ou-hb .tr i.s1{background:var(--c1)}:root[data-theme=light] .ou-hb .tr i.s2{background:var(--c2)}:root[data-theme=light] .ou-hb .tr i.s3{background:var(--c3)}:root[data-theme=light] .ou-hb .tr i.s4{background:var(--c4)}:root[data-theme=light] .ou-hb .tr i.s5{background:var(--c5)}
+
+/* Mac: the window's traffic lights sit at the top-left over the rail; no page buttons at the top-right */
+html.mac .rtop{padding-left:80px}
+html.mac .chead,html.mac .proc .ph{padding-right:14px}
+html.mac .phead{padding-right:0}
+html.mac .setup::before{content:'';position:fixed;top:0;left:0;right:0;height:40px;-webkit-app-region:drag}

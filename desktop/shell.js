@@ -45,6 +45,7 @@ const ICO = (() => {
   } catch { return path.join(app.getPath('userData'), 'icon.ico') }
 })()
 const WIN_ICON = process.platform === 'win32' && fs.existsSync(ICO) ? ICO : ICON
+const MAC = process.platform === 'darwin'
 for (const d of [DSH_HOME, TIANXI_HOME, LOGS]) fs.mkdirSync(d, { recursive: true })
 
 // ---------- third-party model presets (all OpenAI-compatible chat completions) ----------
@@ -227,7 +228,9 @@ function rememberHomeBg() {
 }
 function createWindow(hidden) {
   win = new BrowserWindow({
-    width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, frame: false, backgroundColor: '#000000',
+    width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, backgroundColor: '#000000',
+    // Windows: no frame, the page draws its own buttons. Mac: the usual traffic lights over the page's top-left corner.
+    ...(MAC ? { titleBarStyle: 'hidden', trafficLightPosition: { x: 16, y: 17 } } : { frame: false }),
     title: '小天 Bot', icon: WIN_ICON, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
   })
   if (process.platform === 'win32' && WIN_ICON === ICO) {
@@ -274,6 +277,7 @@ function createPill() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, backgroundThrottling: false },
   })
   pill.setAlwaysOnTop(true, 'screen-saver')
+  if (MAC) pill.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   pill.setIgnoreMouseEvents(true, { forward: true })
   pill.loadURL(uiURL('orb.html'))
   pill.once('ready-to-show', () => { pill.showInactive(); orbTick() })
@@ -315,7 +319,7 @@ const showMain = () => { if (!win) return; if (win.isMinimized()) win.restore();
 
 function createTray() {
   // the .ico carries a hand-tuned 16 px picture; a 256 px png shrunk down blurs the eyes
-  tray = new Tray(process.platform === 'win32' && fs.existsSync(ICO) ? nativeImage.createFromPath(ICO) : nativeImage.createFromPath(ICON).resize({ width: 16, height: 16 }))
+  tray = new Tray(process.platform === 'win32' && fs.existsSync(ICO) ? nativeImage.createFromPath(ICO) : nativeImage.createFromPath(ICON).resize({ width: MAC ? 18 : 16, height: MAC ? 18 : 16, quality: 'best' }))
   tray.setToolTip('小天 Bot')
   const menu = () => Menu.buildFromTemplate([
     { label: '打开小天 Bot', click: showMain },
@@ -328,7 +332,29 @@ function createTray() {
   ])
   tray.setContextMenu(menu())
   refreshTray = () => tray.setContextMenu(menu())
-  tray.on('click', showMain)
+  // on a Mac a click on a menu-bar icon opens its menu, as everywhere else in the menu bar
+  if (!MAC) tray.on('click', showMain)
+}
+
+// Mac: the app menu, without which copy, paste, undo and quit have no keyboard shortcuts.
+function macMenu() {
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: '小天 Bot', submenu: [
+      { role: 'about', label: '关于小天 Bot' }, { type: 'separator' },
+      { label: '设置…', accelerator: 'Command+,', click: () => { showMain(); win?.webContents.executeJavaScript("typeof openModal === 'function' && openModal('settings')").catch(() => {}) } },
+      { type: 'separator' }, { role: 'hide', label: '隐藏小天 Bot' }, { role: 'hideOthers', label: '隐藏其他' }, { role: 'unhide', label: '全部显示' },
+      { type: 'separator' }, { label: '退出小天 Bot', accelerator: 'Command+Q', click: () => { quitting = true; app.quit() } },
+    ] },
+    { label: '编辑', submenu: [
+      { role: 'undo', label: '撤销' }, { role: 'redo', label: '重做' }, { type: 'separator' },
+      { role: 'cut', label: '剪切' }, { role: 'copy', label: '拷贝' }, { role: 'paste', label: '粘贴' }, { role: 'selectAll', label: '全选' },
+    ] },
+    { label: '窗口', submenu: [
+      { role: 'minimize', label: '最小化' }, { role: 'zoom', label: '缩放' },
+      { label: '关闭窗口', accelerator: 'Command+W', click: () => win?.hide() },
+      { type: 'separator' }, { role: 'togglefullscreen', label: '进入全屏' },
+    ] },
+  ]))
 }
 
 // ---------- bridge for the page ----------
@@ -520,6 +546,8 @@ powerMonitor.on('unlock-screen', () => { if (child) api('presence', { idleSec: 0
 
 // ---------- lifecycle ----------
 app.on('second-instance', showMain)
+// Mac: clicking the Dock icon brings the window back
+app.on('activate', showMain)
 app.on('before-quit', () => { quitting = true })
 app.on('will-quit', () => { globalShortcut.unregisterAll() })
 app.on('quit', () => { if (evalChild) killTree(evalChild); if (child) { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(child.pid), '/t', '/f']) : child.kill() } catch {} } })
@@ -544,9 +572,10 @@ app.whenReady().then(async () => {
     }
     cfg.shortcuts = true; cfg.shortcutIcon = WIN_ICON; cfg.shortcutName = LNK; saveCfg(cfg)
   }
+  if (MAC) { macMenu(); if (!app.isPackaged) app.dock?.setIcon(ICON) }
   createWindow(hidden)
   createTray()
-  globalShortcut.register('Control+Alt+Space', () => { win.isVisible() && win.isFocused() ? win.hide() : showMain() })
+  globalShortcut.register(MAC ? 'Command+Shift+Space' : 'Control+Alt+Space', () => { win.isVisible() && win.isFocused() ? win.hide() : showMain() })
   await loadMain()
   setTimeout(runCheck, 20000)
 })

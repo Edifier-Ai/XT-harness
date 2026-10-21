@@ -2,6 +2,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('tianxiApp', {
+  platform: process.platform,
   win: (cmd) => ipcRenderer.invoke('tianxi:win', cmd),
   show: () => ipcRenderer.invoke('tianxi:show'),
   // the floating 小天

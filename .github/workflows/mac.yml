@@ -1,0 +1,97 @@
+# Builds the Mac app (Apple silicon and Intel) for each new version, starts it once as a check,
+# and attaches the .dmg files to the version's GitHub Release (the same release as the Windows installer).
+# Runs when release/manifest.json changes on main, or by hand from the Actions tab.
+name: Mac app
+
+on:
+  push:
+    branches: [main]
+    paths: [release/manifest.json, .github/workflows/mac.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mac-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+          - arch: x64
+            runner: macos-15-intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: v
+        run: |
+          VER=$(node -p "require('./release/manifest.json').version")
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VER" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx "XiaotianBot-$VER-mac-${{ matrix.arch }}.dmg"; then echo "exists=1" >> "$GITHUB_OUTPUT"; echo "already built"; fi
+
+      - uses: actions/setup-node@v4
+        if: steps.v.outputs.exists != '1'
+        with:
+          node-version: 22
+
+      - name: Electron and DSH runtime
+        if: steps.v.outputs.exists != '1'
+        run: |
+          mkdir -p build/dl build/runtime-mac
+          curl -sSfL -o build/dl/electron-mac-${{ matrix.arch }}.zip https://github.com/electron/electron/releases/download/v44.7.0/electron-v44.7.0-darwin-${{ matrix.arch }}.zip
+          # the same DSH version as Windows; the lock file there only lists Windows' native packages, so resolve fresh for this Mac
+          cp build/runtime-lock/package.json build/runtime-mac/
+          (cd build/runtime-mac && npm install --no-audit --no-fund --no-package-lock)
+
+      - name: Assemble app and disk image
+        if: steps.v.outputs.exists != '1'
+        run: bash build/assemble-mac.sh ${{ steps.v.outputs.ver }} ${{ matrix.arch }}
+
+      - name: Start once
+        if: steps.v.outputs.exists != '1'
+        run: |
+          # a dummy model so the runtime starts and the home page shows (no model call is made)
+          U="$HOME/Library/Application Support/TianxiAI-Concept"; mkdir -p "$U"
+          printf '{"provider":"deepseek","baseURL":"https://api.deepseek.com/v1","model":"deepseek-chat","key":"%s","keyEnc":false,"pill":true}' "$(printf test | base64)" > "$U/config.json"
+          "build/out-mac/小天 Bot.app/Contents/MacOS/Electron" > start.log 2>&1 &
+          ok=0
+          for i in $(seq 1 120); do
+            c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3090/api/ping || true)
+            if [ "$c" != "000" ]; then ok=1; echo "runtime answered ($c) after ${i}s"; break; fi
+            sleep 1
+          done
+          sleep 12
+          screencapture -x shot-${{ matrix.arch }}.png || true
+          pkill -f "小天 Bot.app" || true
+          echo "--- start.log"; tail -40 start.log || true
+          echo "--- runtime.log"; tail -60 "$U/logs/runtime.log" || true
+          [ "$ok" = 1 ]
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.v.outputs.exists != '1'
+        with:
+          name: mac-${{ matrix.arch }}-check
+          path: |
+            shot-${{ matrix.arch }}.png
+            start.log
+          if-no-files-found: ignore
+
+      - name: Publish
+        if: steps.v.outputs.exists != '1'
+        run: |
+          VER=${{ steps.v.outputs.ver }}
+          node build/release-notes.mjs
+          gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md || true
+          gh release edit "v$VER" --notes-file notes.md
+          gh release upload "v$VER" "build/out-mac/XiaotianBot-$VER-mac-${{ matrix.arch }}.dmg" --clobber

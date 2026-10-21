@@ -1,4 +1,4 @@
-# Builds the Windows installer for each new version and attaches it to a GitHub Release.
+# Builds the Windows installer for each new version and attaches it to the version's GitHub Release (mac.yml adds the Mac app to the same one).
 # Runs when release/manifest.json changes on main (node build/release.mjs x.y.z), or by hand from the Actions tab.
 # Download link for the newest one: https://github.com/Edifier-Ai/XT-harness/releases/latest
 name: Windows installer
@@ -32,7 +32,7 @@ jobs:
         run: |
           VER=$(node -p "require('./release/manifest.json').version")
           echo "ver=$VER" >> "$GITHUB_OUTPUT"
-          if gh release view "v$VER" >/dev/null 2>&1; then echo "exists=1" >> "$GITHUB_OUTPUT"; echo "v$VER already has a release"; fi
+          if gh release view "v$VER" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx "XiaotianBot-Setup-$VER.exe"; then echo "exists=1" >> "$GITHUB_OUTPUT"; echo "already built"; fi
 
       - uses: actions/setup-node@v4
         if: steps.v.outputs.exists != '1'
@@ -62,6 +62,7 @@ jobs:
         if: steps.v.outputs.exists != '1'
         run: |
           VER=${{ steps.v.outputs.ver }}
-          NOTES=$(node -p "require('./release/manifest.json').notes")
-          printf '%s\n\n下载 XiaotianBot-Setup-%s.exe，双击安装（完整版，不需要管理员权限）。装好后有新版本会自动更新。\n' "$NOTES" "$VER" > notes.md
-          gh release create "v$VER" "build/out/XiaotianBot-Setup-$VER.exe" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md
+          node build/release-notes.mjs
+          gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md || true
+          gh release edit "v$VER" --notes-file notes.md
+          gh release upload "v$VER" "build/out/XiaotianBot-Setup-$VER.exe" --clobber
