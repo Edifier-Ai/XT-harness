@@ -10,6 +10,8 @@
         android:id="@+id/scanner"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        app:zxing_framing_rect_height="248dp"
+        app:zxing_framing_rect_width="248dp"
         app:zxing_scanner_layout="@layout/scan_view" />
 
     <LinearLayout

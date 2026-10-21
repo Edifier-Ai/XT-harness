@@ -6,9 +6,18 @@
 
     <!-- Android 11+: to see whether UU 远程 is installed and to open it, and to open links in a browser -->
     <queries>
+        <!-- as the UU 远程 guide asks; plus the full addresses, in case its link filter names a host or path -->
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="uuremote" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="uuremote" android:host="external" android:path="/device/authorize" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="uuremote" android:host="external" android:path="/device/control" />
         </intent>
         <intent>
             <action android:name="android.intent.action.VIEW" />

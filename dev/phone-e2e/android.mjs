@@ -121,7 +121,8 @@ async function main() {
 
   // 电脑, before UU 远程 is installed
   await pg.click('#mtabs [data-mtab=pc]')
-  await sleep(1000)
+  await pg.waitForSelector('.mpc', { timeout: 10000 })
+  await sleep(1500)
   shot('pc-no-uu')
   check(await pg.evaluate(() => !window.XiaotianNative.uuInstalled()), 'no UU 远程 on the phone yet')
   await pg.click('.mpc-b [data-how=full]')
@@ -143,6 +144,7 @@ async function main() {
   check(took, 'taking over pauses the Bots on the computer')
   check(await pg.evaluate(() => (localStorage.getItem('tx.uuDevice') || '').includes('fake-pc-1')), 'the computer is bound in UU 远程 (anonymous_device_id kept)')
   back()
+  pg = await page((u) => u.startsWith(HOST))
   const gave = await until(async () => (await ctl('takeover')) === null, 20000)
   await sleep(1200)
   shot('handed-back')
@@ -153,6 +155,7 @@ async function main() {
 
   await pg.click('.mpc-b [data-how=pip]')
   await sleep(3000)
+  pg = await page((u) => u.startsWith(HOST))
   check(/MainActivity/.test(top()), 'the small window: UU 远程 answers and the App stays in front', top())
   adb('shell', 'am', 'start', '-a', 'android.intent.action.VIEW', '-d', 'xiaotian://uu/control?status=failure\\&reason=device_offline')
   await sleep(1200)
