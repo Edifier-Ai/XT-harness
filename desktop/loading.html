@@ -4,12 +4,84 @@
 <meta charset="utf-8">
 <title>小天 Bot</title>
 <style>
-html,body{margin:0;height:100%;background:#212121;color:#ececec;font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;-webkit-app-region:drag}
-.c{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
-.orb{width:56px;height:56px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffb46b 0,#e2502e 30%,#5a2fd0 62%,#141432 85%);animation:b 1.6s ease-in-out infinite}
-@keyframes b{50%{filter:brightness(1.35);transform:scale(1.08)}}
-#msg{font-size:14px;color:#a8a8a8}
+/* Start-up page: a blue-violet light breathing up from the bottom of a black screen while 小天 wakes.
+   When the runtime is ready the shell calls finish(): the light rises and fills the window, then hands over to the home page. */
+html,body{margin:0;height:100%;background:#000;color:#ececec;font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;overflow:hidden;-webkit-app-region:drag}
+.sky{position:fixed;inset:0;overflow:hidden}
+.g{position:absolute;border-radius:50%;filter:blur(60px);mix-blend-mode:screen;will-change:transform,opacity;transition:transform 1.9s cubic-bezier(.55,0,.15,1),opacity 1.4s ease}
+/* three coloured lights drifting slowly against each other, so the gradient keeps changing */
+.g1{left:50%;bottom:-40%;width:84vw;height:115vh;margin-left:-42vw;background:radial-gradient(closest-side,#4b39d8 0,#3a2bb0 45%,rgba(30,20,120,0) 100%);animation:d1 9s ease-in-out infinite alternate}
+.g2{left:-10%;bottom:-30%;width:75vw;height:75vh;background:radial-gradient(closest-side,#2257ff 0,rgba(20,60,220,.55) 50%,rgba(0,0,0,0) 100%);animation:d2 11s ease-in-out infinite alternate}
+.g3{right:-12%;bottom:-28%;width:70vw;height:70vh;background:radial-gradient(closest-side,#7a3cff 0,rgba(100,40,220,.5) 50%,rgba(0,0,0,0) 100%);animation:d3 13s ease-in-out infinite alternate}
+.core{left:50%;bottom:-22%;width:60vw;height:48vh;margin-left:-30vw;background:radial-gradient(closest-side,#fff 0,#e6e2ff 22%,#9c8cff 48%,rgba(80,60,220,0) 100%);filter:blur(30px);animation:pulse 4.5s ease-in-out infinite}
+@keyframes d1{0%{transform:translate(-4vw,0) scale(1)}50%{transform:translate(3vw,-4vh) scale(1.08)}100%{transform:translate(5vw,2vh) scale(.96)}}
+@keyframes d2{0%{transform:translate(0,0) scale(1)}100%{transform:translate(18vw,-10vh) scale(1.15)}}
+@keyframes d3{0%{transform:translate(0,-4vh) scale(1.05)}100%{transform:translate(-20vw,2vh) scale(.92)}}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.12,1.2);opacity:1}}
+.st{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw 3s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.15}50%{opacity:.9}}
+
+.c{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding-bottom:12vh;transition:opacity .6s ease,transform 1.2s cubic-bezier(.6,0,.2,1)}
+.ball{width:64px;height:64px;animation:bob 3.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.ball svg{display:block;width:100%;height:100%;overflow:visible}
+.eye{animation:blink 4.6s infinite;transform-box:fill-box;transform-origin:50% 50%}
+@keyframes blink{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.1)}}
+#msg{font-size:14px;color:rgba(236,236,240,.78);letter-spacing:.04em}
+#msg::after{content:'';display:inline-block;width:1.2em;text-align:left;animation:dots 1.4s steps(4) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+
+/* the hand-over: the light floods up and fills the window */
+.go .g1{transform:translateY(-55vh) scale(3.2)}
+.go .g2{transform:translate(20vw,-50vh) scale(3)}
+.go .g3{transform:translate(-20vw,-50vh) scale(3)}
+.go .core{transform:translateY(-60vh) scale(4.2);opacity:1;animation:none}
+.go .c{opacity:0;transform:translateY(-4vh) scale(.96)}
+.go .st{opacity:0;transition:opacity .4s}
+/* last step: settle into the home page's background */
+.veil{position:fixed;inset:0;background:var(--home,#121212);opacity:0;pointer-events:none;transition:opacity .5s ease}
+.out .veil{opacity:1}
+@media (prefers-reduced-motion:reduce){.g,.core,.ball,.st{animation:none}}
 </style>
 </head>
-<body><div class="c"><div class="orb"></div><div id="msg">小天正在醒来…</div></div></body>
+<body>
+<div class="sky" id="sky">
+  <div class="g g2"></div><div class="g g3"></div><div class="g g1"></div><div class="g core"></div>
+</div>
+<div class="c">
+  <div class="ball">
+    <svg viewBox="0 0 100 100" aria-hidden="true">
+      <defs><radialGradient id="r" cx="36%" cy="30%" r="75%"><stop offset="0" stop-color="#ff7a6e"/><stop offset=".45" stop-color="#ec3f3a"/><stop offset="1" stop-color="#b8232a"/></radialGradient></defs>
+      <circle cx="50" cy="50" r="46" fill="url(#r)"/>
+      <ellipse cx="34" cy="24" rx="13" ry="7" fill="#fff" opacity=".22" transform="rotate(-28 34 24)"/>
+      <rect class="eye" x="35.6" y="38" width="8.8" height="18" rx="4.4" transform="rotate(-16 40 47)" fill="#fff"/>
+      <rect class="eye" x="56.6" y="36" width="8.8" height="18" rx="4.4" transform="rotate(-16 61 45)" fill="#fff"/>
+    </svg>
+  </div>
+  <div id="msg">小天正在醒来</div>
+</div>
+<div class="veil"></div>
+<script>
+// a few stars in the dark upper half
+const sky = document.getElementById('sky')
+for (let i = 0; i < 14; i++) {
+  const s = document.createElement('i'); s.className = 'st'
+  s.style.left = (8 + Math.random() * 84) + '%'; s.style.top = (8 + Math.random() * 55) + '%'
+  s.style.animationDelay = (Math.random() * 3).toFixed(2) + 's'; s.style.transform = `scale(${(.6 + Math.random()).toFixed(2)})`
+  sky.appendChild(s)
+}
+const shown = Date.now()
+// Called by the shell when 小天 is ready. Resolves once the light has filled the window,
+// so the shell can switch to the home page. `home` is the home page's background colour.
+window.finish = (home) => new Promise((done) => {
+  if (home) document.documentElement.style.setProperty('--home', home)
+  // let the light breathe for a moment even when start-up is quick
+  const wait = Math.max(0, 1600 - (Date.now() - shown))
+  setTimeout(() => {
+    document.body.classList.add('go')
+    setTimeout(() => { document.body.classList.add('out'); setTimeout(done, 520) }, 1750)
+  }, wait)
+})
+</script>
+</body>
 </html>

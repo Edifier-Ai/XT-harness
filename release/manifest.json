@@ -1,13 +1,13 @@
 {
- "version": "0.14.1",
- "notes": "桌面小天的眼睛改成白色",
+ "version": "0.15.0",
+ "notes": "新启动页：黑底上蓝紫氛围光从底部升起、缓慢流动变换，小天在中间醒来；加载完成后光向上铺满整个窗口，再淡入首页",
  "minBase": "0.4.0",
- "at": "2026-10-21T07:28:40.878Z",
+ "at": "2026-10-21T07:38:27.545Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "a860418a4aa10dc7a12d842e06147045e8080e1a8e58766521acbd908b61efee",
-   "size": 32482
+   "sha256": "c5817a448670a4a306ca3ae725d94b8402a3121544a6617f67c398bb1089342b",
+   "size": 33248
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -26,8 +26,8 @@
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
-   "sha256": "337243f434a0274adfa118d66a109c87df4d259b689786b55314be86917ed0ce",
-   "size": 764
+   "sha256": "632367331db13cfe821a60884cfeefe7453b7a806fc5aa92a7d2da66d401c2f0",
+   "size": 5731
   },
   "app/icon.png": {
    "path": "desktop/icon.png",

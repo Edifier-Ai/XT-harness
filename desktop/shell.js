@@ -202,15 +202,21 @@ const api = (p, body) => fetch(`http://127.0.0.1:${PORT}/api/${p}`, { method: bo
 // ---------- windows ----------
 let win = null, pill = null, tray = null, refreshTray = () => {}
 
+// The home page's background (dark or light theme), so the start-up page can hand over without a flash next time.
+function rememberHomeBg() {
+  if (!win || win.isDestroyed() || !/^http/.test(win.webContents.getURL())) return
+  win.webContents.executeJavaScript('getComputedStyle(document.body).backgroundColor').then((c) => { if (c && c !== cfg.homeBg) { cfg.homeBg = c; saveCfg(cfg) } }).catch(() => {})
+}
 function createWindow(hidden) {
   win = new BrowserWindow({
-    width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, frame: false, backgroundColor: '#212121',
+    width: 1280, height: 820, minWidth: 960, minHeight: 620, show: false, frame: false, backgroundColor: '#000000',
     title: '小天 Bot', icon: WIN_ICON, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
   })
   if (process.platform === 'win32' && WIN_ICON === ICO) {
     try { win.setAppDetails({ appId: APP_ID, appIconPath: ICO, appIconIndex: 0, relaunchCommand: `"${process.execPath}"`, relaunchDisplayName: '小天 Bot' }) } catch {}
   }
-  win.on('close', (e) => { if (!quitting) { e.preventDefault(); win.hide() } })
+  win.on('blur', rememberHomeBg)
+  win.on('close', (e) => { rememberHomeBg(); if (!quitting) { e.preventDefault(); win.hide() } })
   win.webContents.setWindowOpenHandler(({ url }) => { shell.openExternal(url); return { action: 'deny' } })
   win.once('ready-to-show', () => { if (!hidden) win.show() })
 }
@@ -218,7 +224,13 @@ async function loadMain() {
   if (!configured()) { await win.loadFile(path.join(BUNDLE, 'web', 'index.html')); return }
   await win.loadFile(path.join(__dirname, 'loading.html'))
   await startRuntime()
-  if (await waitReady()) { await win.loadURL(uiURL()); createPill(); updater.started() }
+  if (await waitReady()) {
+    // the start-up light floods the window, then the home page takes over on the same background colour
+    const home = cfg.homeBg || '#121212'
+    await win.webContents.executeJavaScript(`window.finish ? window.finish(${JSON.stringify(home)}) : 0`).catch(() => {})
+    win.setBackgroundColor(home)
+    await win.loadURL(uiURL()); createPill(); updater.started()
+  }
   else win.webContents.executeJavaScript(`document.getElementById('msg').textContent = '小天 Bot 没能启动。日志在 ${LOGS.replace(/\\/g, '\\\\')}\\\\runtime.log'`)
 }
 // The floating 小天: a red ball that sits anywhere on the desktop. The window is bigger than the ball so its
