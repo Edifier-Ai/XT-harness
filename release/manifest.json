@@ -1,8 +1,8 @@
 {
- "version": "0.17.2",
- "notes": "启动更稳：小天启动慢时不再 60 秒就报“没能启动”，会一直等到它醒来并提示进度；就算显示了失败，之后醒来也会自动进入首页",
+ "version": "0.17.3",
+ "notes": "生成式界面有颜色了：饼图、柱状图、折线图、条形图用小天的蓝紫为首的 6 色，关键数字左侧带色条；深色和浅色主题各调一套",
  "minBase": "0.4.0",
- "at": "2026-10-21T08:45:14.798Z",
+ "at": "2026-10-21T09:19:42.003Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -486,8 +486,8 @@
   },
   "bundle/web/genui.js": {
    "path": "tianxi/web/genui.js",
-   "sha256": "ddc2ab81c9fe303e57e19b0a8ba618efef32cfc4acf73a8fa45308343cd9ab2c",
-   "size": 32074
+   "sha256": "c22ba416618cf797b80819d96cbf9441f863d4c81057c4faf7b282e0a063f0f3",
+   "size": 32110
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -516,13 +516,13 @@
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "4a35af1543048c6361267086e6c74f4d0c2262beba8b3c2fb7b4bcdf1ac817ad",
-   "size": 20339
+   "sha256": "d23c509a5416242893c4712097431ed24ab8fc39983d9f9f38417027f24abeb3",
+   "size": 18664
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
-   "sha256": "3c4530c8d2b2861b05407b81fa404fd10cae105eb928d2aab8ebc5ffbc3dbef8",
-   "size": 13472
+   "sha256": "161f386f2b446452108d8b176fc6fe5c339f6f57f5d92cb38b42e64661980b96",
+   "size": 14425
   },
   "bundle/web/orb.html": {
    "path": "tianxi/web/orb.html",
@@ -531,8 +531,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "37ca572a5e56e36ab695eb70be7c50f358376b9031a7c673e48558c9ae2f2ac0",
-   "size": 95320
+   "sha256": "81130d7ab40b977f983cf1988abfb52f3c82c1ddbb3df3f20c02a8750b169519",
+   "size": 95498
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

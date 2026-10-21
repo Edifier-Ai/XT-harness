@@ -177,9 +177,9 @@ const GU = (() => {
       const v = val(form, p.name, d), set = new Set(arr(v).map(String))
       return `<div class="${cls}" data-ou-pick="${esc(k)}" data-multi="${multi ? 1 : ''}">${arr(p.items).filter(isEl).map((o) => { const x = o.props || {}; return `<button type="button" class="${set.has(String(x.value)) ? 'on' : ''}" data-v="${esc(x.value)}" ${x.disabled ? 'disabled' : ''}>${label(x)}</button>` }).join('')}</div>`
     }
-    // ---- charts: drawn as SVG, series in the page's greys ----
+    // ---- charts: drawn as SVG, series in 小天's six chart colours (--c0…--c5, motion.css) ----
     function series(p) { return arr(p.series).filter(isEl).map((s) => ({ name: str(s.props?.category), values: arr(s.props?.values).map((x) => +x || 0) })) }
-    const legend = (ss) => ss.length > 1 ? `<div class="ou-leg">${ss.map((s, i) => `<span><i class="s${i % 5}"></i>${esc(s.name)}</span>`).join('')}</div>` : ''
+    const legend = (ss) => ss.length > 1 ? `<div class="ou-leg">${ss.map((s, i) => `<span><i class="s${i % 6}"></i>${esc(s.name)}</span>`).join('')}</div>` : ''
     const axisT = (p) => p.yLabel || p.xLabel ? `<div class="ou-ax">${esc(p.yLabel || '')}${p.yLabel && p.xLabel ? ' · ' : ''}${esc(p.xLabel || '')}</div>` : ''
     function bars(p) {
       const labels = arr(p.labels).map(str), ss = series(p); if (!labels.length || !ss.length) return ''
@@ -195,7 +195,7 @@ const GU = (() => {
         ss.forEach((s, j) => {
           const v = Math.max(0, s.values[i] || 0), x = stacked ? x0 + (cw - inner) / 2 : x0 + (cw - inner) / 2 + bw * j
           const y1 = y(acc + v), y2 = y(acc); if (stacked) acc += v
-          g += `<rect class="s${j % 5}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${Math.max(0, y2 - y1).toFixed(1)}" rx="3"><title>${esc(lb)} ${esc(s.name)}：${v}</title></rect>`
+          g += `<rect class="s${j % 6}" x="${x.toFixed(1)}" y="${y1.toFixed(1)}" width="${Math.max(1, bw - 2).toFixed(1)}" height="${Math.max(0, y2 - y1).toFixed(1)}" rx="3"><title>${esc(lb)} ${esc(s.name)}：${v}</title></rect>`
         })
         g += `<text class="xt" x="${(x0 + cw / 2).toFixed(1)}" y="${H - 6}">${esc(lb.length > 8 ? lb.slice(0, 7) + '…' : lb)}</text>`
       })
@@ -204,7 +204,7 @@ const GU = (() => {
     function hbars(p) {
       const labels = arr(p.labels).map(str), ss = series(p); if (!labels.length || !ss.length) return ''
       const tot = labels.map((_, i) => ss.reduce((a, s) => a + Math.max(0, s.values[i] || 0), 0)), top = Math.max(...tot, 1)
-      return `<div class="ou-chart">${axisT(p)}<div class="bars ou-hb">${labels.map((lb, i) => `<div class="bar"><span class="l">${esc(lb)}</span><span class="tr">${ss.map((s, j) => `<i class="s${j % 5}" style="width:${Math.max(.5, (s.values[i] || 0) / top * 100)}%" title="${esc(s.name)}：${s.values[i] || 0}"></i>`).join('')}</span><span class="v">${nice(tot[i])}</span></div>`).join('')}</div>${legend(ss)}</div>`
+      return `<div class="ou-chart">${axisT(p)}<div class="bars ou-hb">${labels.map((lb, i) => `<div class="bar"><span class="l">${esc(lb)}</span><span class="tr">${ss.map((s, j) => `<i class="s${j % 6}" style="width:${Math.max(.5, (s.values[i] || 0) / top * 100)}%" title="${esc(s.name)}：${s.values[i] || 0}"></i>`).join('')}</span><span class="v">${nice(tot[i])}</span></div>`).join('')}</div>${legend(ss)}</div>`
     }
     function line(p) {
       const labels = arr(p.labels).map(str), ss = series(p); if (!labels.length || !ss.length) return ''
@@ -221,7 +221,7 @@ const GU = (() => {
         if (p.variant === 'step') pts.forEach(([a, b], i) => { d += i ? `H${a.toFixed(1)}V${b.toFixed(1)}` : `M${a.toFixed(1)} ${b.toFixed(1)}` })
         else if (p.variant === 'linear') d = pts.map(([a, b], i) => (i ? 'L' : 'M') + a.toFixed(1) + ' ' + b.toFixed(1)).join('')
         else pts.forEach(([a, b], i) => { if (!i) { d = `M${a.toFixed(1)} ${b.toFixed(1)}`; return } const [pa, pb] = pts[i - 1], m = (a - pa) / 2; d += `C${(pa + m).toFixed(1)} ${pb.toFixed(1)} ${(a - m).toFixed(1)} ${b.toFixed(1)} ${a.toFixed(1)} ${b.toFixed(1)}` })
-        g += `<path class="ln s${j % 5}" d="${d}"/>` + pts.map(([a, b], i) => `<circle class="pt s${j % 5}" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="3"><title>${esc(labels[i] || '')} ${esc(s.name)}：${s.values[i]}</title></circle>`).join('')
+        g += `<path class="ln s${j % 6}" d="${d}"/>` + pts.map(([a, b], i) => `<circle class="pt s${j % 6}" cx="${a.toFixed(1)}" cy="${b.toFixed(1)}" r="3"><title>${esc(labels[i] || '')} ${esc(s.name)}：${s.values[i]}</title></circle>`).join('')
       })
       return `<div class="ou-chart">${axisT(p)}<svg viewBox="0 0 ${W} ${H}">${g}</svg>${legend(ss)}</div>`
     }
@@ -236,10 +236,10 @@ const GU = (() => {
         const d = v >= sum ? `M${C - R} ${C}A${R} ${R} 0 1 1 ${C + R} ${C}A${R} ${R} 0 1 1 ${C - R} ${C}Z` : r
           ? `M${pt(a0, R)}A${R} ${R} 0 ${big} 1 ${pt(a1, R)}L${pt(a1, r)}A${r} ${r} 0 ${big} 0 ${pt(a0, r)}Z`
           : `M${C} ${C}L${pt(a0, R)}A${R} ${R} 0 ${big} 1 ${pt(a1, R)}Z`
-        g += `<path class="s${i % 5} sl" d="${d}"><title>${esc(labels[i])}：${v}</title></path>`
+        g += `<path class="s${i % 6} sl" d="${d}"><title>${esc(labels[i])}：${v}</title></path>`
         a0 = a1
       })
-      return `<div class="ou-chart ou-pie"><svg viewBox="0 0 160 160" width="150" height="150">${g}${r ? `<circle class="hole" cx="${C}" cy="${C}" r="${r - 1}"/>` : ''}</svg><div class="ou-leg col">${labels.map((lb, i) => `<span><i class="s${i % 5}"></i>${esc(lb)}<b>${Math.round(vals[i] / sum * 100)}%</b></span>`).join('')}</div></div>`
+      return `<div class="ou-chart ou-pie"><svg viewBox="0 0 160 160" width="150" height="150">${g}${r ? `<circle class="hole" cx="${C}" cy="${C}" r="${r - 1}"/>` : ''}</svg><div class="ou-leg col">${labels.map((lb, i) => `<span><i class="s${i % 6}"></i>${esc(lb)}<b>${Math.round(vals[i] / sum * 100)}%</b></span>`).join('')}</div></div>`
     }
     return { node, acts, fields: () => fields, S, used }
   }

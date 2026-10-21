@@ -217,16 +217,6 @@
 :where(:root[data-theme=light]) .ou-ent .r b{color:#2b2b31}
 :where(:root[data-theme=light]) .ou-chart .gl{stroke:#e2e2ea}
 :where(:root[data-theme=light]) .ou-chart text{fill:#adadb5}
-:where(:root[data-theme=light]) .ou-chart rect.s0,:where(:root[data-theme=light]) .ou-chart .sl.s0,:where(:root[data-theme=light]) .ou-leg i.s0,:where(:root[data-theme=light]) .ou-hb i.s0{fill:#222228;background:#222228}
-:where(:root[data-theme=light]) .ou-chart rect.s1,:where(:root[data-theme=light]) .ou-chart .sl.s1,:where(:root[data-theme=light]) .ou-leg i.s1,:where(:root[data-theme=light]) .ou-hb i.s1{fill:#8d8d95;background:#8d8d95}
-:where(:root[data-theme=light]) .ou-chart rect.s2,:where(:root[data-theme=light]) .ou-chart .sl.s2,:where(:root[data-theme=light]) .ou-leg i.s2,:where(:root[data-theme=light]) .ou-hb i.s2{fill:#d4d4dc;background:#d4d4dc}
-:where(:root[data-theme=light]) .ou-chart rect.s3,:where(:root[data-theme=light]) .ou-chart .sl.s3,:where(:root[data-theme=light]) .ou-leg i.s3,:where(:root[data-theme=light]) .ou-hb i.s3{fill:#62626a;background:#62626a}
-:where(:root[data-theme=light]) .ou-chart rect.s4,:where(:root[data-theme=light]) .ou-chart .sl.s4,:where(:root[data-theme=light]) .ou-leg i.s4,:where(:root[data-theme=light]) .ou-hb i.s4{fill:#d4d4dc;background:#d4d4dc}
-:where(:root[data-theme=light]) .ou-chart .ln.s0,:where(:root[data-theme=light]) .ou-chart .pt.s0{stroke:#28282e}
-:where(:root[data-theme=light]) .ou-chart .ln.s1,:where(:root[data-theme=light]) .ou-chart .pt.s1{stroke:#28282e}
-:where(:root[data-theme=light]) .ou-chart .ln.s2,:where(:root[data-theme=light]) .ou-chart .pt.s2{stroke:#ceced6}
-:where(:root[data-theme=light]) .ou-chart .ln.s3,:where(:root[data-theme=light]) .ou-chart .pt.s3{stroke:#28282e}
-:where(:root[data-theme=light]) .ou-chart .ln.s4,:where(:root[data-theme=light]) .ou-chart .pt.s4{stroke:#ceced6}
 :where(:root[data-theme=light]) .ou-chart .pt{fill:#f3f3f9}
 :where(:root[data-theme=light]) .ou-chart .sl{stroke:#e2e2ea}
 :where(:root[data-theme=light]) .ou-chart .hole{fill:#f3f3f9}

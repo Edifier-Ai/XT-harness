@@ -1032,14 +1032,15 @@ button:focus:not(:focus-visible){outline:none}
 .ou-chart .gl{stroke:#26262a;stroke-width:1;vector-effect:non-scaling-stroke}
 .ou-chart text{font-size:11px;fill:#6e6e74;font-family:var(--ui)}
 .ou-chart .yt{text-anchor:end}.ou-chart .xt{text-anchor:middle}
-.ou-chart rect.s0,.ou-chart .sl.s0,.ou-leg i.s0,.ou-hb i.s0{fill:#ececee;background:#ececee}
-.ou-chart rect.s1,.ou-chart .sl.s1,.ou-leg i.s1,.ou-hb i.s1{fill:#8e8e95;background:#8e8e95}
-.ou-chart rect.s2,.ou-chart .sl.s2,.ou-leg i.s2,.ou-hb i.s2{fill:#5c5c63;background:#5c5c63}
-.ou-chart rect.s3,.ou-chart .sl.s3,.ou-leg i.s3,.ou-hb i.s3{fill:#b9b9bf;background:#b9b9bf}
-.ou-chart rect.s4,.ou-chart .sl.s4,.ou-leg i.s4,.ou-hb i.s4{fill:#3e3e44;background:#3e3e44}
+.ou-chart rect.s0,.ou-chart .sl.s0,.ou-leg i.s0,.ou-hb i.s0{fill:var(--c0);background:var(--c0)}
+.ou-chart rect.s1,.ou-chart .sl.s1,.ou-leg i.s1,.ou-hb i.s1{fill:var(--c1);background:var(--c1)}
+.ou-chart rect.s2,.ou-chart .sl.s2,.ou-leg i.s2,.ou-hb i.s2{fill:var(--c2);background:var(--c2)}
+.ou-chart rect.s3,.ou-chart .sl.s3,.ou-leg i.s3,.ou-hb i.s3{fill:var(--c3);background:var(--c3)}
+.ou-chart rect.s4,.ou-chart .sl.s4,.ou-leg i.s4,.ou-hb i.s4{fill:var(--c4);background:var(--c4)}
+.ou-chart rect.s5,.ou-chart .sl.s5,.ou-leg i.s5,.ou-hb i.s5{fill:var(--c5);background:var(--c5)}
 .ou-chart rect:hover,.ou-chart .sl:hover{opacity:.82}
 .ou-chart .ln{fill:none;stroke-width:2.2;vector-effect:non-scaling-stroke}
-.ou-chart .ln.s0,.ou-chart .pt.s0{stroke:#ececee}.ou-chart .ln.s1,.ou-chart .pt.s1{stroke:#8e8e95}.ou-chart .ln.s2,.ou-chart .pt.s2{stroke:#5c5c63}.ou-chart .ln.s3,.ou-chart .pt.s3{stroke:#b9b9bf}.ou-chart .ln.s4,.ou-chart .pt.s4{stroke:#3e3e44}
+.ou-chart .ln.s0,.ou-chart .pt.s0{stroke:var(--c0)}.ou-chart .ln.s1,.ou-chart .pt.s1{stroke:var(--c1)}.ou-chart .ln.s2,.ou-chart .pt.s2{stroke:var(--c2)}.ou-chart .ln.s3,.ou-chart .pt.s3{stroke:var(--c3)}.ou-chart .ln.s4,.ou-chart .pt.s4{stroke:var(--c4)}.ou-chart .ln.s5,.ou-chart .pt.s5{stroke:var(--c5)}
 .ou-chart .pt{fill:#151517;stroke-width:2;vector-effect:non-scaling-stroke}
 .ou-chart .sl{stroke:#151517;stroke-width:1.5}
 .ou-chart .hole{fill:#151517}
