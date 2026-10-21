@@ -1,8 +1,8 @@
 {
- "version": "0.13.0",
- "notes": "产品改名小天 Bot；Bot 之间的交接直接显示在对话里；你发的消息底色跟着 Bot 颜色，设置里可改成黑色",
+ "version": "0.13.1",
+ "notes": "「我的」里的后台任务改名为系统感知",
  "minBase": "0.4.0",
- "at": "2026-10-21T06:51:59.849Z",
+ "at": "2026-10-21T07:12:29.232Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -466,7 +466,7 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "7ab252493775fd6d6b6343802db0dce64a3c129ab8f901f16c216357e138dde1",
+   "sha256": "4fd628aab834dacd091a475ac11d82a5c7ffebea98096811e5417c1ac82fd681",
    "size": 148551
   },
   "bundle/web/free-models.json": {

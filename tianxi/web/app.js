@@ -658,7 +658,7 @@ function pageMe() {
   h += card('memory', '我的记忆', `${ms.length} 条`, dots ? `<span class="kd">${dots}</span>` : '聊天时说“记住……”就会记下', '带出处，能改能删')
   h += card('reflect', '反思', r ? dayLabel(r.at) + ' 的反思' : '还没反思过', r ? `${r.insights.length} 个发现 · ${r.proposals.length + r.lessons.length} 条建议` : '每晚你不在时回想一次', nr ? `<b class="warn">${nr} 条等你采纳</b>` : '')
   h += card('ledger', '操作记录', `${led.length} 件事`, led[0] ? esc(led[0].title) : '还没替你做过事', canUndo ? `${canUndo} 件能撤回` : '')
-  h += card('later', '后台任务', q ? `${q} 件排着` : '队列是空的', '交给 Bot “晚点做”的事，你离开或夜里做', '')
+  h += card('later', '系统感知', q ? `${q} 件排着` : '队列是空的', '交给 Bot “晚点做”的事，你离开或夜里做', '')
   h += '</div>'
   h += `<div class="sec">隐私</div><div class="panel"><div class="setrow"><label>临时模式</label><div class="ctl"><button class="sw ${S.privateMode ? 'on' : ''}" data-act="priv"></button><span class="hint" style="margin:0">开着时所有 Bot 都不记住你说的话</span></div></div></div>`
   return h
@@ -827,7 +827,7 @@ function pageLedger() {
 
 function pageLater() {
   const st = { queued: '排队中', running: '正在做', done: '做完了', error: '没做成' }
-  let h = phead('后台任务') + '<div class="intro">交给 Bot“晚点做”的事会排在这里。你离开电脑或到了夜里，它会自己做，结果写进第二天的简报。</div>'
+  let h = phead('系统感知') + '<div class="intro">交给 Bot“晚点做”的事会排在这里。你离开电脑或到了夜里，它会自己做，结果写进第二天的简报。</div>'
   const jobs = [...S.later].reverse()
   const jt = turnsOf(S.mainId).filter((t) => t.kind === 'job')
   h += '<div class="sec">队列</div><div class="panel">' + (jobs.length ? jobs.map((j) => { const t = j.startedAt ? jt.find((x) => x.at >= j.startedAt) : null; return `<div class="ent"><div class="tm">${hhmm(j.createdAt)}</div><div class="m"><div class="t">${esc(j.title)}</div><div class="w">${st[j.status] || j.status} · ${j.when === 'night' ? '夜里做' : '你离开时做'}${t ? ` · <button class="lk" data-act="proc-open" data-agent="${S.mainId}" data-turn="${t.id}">过程</button>` : ''}</div>${j.result ? `<div class="w" style="color:#cfcfd4;margin-top:6px;white-space:pre-wrap">${esc(j.result.slice(0, 400))}</div>` : ''}
