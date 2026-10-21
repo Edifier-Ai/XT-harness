@@ -2,11 +2,15 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>小天 Bot</title>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="light.css">
 <link rel="stylesheet" href="motion.css">
+<link rel="stylesheet" href="mobile.css">
+<!-- on a phone (a narrow screen outside the desktop client) the page is laid out as an app; the phone's own token
+     comes in the address once, from pairing, and is kept on the phone from then on -->
+<script>(function(){try{var q=new URLSearchParams(location.search);if(window.tianxiApp||!(q.has('m')||matchMedia('(max-width: 720px)').matches||/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)))return;document.documentElement.classList.add('mob');window.MOB=true;var t=q.get('t');if(t){localStorage.setItem('tx.ptoken',t);q.delete('t')}if(q.has('paired')){sessionStorage.setItem('tx.paired','1');q.delete('paired')}localStorage.setItem('tx.proc','"closed"');localStorage.setItem('tx.tourSeen','true');var s=q.toString();history.replaceState(null,'',location.pathname+(s?'?'+s:''))}catch(e){}})()</script>
 <script>try{var t=JSON.parse(localStorage.getItem('tx.theme')||'"dark"');if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
@@ -86,5 +90,6 @@
 <script src="tour.js"></script>
 <script src="voice.js"></script>
 <script src="theme.js"></script>
+<script src="mobile.js"></script>
 </body>
 </html>

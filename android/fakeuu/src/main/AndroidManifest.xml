@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Stands in for UU 远程 in the emulator test: answers its uuremote:// protocol the way the integration guide describes. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="UU 远程（测试替身）" android:theme="@android:style/Theme.Material.NoActionBar">
+        <activity android:name=".FakeUU" android:exported="true" android:launchMode="singleTask">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="uuremote" android:host="external" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

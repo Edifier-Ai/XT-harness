@@ -11,6 +11,7 @@ const net = require('node:net')
 const crypto = require('node:crypto')
 const { pathToFileURL } = require('node:url')
 const { createUpdater } = require('./updater.js')
+const { createPhone } = require('./phone.js')
 
 const APP_ID = 'com.lenovo.tianxi.concept'
 app.setAppUserModelId(APP_ID)
@@ -551,6 +552,22 @@ ipcMain.handle('tianxi:updateSource', (e, c = {}) => {
   return updater.status()
 })
 
+// ---------- 手机: a paired phone on the same Wi-Fi uses this computer's 小天 (see phone.js) ----------
+const phone = createPhone({
+  getCfg: () => cfg, saveCfg,
+  runtime: () => ({ port: child ? PORT : 0, token: TOKEN }),
+  log: (m) => { try { fs.appendFileSync(path.join(LOGS, 'phone.log'), `${new Date().toISOString()} ${m}\n`) } catch {} },
+  onEvent: (ev) => {
+    // you took over from the phone: 小天 waits before its next step until you hand back
+    if (ev.type === 'takeover') api('takeover', { on: ev.on, how: ev.how, phone: ev.phone })
+    if (win && !win.isDestroyed()) win.webContents.send('tianxi:phone', ev)
+  },
+})
+ipcMain.handle('tianxi:phoneState', () => phone.state())
+ipcMain.handle('tianxi:phoneOn', (e, on) => phone.setOn(!!on))
+ipcMain.handle('tianxi:phoneRenew', () => phone.renew())
+ipcMain.handle('tianxi:phoneForget', (e, id) => phone.forget(String(id || '')))
+
 // ---------- presence: lets 小天 do queued work while you are away ----------
 setInterval(() => { if (child) api('presence', { idleSec: powerMonitor.getSystemIdleTime() }) }, 30000)
 powerMonitor.on('lock-screen', () => { if (child) api('presence', { idleSec: 3600 }) })
@@ -562,7 +579,7 @@ app.on('second-instance', showMain)
 app.on('activate', showMain)
 app.on('before-quit', () => { quitting = true })
 app.on('will-quit', () => { globalShortcut.unregisterAll() })
-app.on('quit', () => { if (evalChild) killTree(evalChild); if (child) { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(child.pid), '/t', '/f']) : child.kill() } catch {} } })
+app.on('quit', () => { phone.stop(); if (evalChild) killTree(evalChild); if (child) { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(child.pid), '/t', '/f']) : child.kill() } catch {} } })
 app.on('window-all-closed', () => {})
 
 app.whenReady().then(async () => {
@@ -590,5 +607,6 @@ app.whenReady().then(async () => {
   createTray()
   globalShortcut.register(MAC ? 'Command+Shift+Space' : 'Control+Alt+Space', () => { win.isVisible() && win.isFocused() ? win.hide() : showMain() })
   await loadMain()
+  phone.start().catch(() => {})
   setTimeout(runCheck, 20000)
 })

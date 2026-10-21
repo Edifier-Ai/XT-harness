@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- the computer serves 小天 Bot over plain http on the local network (its address is whatever the Wi-Fi gave it) -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

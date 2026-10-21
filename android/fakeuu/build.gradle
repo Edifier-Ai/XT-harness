@@ -1,0 +1,31 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.xiaotianbot.fakeuu'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.xiaotianbot.fakeuu'
+        minSdk 24
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        test {
+            storeFile rootProject.file('test.keystore')
+            storePassword 'xiaotian'
+            keyAlias 'xiaotian'
+            keyPassword 'xiaotian'
+        }
+    }
+    buildTypes {
+        debug { signingConfig signingConfigs.test }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

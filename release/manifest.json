@@ -1,13 +1,13 @@
 {
- "version": "0.18.1",
- "notes": "Mac 版：从程序坞或访达打开时也能找到电脑上装的 node、git 等命令行工具；开机自启时安静待在菜单栏。Windows 版不变。",
+ "version": "0.19.0",
+ "notes": "手机版来了：电脑上打开 设置 › 手机 › 允许手机连接，手机扫码就能和电脑上的 Bot 聊天、替它点确认、看简报和操作记录。新增安卓 App：除了这些，还能通过 UU 远程小窗看着电脑、全屏接手，你接手时 Bot 先停下等你，回到 App 自动交还。目前手机和电脑要在同一个 Wi-Fi 下。",
  "minBase": "0.4.0",
- "at": "2026-10-21T15:30:56.421Z",
+ "at": "2026-10-21T21:15:25.393Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "22b6d1012e058cdfcbdcca1891f8512b098bc0d6bc11ec674654e1ffaaa03e24",
-   "size": 37860
+   "sha256": "addad2329d4a4413ba179528ad4229a5d21d5e3c8bfde7f6881ec2108f459705",
+   "size": 38849
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -16,13 +16,18 @@
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
-   "sha256": "3f538e2fc3dee008c62fa70a9851f52ab0c58aff7b3c3651bd5ed4583f1767a5",
-   "size": 1719
+   "sha256": "99b26009d216e45c1b47dfaeff0b7cdf257709b9a7d4a6d281f5e636abc1afc2",
+   "size": 2088
   },
   "app/freegate.js": {
    "path": "desktop/freegate.js",
    "sha256": "16cae5a906e7f7c1ed43f7fed6dd4d04f9e6df953e4bb386a116ff89c98e3495",
    "size": 11118
+  },
+  "app/phone.js": {
+   "path": "desktop/phone.js",
+   "sha256": "d7f2556a28bcf06c580a9e8b0b62c052b58765a2eab2307457525b88580fc4b5",
+   "size": 12702
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
@@ -421,8 +426,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "cc8699d07b224e354a9e3bc37d25b68e384cfd3c7002c9f2f4019dbd4b99fd70",
-   "size": 32395
+   "sha256": "cba48bcaf093d96d71762ca0e0b87204b142da2475bc1f1346b6188cf046a9ba",
+   "size": 34061
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -436,8 +441,8 @@
   },
   "bundle/plugins/store.js": {
    "path": "tianxi/plugins/store.js",
-   "sha256": "4eef0539349707654d34a21c477ee0b10792409b871951539ae2bcf0da84c55b",
-   "size": 6035
+   "sha256": "98816bb64214cb936804a2ae3c113d27bd663fabb414fcf5803cb52957f31c88",
+   "size": 6051
   },
   "bundle/plugins/voice.js": {
    "path": "tianxi/plugins/voice.js",
@@ -466,8 +471,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "65baad5519f34124f25d30924cbafa2bfe87fc042b2252934e86584ee0b4af63",
-   "size": 149192
+   "sha256": "8560a10ef050948a6c2c47e684ef704193de63fc6769779d8b782a74b4592782",
+   "size": 154732
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
@@ -511,13 +516,23 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "8a0e14633da3768d234b70b6980458211471e42c022c6a7a2d4bcf4e1f62f7ad",
-   "size": 9246
+   "sha256": "2cbf23e85769f46b1c34c52d5a927dc9420f1f265ba888924e71746c8f55333b",
+   "size": 10156
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
    "sha256": "d23c509a5416242893c4712097431ed24ab8fc39983d9f9f38417027f24abeb3",
    "size": 18664
+  },
+  "bundle/web/mobile.css": {
+   "path": "tianxi/web/mobile.css",
+   "sha256": "514f202e6272c15514d7a18865802c57f55e0733f62867021b0964b958e0f097",
+   "size": 14758
+  },
+  "bundle/web/mobile.js": {
+   "path": "tianxi/web/mobile.js",
+   "sha256": "7c1905a607824f7b745ace5d08779d6897f50dffb1737e9dcaa687802503ef9d",
+   "size": 26937
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
@@ -526,13 +541,18 @@
   },
   "bundle/web/orb.html": {
    "path": "tianxi/web/orb.html",
-   "sha256": "fe460fa9a7d171c8a75089338a7e64c50fd45ae31ba3b1c0fe0fd6540e9fafe3",
-   "size": 18375
+   "sha256": "59916e36f442ea25413dd17253ff0a3f12c78d8c9f54a4825c728e33ce24b79b",
+   "size": 18657
+  },
+  "bundle/web/qrcode.js": {
+   "path": "tianxi/web/qrcode.js",
+   "sha256": "18ae399f81182bc9de916e9c77b195df20cc58d6f2d55a62b085a299f1bf1780",
+   "size": 56694
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "81130d7ab40b977f983cf1988abfb52f3c82c1ddbb3df3f20c02a8750b169519",
-   "size": 95498
+   "sha256": "09b838b956acf3f3f56ebb6319adbe2af2781472d2eecd327a76893572f4b1ac",
+   "size": 96095
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

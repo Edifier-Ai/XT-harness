@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
 import { load, update, save, id, now, localISO, today, flags, bus, onChange, settings, HOME, EVAL, MAIN, STYLES, agentList, agentById, transcriptKey, fileFact, IMG_MIME } from './store.js'
-import { entries, undoEntry, undoLast, pendingArgs } from './ledger.js'
+import { entries, undoEntry, undoLast, pendingArgs, record } from './ledger.js'
 import { memories, editMemory, forgetMemory, addMemory, reflections, runReflect, applyProposal } from './memory.js'
 import { runBrief } from './ambient.js'
 import { CATALOG, BUILTIN, saveApp, removeApp, toggleApp, toggleBuiltin } from './apps.js'
@@ -257,6 +257,33 @@ export function apply(ctx) {
     })
   }, true)   // first in line: DSH's own web remote would otherwise hold the request waiting for a page nobody has open
 
+  // ---------- you take over the computer from your phone (UU 远程) ----------
+  // While you drive, a Bot's next step waits for you to hand back (at most 15 minutes), so the two of you
+  // never move the same mouse. Watching in the small window does not stop anything.
+  let handBack = []
+  const handedBack = () => { const l = handBack; handBack = []; for (const f of l) f() }
+  ctx.on('tools/pre-execute', async (exec, next) => {
+    // a phone that never said it handed back (its app was closed) stops holding 小天 after 15 minutes
+    if (flags.takeover && Date.now() - Date.parse(flags.takeover.at) > 15 * 60e3) takeover({ on: false })
+    if (flags.takeover && flags.takeover.how === 'full') {
+      await new Promise((resolve) => { handBack.push(resolve); setTimeout(resolve, 15 * 60e3 - (Date.now() - Date.parse(flags.takeover.at))) })
+    }
+    return next()
+  })
+  const takeover = ({ on, how, phone }) => {
+    const was = flags.takeover
+    if (on) flags.takeover = { how: how === 'pip' ? 'pip' : 'full', phone: String(phone || '手机').slice(0, 40), at: now() }
+    else {
+      flags.takeover = null
+      handedBack()
+      if (was && was.how === 'full') {
+        const min = Math.max(1, Math.round((Date.now() - Date.parse(was.at)) / 60000))
+        record({ tool: 'takeover', title: `你用手机（${was.phone}）接手了电脑 ${min} 分钟`, why: '通过 UU 远程，这段时间 Bot 停着等你' })
+      }
+    }
+    push({ type: 'takeover', takeover: flags.takeover })
+  }
+
   // ---------- HTTP ----------
   const json = (res, code, v) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(v)) }
   const body = async (req) => { let b = ''; for await (const d of req) b += d; try { return JSON.parse(b || '{}') } catch { return {} } }
@@ -279,6 +306,7 @@ export function apply(ctx) {
       models: MODELS, pick: pickNow(),
       apps: bus.appsState?.() || { apps: [], disabled: [] },
       voice: bus.voice?.state() || { available: false, phase: 'missing' },
+      takeover: flags.takeover || null,
     }
   }
 
@@ -305,6 +333,7 @@ export function apply(ctx) {
     'POST /api/reflect/run': async () => { runReflect('手动').catch((e) => console.error(e)); return { ok: true } },
     'POST /api/reflect/apply': async (b) => ({ ok: true, item: applyProposal(b.rid, b.pid, !!b.accept) }),
     'POST /api/private': async (b) => { flags.privateMode = !!b.on; push({ type: 'private', on: flags.privateMode }); return { ok: true, on: flags.privateMode } },
+    'POST /api/takeover': async (b) => { takeover(b); return { ok: true, takeover: flags.takeover || null } },
     'POST /api/presence': async (b) => { flags.idleSec = +b.idleSec || 0; flags.lastSeen = Date.now(); return { ok: true } },
     'POST /api/brief/run': async () => { runBrief('手动').catch((e) => console.error(e)); return { ok: true } },
     'POST /api/brief/act': async (b) => {

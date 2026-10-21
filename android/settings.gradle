@@ -1,0 +1,18 @@
+// 小天 App (Android): a WebView shell around the 小天 Bot page a paired computer serves, plus UU 远程 to see and take over
+// that computer's screen. fakeuu is a stand-in for UU 远程 used only by the emulator test (dev/phone-e2e), never shipped.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = 'xiaotian-android'
+include ':app', ':fakeuu'

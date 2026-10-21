@@ -9,7 +9,7 @@ if command -v unzip >/dev/null; then unzip -q dl/electron.zip -d $OUT; else 7z x
 mv $OUT/electron.exe $OUT/TianxiAI.exe
 rm -f $OUT/resources/default_app.asar $OUT/LICENSES.chromium.html
 mkdir -p $OUT/resources/app $OUT/resources/runtime
-cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} $OUT/resources/app/
+cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,phone.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} $OUT/resources/app/
 # the shipped version, so a fresh install does not download itself again
 node -e "const f=require('path').resolve('out/TianxiAI/resources/app/package.json'),p=require(f);p.version='$VER';require('fs').writeFileSync(f,JSON.stringify(p,null,2))"
 cp -r runtime/node_modules $OUT/resources/runtime/node_modules

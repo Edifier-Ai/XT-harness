@@ -2,7 +2,8 @@
 'use strict'
 const $ = (s, r = document) => r.querySelector(s)
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
-const TOKEN = new URLSearchParams(location.search).get('t') || ''
+// a phone keeps its own token from pairing (see index.html)
+const TOKEN = new URLSearchParams(location.search).get('t') || (window.MOB ? (() => { try { return localStorage.getItem('tx.ptoken') || '' } catch { return '' } })() : '')
 const APP = window.tianxiApp || null   // Electron bridge (absent in a plain browser)
 const store = { get(k, d) { try { const v = localStorage.getItem('tx.' + k); return v === null ? d : JSON.parse(v) } catch { return d } }, set(k, v) { try { localStorage.setItem('tx.' + k, JSON.stringify(v)) } catch {} } }
 
@@ -204,6 +205,7 @@ const MINE = ['brief', 'memory', 'reflect', 'ledger', 'later']
 let query = ''
 function nowDoing(aid) {
   const t = turnsOf(aid).filter((x) => x.running).pop(); if (!t) return ''
+  if (S.takeover?.how === 'full') return '你在用手机操作电脑，先停下等你'
   const now = [...toolsOf(t)].reverse().find((x) => x.state === 'running') || toolsOf(t).pop()
   return now ? `正在${toolLabel(now.name)}${toolDetail(now.args) ? ' · ' + toolDetail(now.args) : ''}` : '正在想'
 }
@@ -1088,6 +1090,7 @@ const MI = {
   sense: '<circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/>',
   guide: '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 16.5v.01"/>',
   ext: '<path d="M8 16L16 8M9 8h7v7"/>',
+  phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>',
 }
 const ico = (k, w = 18, sw = 1.8) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${MI[k]}</svg>`
@@ -1208,11 +1211,12 @@ function appForm() {
   return h
 }
 
-// 设置: 通用 · 电脑 · 模型 · 评测 · 更新
-const SETTABS = [['general', '通用', 'settings'], ['computer', '电脑', 'comp'], ['model', '模型', 'usage'], ['eval', '评测', 'eval'], ['update', '更新', 'update']]
+// 设置: 通用 · 电脑 · 手机 · 模型 · 评测 · 更新. On a phone only what works there: 通用 and 电脑.
+const SETTABS = [['general', '通用', 'settings'], ['computer', '电脑', 'comp'], ['phone', '手机', 'phone'], ['model', '模型', 'usage'], ['eval', '评测', 'eval'], ['update', '更新', 'update']]
+const setTabs = () => SETTABS.filter(([k]) => APP ? k !== 'phone' || !!APP.phoneState : k === 'general' || k === 'computer')
 function settingsModal() {
   const s = S.settings || {}, t = modal.tab
-  const nav = `<div class="snav">${SETTABS.map(([k, l, i]) => `<button class="${t === k ? 'on' : ''}" data-act="set-tab" data-t="${k}">${ico(i, 19)}<span>${l}</span></button>`).join('')}</div>`
+  const nav = `<div class="snav">${setTabs().map(([k, l, i]) => `<button class="${t === k ? 'on' : ''}" data-act="set-tab" data-t="${k}">${ico(i, 19)}<span>${l}</span></button>`).join('')}</div>`
   const row = (label, desc, ctl) => `<div class="srow"><div class="m"><b>${label}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="c">${ctl}</div></div>`
   const tg = (key, on) => `<button class="tg ${on ? 'on' : ''}" data-act="set-toggle" data-key="${key}"></button>`
   const sel = (key, val, opts) => `<label class="sel"><select data-set="${key}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${String(v) === String(val) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>${ico('chev', 13)}</label>`
@@ -1229,6 +1233,7 @@ function settingsModal() {
       <div class="slab">Bot 的电脑</div><div class="scard">${row('数据位置', `记忆、对话、操作记录都在本机：${esc(S.home || '')}`, `<button class="pbtn" data-act="copy" data-v="${esc(S.home || '')}">复制</button>`)}${row(`清空和 ${esc(agentOf(cur).name)} 的对话`, '只清对话记录，记忆和操作记录不受影响。', `<button class="pbtn red" data-act="clear">清空</button>`)}</div>`
   } else if (t === 'model') h = `<h2>模型</h2><div class="slab">免费模式</div><div class="scard pad" id="freeForm"></div><div class="slab">我自己的 API Key</div><div class="scard pad" id="modelForm"></div><div class="snote">小天用第三方大模型 API，Key 只加密保存在这台电脑上。</div>`
   else if (t === 'eval') h = `<h2>评测</h2><div class="scard pad" id="evalBox"></div>`
+  else if (t === 'phone') h = `<h2>手机</h2><div id="phoneBox"></div>`
   else h = `<h2>更新</h2><div class="slab">小天 Bot 更新</div><div class="scard" id="updBox"></div><div class="slab">更新来源</div><div class="scard pad" id="updSrc"></div>`
   return `${nav}<div class="sbody">${h}</div><button class="mx" data-act="modal-close">${ico('x', 20)}</button>`
 }
@@ -1237,6 +1242,41 @@ function fillSettings() {
   if (t === 'model') { renderFree($('#freeForm'), false); renderModelForm($('#modelForm'), false) }
   if (t === 'eval') renderEval($('#evalBox'))
   if (t === 'update') renderUpdate($('#updBox'))
+  if (t === 'phone') renderPhone($('#phoneBox'))
+}
+
+// 手机: a phone on the same Wi-Fi scans the code and then uses this computer's Bots; UU 远程 shows it the screen.
+const loadScript = (src) => new Promise((ok, no) => { const x = document.createElement('script'); x.src = src; x.onload = ok; x.onerror = no; document.head.appendChild(x) })
+function qrSvg(text) {
+  const q = qrcode(0, 'M'); q.addData(text); q.make()
+  const n = q.getModuleCount(); let d = ''
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += `M${c} ${r}h1v1h-1z`
+  return `<svg viewBox="-3 -3 ${n + 6} ${n + 6}" shape-rendering="crispEdges" role="img" aria-label="配对二维码"><rect x="-3" y="-3" width="${n + 6}" height="${n + 6}" fill="#fff"/><path d="${d}" fill="#0b0b0c"/></svg>`
+}
+let phoneTimer = null
+async function renderPhone(el, st) {
+  if (!el) return
+  clearTimeout(phoneTimer)
+  st = st || await APP.phoneState()
+  if (!window.qrcode) await loadScript('qrcode.js').catch(() => {})
+  if (!el.isConnected || modal?.tab !== 'phone') return
+  const row = (label, desc, ctl) => `<div class="srow"><div class="m"><b>${label}</b>${desc ? `<span>${desc}</span>` : ''}</div><div class="c">${ctl}</div></div>`
+  let h = `<div class="slab">让手机连上这台电脑</div><div class="scard">${row('允许手机连接', '打开后，同一个 Wi-Fi 下的手机扫一下码，就能和这台电脑上的 Bot 聊天、看它在做什么、替它点确认。', `<button class="tg ${st.on ? 'on' : ''}" data-act="phone-on"></button>`)}</div>`
+  if (st.on) {
+    if (!st.running) h += `<div class="scard pad"><div class="fm-res bad">${esc(st.error || '没能打开手机连接')}</div></div>`
+    else if (!st.url) h += `<div class="scard pad"><div class="fm-res bad">这台电脑没连上 Wi-Fi 或局域网，手机找不到它。</div></div>`
+    else {
+      const mins = Math.max(1, Math.round((st.expires - Date.now()) / 60000))
+      h += `<div class="scard pad"><div class="pqr"><div class="qr">${window.qrcode ? qrSvg(st.url) : ''}</div><div class="m"><b>用手机扫一扫</b><span>手机相机、微信或小天 App 都能扫。扫完就连上了，以后不用再扫。</span><span class="hint">${mins} 分钟内有效，只能用一次 · <button class="lk" data-act="phone-renew">换一个</button></span><span class="hint">在小天 App 里手动输入：${esc(st.addresses.map((a) => a + ':' + st.port).join('、'))} · 配对码 <b class="pcode">${esc(st.code)}</b></span></div></div></div>`
+    }
+    h += `<div class="slab">连上的手机</div><div class="scard">${st.devices.length ? st.devices.slice().reverse().map((d) => row(esc(d.name), `${d.seen ? '上次连接 ' + when(d.seen) : ''}${d.ip ? ' · ' + esc(d.ip) : ''}`, `<button class="pbtn red" data-act="phone-forget" data-id="${esc(d.id)}">断开</button>`)).join('') : row('还没有', '扫码之后会出现在这里', '')}</div>`
+  }
+  const uu = st.uu || {}
+  h += `<div class="slab">在手机上看屏幕、接手：UU 远程</div><div class="scard">${row('这台电脑', uu.installed ? (uu.running ? '装了 UU 远程，正在运行。' : '装了 UU 远程，但没有打开。打开并登录后，手机才看得到这台电脑。') : '没找到 UU 远程。装好并登录，手机才看得到这台电脑的屏幕。', uu.installed ? '' : '<button class="pbtn" data-act="open-url" data-u="https://uuyc.163.com/">去下载</button>')}${row('手机上', '装小天 App 和 UU 远程（4.42 以上），两边登录同一个 UU 账号。在小天 App 的「电脑」里，可以小窗看着 Bot 做，也可以全屏接手；你接手时 Bot 会先停下等你。', '')}</div>
+    <div class="snote">现在只在同一个 Wi-Fi 下能连，只在你信任的网络里打开。第一次打开时，系统可能问要不要让小天 Bot 使用网络，选“允许”。</div>`
+  el.innerHTML = h
+  // the code expires: show a fresh one in time
+  if (st.on && st.running) phoneTimer = setTimeout(async () => { if (modal?.tab === 'phone') renderPhone($('#phoneBox'), st.expires - Date.now() < 60000 ? await APP.phoneRenew() : undefined) }, 30000)
 }
 async function saveSetting(key, raw) {
   if (key === 'meBubble') { store.set('meBubble', raw); if (view === 'chat') renderMsgs(true); return }
@@ -1323,6 +1363,7 @@ function connect() {
     }
     else if (m.type === 'approval-gone') { S.approvals = S.approvals.filter((a) => a.id !== m.id); renderAll(true) }
     else if (m.type === 'private') { S.privateMode = m.on; renderAll(true) }
+    else if (m.type === 'takeover') { S.takeover = m.takeover || null; renderAll(true) }
     else if (m.type === 'mail') soon()
     else if (m.type === 'voice') voiceChanged(m.state)
     else if (m.type === 'model') { S.pick = m.pick; renderPicks() }
@@ -1548,6 +1589,10 @@ document.addEventListener('click', async (e) => {
     el.disabled = true; el.textContent = '正在检查…'
     renderUpdate($('#updBox'), await APP.updateCheck())
   }
+  else if (act === 'phone-on') { el.classList.toggle('on'); renderPhone($('#phoneBox'), await APP.phoneOn(el.classList.contains('on'))) }
+  else if (act === 'phone-renew') renderPhone($('#phoneBox'), await APP.phoneRenew())
+  else if (act === 'phone-forget') { if (confirm('断开这台手机？它要重新扫码才能再连。')) renderPhone($('#phoneBox'), await APP.phoneForget(el.dataset.id)) }
+  else if (act === 'open-url') { if (APP) APP.open(el.dataset.u); else window.open(el.dataset.u, '_blank') }
   else if (act === 'eval-stop') { await APP.evalStop(); renderEval($('#evalBox')) }
   else if (act === 'eval-open') { APP.evalOpen(el.dataset.dir) }
 })
@@ -1560,6 +1605,10 @@ document.addEventListener('input', (e) => { if (e.target.type === 'range') { con
     if (APP.platform === 'darwin') document.documentElement.classList.add('mac')
     else $('#wctl').hidden = false
     document.querySelectorAll('[data-win]').forEach((b) => { b.onclick = () => APP.win(b.dataset.win) })
+    APP.onPhone?.((ev) => {
+      if (ev.type === 'paired') toastText(`${ev.name} 连上了`)
+      if (modal?.tab === 'phone') renderPhone($('#phoneBox'))
+    })
     const cfg = await APP.getConfig()
     if (!cfg.configured) {
       $('#setup').classList.add('on'); renderFree($('#setupFree'), true); renderModelForm($('#setupForm'), true)

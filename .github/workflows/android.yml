@@ -1,0 +1,115 @@
+# Builds the 小天 App (Android) for each new version, tests it in an Android emulator against a real 小天 runtime
+# (dev/phone-e2e), and attaches the APK to the version's GitHub Release next to the Windows and Mac builds.
+# Runs when release/manifest.json changes on main (node build/release.mjs x.y.z), on pushes to ci/* branches (test only,
+# nothing is published), or by hand from the Actions tab. Test screenshots are kept as the run's "phone-e2e" artifact.
+name: Android app
+
+on:
+  push:
+    branches: [main, 'ci/**']
+    paths: [release/manifest.json, 'android/**', 'dev/phone-e2e/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: v
+        run: |
+          VER=$(node -p "require('./release/manifest.json').version")
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF" = "refs/heads/main" ] && ! gh release view "v$VER" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx "XiaotianBot-$VER.apk"; then echo "publish=1" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.14'
+
+      - name: Build APKs
+        run: gradle -p android --no-daemon :app:assembleDebug :app:assembleRelease :fakeuu:assembleDebug
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 小天 runtime for the test computer
+        run: |
+          mkdir -p build/runtime
+          cp build/runtime-lock/package.json build/runtime-lock/package-lock.json build/runtime/
+          (cd build/runtime && npm ci --no-audit --no-fund && npm i --no-save --no-audit --no-fund @deepseek-ai/node-addon-system-linux-x64@0.1.2 @vscode/ripgrep-linux-x64@1.18.0 @koromix/koffi-linux-x64@3.1.1 node-addon-require-builtin-linux-x64-gnu@0.1.9)
+          npm i --no-save --no-audit --no-fund --prefix dev/phone-e2e playwright-core@1.56.1
+
+      - name: Start the test computer
+        run: |
+          nohup node dev/phone-e2e/host.mjs "$RUNNER_TEMP/e2e" > "$RUNNER_TEMP/e2e-host.log" 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://127.0.0.1:3092/state >/dev/null && break; sleep 2; done
+          cat "$RUNNER_TEMP/e2e-host.log"
+          if ! curl -sf http://127.0.0.1:3092/state; then tail -60 "$RUNNER_TEMP/e2e/runtime.log"; tail -20 "$RUNNER_TEMP/e2e/fake-llm.log"; exit 1; fi
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Test in the emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          # no Google services, like most phones sold in China (and Google services dying on the emulator took the App with it)
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          ram-size: 4096M
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
+          script: adb install -r android/app/build/outputs/apk/debug/app-debug.apk && node dev/phone-e2e/android.mjs "$RUNNER_TEMP/shots" android/fakeuu/build/outputs/apk/debug/fakeuu-debug.apk || { tail -40 "$RUNNER_TEMP/e2e-host.log"; tail -40 "$RUNNER_TEMP/e2e/runtime.log"; exit 1; }
+
+      - name: Keep screenshots and logs
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/shots"
+          cp "$RUNNER_TEMP/e2e-host.log" "$RUNNER_TEMP"/e2e/*.log "$RUNNER_TEMP/shots/" 2>/dev/null || true
+          cp android/app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/shots/XiaotianBot-${{ steps.v.outputs.ver }}.apk" 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phone-e2e
+          path: ${{ runner.temp }}/shots
+          retention-days: 14
+
+      # on test branches, the screenshots also go to the ci-shots branch, to look at without downloading the artifact
+      - name: Screenshots to ci-shots
+        if: always() && startsWith(github.ref, 'refs/heads/ci/')
+        run: |
+          cd "$RUNNER_TEMP/shots" && rm -f *.apk
+          git init -q -b ci-shots && git add -A
+          git -c user.name=ci -c user.email=ci@localhost commit -qm "phone e2e $GITHUB_SHA"
+          git push -qf "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" ci-shots
+
+      - name: Publish APK
+        if: steps.v.outputs.publish == '1'
+        run: |
+          VER=${{ steps.v.outputs.ver }}
+          cp android/app/build/outputs/apk/release/app-release.apk "XiaotianBot-$VER.apk"
+          for i in $(seq 1 30); do gh release view "v$VER" >/dev/null 2>&1 && break; sleep 20; done
+          gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes "小天 Bot $VER" || true
+          gh release upload "v$VER" "XiaotianBot-$VER.apk" --clobber

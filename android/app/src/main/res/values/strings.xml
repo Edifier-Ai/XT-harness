@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">小天 Bot</string>
+    <string name="scan_title">扫电脑上的二维码</string>
+    <string name="scan_hint">在电脑上打开 小天 Bot › 设置 › 手机，打开“允许手机连接”，二维码就出来了。</string>
+    <string name="scan_manual">输入地址</string>
+    <string name="scan_no_camera">要用相机才能扫码。也可以手动输入电脑上显示的地址和配对码。</string>
+    <string name="scan_allow">允许使用相机</string>
+    <string name="close">关闭</string>
+</resources>

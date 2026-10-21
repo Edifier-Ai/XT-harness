@@ -1,0 +1,52 @@
+plugins {
+    id 'com.android.application'
+}
+
+// the App carries the client's version: release/manifest.json, 0.19.0 -> versionCode 1900
+def manifest = new groovy.json.JsonSlurper().parse(rootProject.file('../release/manifest.json'))
+def ver = manifest.version as String
+def (maj, min, pat) = ver.tokenize('.').collect { it as int }
+
+android {
+    namespace 'com.xiaotianbot.app'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.xiaotianbot.app'
+        minSdk 24
+        targetSdk 35
+        versionCode maj * 10000 + min * 100 + pat
+        versionName ver
+    }
+
+    // a test key that lives in the repository, so every build can be installed over the last one.
+    // Its password is public: fine for trying the App, not for a store.
+    signingConfigs {
+        test {
+            storeFile rootProject.file('test.keystore')
+            storePassword 'xiaotian'
+            keyAlias 'xiaotian'
+            keyPassword 'xiaotian'
+        }
+    }
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.test
+        }
+        release {
+            signingConfig signingConfigs.test
+            minifyEnabled false
+        }
+    }
+    buildFeatures {
+        buildConfig true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+}

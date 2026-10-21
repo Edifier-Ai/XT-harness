@@ -57,7 +57,7 @@ export function localISO(d = new Date()) {
 export const today = () => localISO().slice(0, 10)
 
 // Runtime flags shared across plugins (not persisted).
-export const flags = { privateMode: false, idleSec: 0, lastSeen: Date.now() }
+export const flags = { privateMode: false, idleSec: 0, lastSeen: Date.now(), takeover: null }
 
 // Message bus between plugins: host.js installs `say`, ambient.js uses it to wake 小天 on its own.
 export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () => 'tianxi', hopsOf: () => -1, deliver: null }
