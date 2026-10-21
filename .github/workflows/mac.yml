@@ -80,7 +80,9 @@ jobs:
           set +e
           node build/mac-check.mjs "$HOME/Applications/小天 Bot.app" "check-$A"; rc=$?
           echo "--- app.log"; tail -40 "check-$A/app.log"
-          echo "--- runtime.log"; tail -40 "$U/logs/runtime.log"
+          echo "--- runtime.log"; tail -40 "$U/logs/runtime.log"; cp "$U/logs/runtime.log" "check-$A/" 2>/dev/null
+          # errors 小天 showed in chats (the dummy key makes any model call fail with 401; anything else is a real problem)
+          grep -rhoE '"role":"error"[^}]{0,400}' "$U" 2>/dev/null | sort | uniq -c | tee "check-$A/errors.txt"
           exit $rc
 
       # what the check saw (screenshots + check.json), on a branch of its own so it can be looked at without downloads
@@ -103,5 +105,6 @@ jobs:
           node build/release-notes.mjs
           gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md || true
           gh release edit "v$VER" --notes-file notes.md
-          A=${{ matrix.arch }}; [ "$A" = arm64 ] && K='Apple 芯片' || K='Intel 芯片'
-          gh release upload "v$VER" "build/out-mac/XiaotianBot-$VER-mac-$A.dmg#Mac 版 · $K（${{ steps.v.outputs.key }}）" --clobber
+          # the label (ASCII only: GitHub refuses some Unicode there) says which commit the file was built from
+          A=${{ matrix.arch }}
+          gh release upload "v$VER" "build/out-mac/XiaotianBot-$VER-mac-$A.dmg#Mac $A (build ${{ steps.v.outputs.key }})" --clobber
