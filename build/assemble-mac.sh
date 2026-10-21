@@ -12,13 +12,11 @@ mv "$OUT/Electron.app" "$APP"
 # "<executable> Helper*.app" next to it: rename both (ASCII names; the name people see is CFBundleDisplayName).
 EXE=XiaotianBot; B=/usr/libexec/PlistBuddy
 mv "$APP/Contents/MacOS/Electron" "$APP/Contents/MacOS/$EXE"
-$B -c "Set :CFBundleExecutable $EXE" "$PL"
+plutil -replace CFBundleExecutable -string "$EXE" "$PL"
 for h in "$APP/Contents/Frameworks/Electron Helper"*.app; do
   n=$(basename "$h" .app); m="$EXE${n#Electron}"
   mv "$h/Contents/MacOS/$n" "$h/Contents/MacOS/$m"
-  $B -c "Set :CFBundleExecutable $m" "$h/Contents/Info.plist"
-  $B -c "Set :CFBundleName $m" "$h/Contents/Info.plist"
-  $B -c "Set :CFBundleDisplayName $m" "$h/Contents/Info.plist" 2>/dev/null || true
+  for k in CFBundleExecutable CFBundleName CFBundleDisplayName; do plutil -replace $k -string "$m" "$h/Contents/Info.plist"; done
   mv "$h" "$APP/Contents/Frameworks/$m.app"
 done
 ls "$APP/Contents/Frameworks"
