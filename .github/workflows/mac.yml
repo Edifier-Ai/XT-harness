@@ -6,7 +6,7 @@ name: Mac app
 on:
   push:
     branches: [main]
-    paths: [release/manifest.json, .github/workflows/mac.yml, build/assemble-mac.sh]
+    paths: [release/manifest.json, .github/workflows/mac.yml, build/assemble-mac.sh, build/mac-check.mjs]
   workflow_dispatch:
 
 permissions:
@@ -32,13 +32,19 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Version
         id: v
         run: |
           VER=$(node -p "require('./release/manifest.json').version")
-          echo "ver=$VER" >> "$GITHUB_OUTPUT"
-          if gh release view "v$VER" --json assets --jq '.assets[].name' 2>/dev/null | grep -qx "XiaotianBot-$VER-mac-${{ matrix.arch }}.dmg"; then echo "exists=1" >> "$GITHUB_OUTPUT"; echo "already built"; fi
+          # the last commit that changed anything inside the Mac app; a .dmg already built from it is not built again
+          KEY=$(git log -1 --format=%h -- desktop tianxi build/assemble-mac.sh build/mac-check.mjs build/icon.icns build/runtime-lock .github/workflows/mac.yml release/manifest.json)
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"; echo "key=$KEY" >> "$GITHUB_OUTPUT"
+          L=$(gh release view "v$VER" --json assets --jq ".assets[] | select(.name==\"XiaotianBot-$VER-mac-${{ matrix.arch }}.dmg\") | .label" 2>/dev/null || true)
+          echo "built: $L, now: $KEY"
+          if [ -n "$L" ] && [[ "$L" == *"$KEY"* ]]; then echo "exists=1" >> "$GITHUB_OUTPUT"; echo "already built from $KEY"; fi
 
       - uses: actions/setup-node@v4
         if: steps.v.outputs.exists != '1'
@@ -58,34 +64,37 @@ jobs:
         if: steps.v.outputs.exists != '1'
         run: bash build/assemble-mac.sh ${{ steps.v.outputs.ver }} ${{ matrix.arch }}
 
-      - name: Start once
+      - name: Install from the disk image and start once
         if: steps.v.outputs.exists != '1'
         run: |
+          VER=${{ steps.v.outputs.ver }}; A=${{ matrix.arch }}
+          # install the way a person would: open the .dmg, copy the app out
+          hdiutil attach "build/out-mac/XiaotianBot-$VER-mac-$A.dmg" -nobrowse -readonly -mountpoint /tmp/xtdmg
+          ls -la /tmp/xtdmg
+          mkdir -p "$HOME/Applications"; ditto "/tmp/xtdmg/小天 Bot.app" "$HOME/Applications/小天 Bot.app"
+          hdiutil detach /tmp/xtdmg
+          codesign --verify --deep --strict "$HOME/Applications/小天 Bot.app" && echo "signature ok"
           # a dummy model so the runtime starts and the home page shows (no model call is made)
           U="$HOME/Library/Application Support/TianxiAI-Concept"; mkdir -p "$U"
-          printf '{"provider":"deepseek","baseURL":"https://api.deepseek.com/v1","model":"deepseek-chat","key":"%s","keyEnc":false,"pill":true}' "$(printf test | base64)" > "$U/config.json"
-          "build/out-mac/小天 Bot.app/Contents/MacOS/XiaotianBot" > start.log 2>&1 &
-          ok=0
-          for i in $(seq 1 120); do
-            c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3090/api/ping || true)
-            if [ "$c" != "000" ]; then ok=1; echo "runtime answered ($c) after ${i}s"; break; fi
-            sleep 1
-          done
-          sleep 12
-          screencapture -x shot-${{ matrix.arch }}.png || true
-          pkill -f "小天 Bot.app" || true
-          echo "--- start.log"; tail -40 start.log || true
-          echo "--- runtime.log"; tail -60 "$U/logs/runtime.log" || true
-          [ "$ok" = 1 ]
+          printf '{"provider":"deepseek","baseURL":"https://api.deepseek.com/v1","model":"deepseek-chat","key":"%s","keyEnc":false}' "$(printf test | base64)" > "$U/config.json"
+          set +e
+          node build/mac-check.mjs "$HOME/Applications/小天 Bot.app" "check-$A"; rc=$?
+          echo "--- app.log"; tail -40 "check-$A/app.log"
+          echo "--- runtime.log"; tail -40 "$U/logs/runtime.log"
+          exit $rc
 
-      - uses: actions/upload-artifact@v4
+      # what the check saw (screenshots + check.json), on a branch of its own so it can be looked at without downloads
+      - name: Keep the check's screenshots
         if: always() && steps.v.outputs.exists != '1'
-        with:
-          name: mac-${{ matrix.arch }}-check
-          path: |
-            shot-${{ matrix.arch }}.png
-            start.log
-          if-no-files-found: ignore
+        run: |
+          A=${{ matrix.arch }}; [ -d "check-$A" ] || exit 0
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for i in 1 2 3 4; do
+            rm -rf /tmp/cc && git clone -q --depth 1 --branch ci-checks "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" /tmp/cc 2>/dev/null || { rm -rf /tmp/cc; mkdir /tmp/cc; git -C /tmp/cc init -q -b ci-checks; git -C /tmp/cc remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"; }
+            rm -rf "/tmp/cc/mac-$A"; mkdir -p "/tmp/cc/mac-$A"; cp "check-$A"/* "/tmp/cc/mac-$A/"
+            (cd /tmp/cc && git add -A && git commit -qm "mac-$A check for ${GITHUB_SHA::7}" && git push -q origin HEAD:ci-checks) && break
+            sleep 5
+          done
 
       - name: Publish
         if: steps.v.outputs.exists != '1'
@@ -94,4 +103,5 @@ jobs:
           node build/release-notes.mjs
           gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md || true
           gh release edit "v$VER" --notes-file notes.md
-          gh release upload "v$VER" "build/out-mac/XiaotianBot-$VER-mac-${{ matrix.arch }}.dmg" --clobber
+          A=${{ matrix.arch }}; [ "$A" = arm64 ] && K='Apple 芯片' || K='Intel 芯片'
+          gh release upload "v$VER" "build/out-mac/XiaotianBot-$VER-mac-$A.dmg#Mac 版 · $K（${{ steps.v.outputs.key }}）" --clobber

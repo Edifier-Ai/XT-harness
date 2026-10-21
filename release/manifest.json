@@ -1,13 +1,13 @@
 {
- "version": "0.18.0",
- "notes": "新增 Mac 版（Apple 芯片和 Intel）：窗口左上角是 Mac 的红绿灯按钮，有顶部菜单和拷贝粘贴快捷键，点 Dock 图标回到窗口，菜单栏有小天图标；呼出快捷键 ⌘⇧空格。Windows 版功能不变。",
+ "version": "0.18.1",
+ "notes": "Mac 版：从程序坞或访达打开时也能找到电脑上装的 node、git 等命令行工具；开机自启时安静待在菜单栏。Windows 版不变。",
  "minBase": "0.4.0",
- "at": "2026-10-21T14:53:26.827Z",
+ "at": "2026-10-21T15:30:56.421Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "a8c31fadcb4453c370eaef20b4517fef45ca4e006567652f9c365579b2abed5e",
-   "size": 36922
+   "sha256": "22b6d1012e058cdfcbdcca1891f8512b098bc0d6bc11ec674654e1ffaaa03e24",
+   "size": 37860
   },
   "app/updater.js": {
    "path": "desktop/updater.js",

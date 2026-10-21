@@ -46,6 +46,18 @@ const ICO = (() => {
 })()
 const WIN_ICON = process.platform === 'win32' && fs.existsSync(ICO) ? ICO : ICON
 const MAC = process.platform === 'darwin'
+// Mac: an app opened from Finder or the Dock gets only /usr/bin:/bin:/usr/sbin:/sbin as PATH, so node, npx, git or python
+// installed with Homebrew or nvm cannot be found by 小天's command tool or by connected apps. Take the login shell's PATH.
+if (MAC) {
+  const dirs = new Set((process.env.PATH || '').split(':').filter(Boolean))
+  try {
+    const sh = process.env.SHELL || '/bin/zsh'
+    const out = require('node:child_process').execFileSync(sh, ['-lc', 'printf "\n__PATH__%s" "$PATH"'], { timeout: 4000, encoding: 'utf8' })
+    for (const d of (out.split('__PATH__').pop() || '').trim().split(':')) if (d) dirs.add(d)
+  } catch {}
+  for (const d of ['/opt/homebrew/bin', '/opt/homebrew/sbin', '/usr/local/bin']) dirs.add(d)
+  process.env.PATH = [...dirs].join(':')
+}
 for (const d of [DSH_HOME, TIANXI_HOME, LOGS]) fs.mkdirSync(d, { recursive: true })
 
 // ---------- third-party model presets (all OpenAI-compatible chat completions) ----------
@@ -554,7 +566,8 @@ app.on('quit', () => { if (evalChild) killTree(evalChild); if (child) { try { pr
 app.on('window-all-closed', () => {})
 
 app.whenReady().then(async () => {
-  const hidden = process.argv.includes('--hidden')
+  // started at login: stay in the tray (Windows passes --hidden; a Mac login item cannot take arguments)
+  const hidden = process.argv.includes('--hidden') || (MAC && app.getLoginItemSettings().wasOpenedAtLogin)
   // First run: put a shortcut on the desktop and in the Start menu. Later runs only refresh the icon of the ones still there.
   // The product was renamed from 天禧AI 概念版 to 小天 Bot: shortcuts under the old name are replaced.
   const LNK = '小天 Bot.lnk', OLD_LNK = '天禧AI 概念版.lnk'
