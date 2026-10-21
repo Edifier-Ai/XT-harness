@@ -2,7 +2,7 @@
 
 /* ---------- theme switch ---------- */
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
-::view-transition-new(root){-webkit-mask-image:var(--blob);mask-image:var(--blob);-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;mask-size:0 0}
+::view-transition-new(root){-webkit-mask-image:var(--liq);mask-image:var(--liq);-webkit-mask-size:100% 100%;mask-size:100% 100%;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
 #bTheme .sun{display:none}
 :root[data-theme=light] #bTheme .sun{display:block}
 :root[data-theme=light] #bTheme .moon{display:none}

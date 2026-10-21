@@ -1,8 +1,8 @@
 {
- "version": "0.9.0",
- "notes": "按参考方案改交互：深色/浅色主题和液态切换动画；打开时各区域逐层进场；麦克风展开成计时胶囊（红光录音、绿光完成）；语音通话换成随声音起伏的蓝色粒子球全屏界面。功能不变",
+ "version": "0.9.1",
+ "notes": "深浅色液态切换按参考视频重做：开关鼓成气泡，新主题像液体带波浪边缘和水滴从开关流向对角，最后吞掉残留的暗角",
  "minBase": "0.4.0",
- "at": "2026-10-21T02:53:44.510Z",
+ "at": "2026-10-21T03:21:52.660Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -466,8 +466,8 @@
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
-   "sha256": "d4c3588a83c7f9b5d552ed3e8506e206b6f38f69c49bb602d80505df0dd5d583",
-   "size": 13241
+   "sha256": "af90204e6f29dbbf4876fb164b744f85730b3ae274c49965901005e5d5321df0",
+   "size": 13273
   },
   "bundle/web/pill.html": {
    "path": "tianxi/web/pill.html",
@@ -481,8 +481,8 @@
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",
-   "sha256": "b9a3dba830baa230e1f9f201697735cf6725a58cb6836c5a68842deeaf30500d",
-   "size": 2519
+   "sha256": "37d954c9a91fc4fe76fd9bfe7052015bc57da6e48f85effd2403c7f6a7856550",
+   "size": 5664
   },
   "bundle/web/voice.js": {
    "path": "tianxi/web/voice.js",
