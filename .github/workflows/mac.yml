@@ -12,6 +12,12 @@ on:
 permissions:
   contents: write
 
+# one Mac build at a time; a newer push stops any older build still running or waiting, so an old build never
+# overwrites the release after a newer one
+concurrency:
+  group: mac-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     strategy:
@@ -22,10 +28,6 @@ jobs:
             runner: macos-15
           # Intel Macs are not supported (summer, 2026-10-21); add "- arch: x64 / runner: macos-15-intel" to bring them back
     runs-on: ${{ matrix.runner }}
-    # one build per kind of Mac at a time; Apple silicon and Intel never wait for each other
-    concurrency:
-      group: mac-${{ matrix.arch }}
-      cancel-in-progress: true
     timeout-minutes: 60
     env:
       GH_TOKEN: ${{ github.token }}
@@ -103,7 +105,6 @@ jobs:
           VER=${{ steps.v.outputs.ver }}; A=${{ matrix.arch }}; KEY=${{ steps.v.outputs.key }}; R=$GITHUB_REPOSITORY
           node build/release-notes.mjs
           gh release view "v$VER" >/dev/null 2>&1 || gh release create "v$VER" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md || true
-          gh release edit "v$VER" --notes-file notes.md
           # Replace the .dmg without a gap: upload under a temporary name, then remove the old file and rename.
           # (--clobber deletes first, so a failed upload would leave the release with no Mac file at all.)
           # The label (ASCII only: GitHub refuses some Unicode there) says which commit the file was built from.
@@ -114,6 +115,14 @@ jobs:
           NEW=$(asset "$T"); [ -n "$NEW" ]
           for old in $(asset "$N"); do gh api -X DELETE "repos/$R/releases/assets/$old"; done
           gh api -X PATCH "repos/$R/releases/assets/$NEW" -f name="$N" -f label="Mac $A (build $KEY)" --jq '.name + " " + .label'
-          # Intel Macs are not supported: remove any Intel build an older run left behind
-          for x in $(gh api "repos/$R/releases/tags/v$VER" --jq '.assets[] | select(.name | test("mac-x64")) | .id'); do gh api -X DELETE "repos/$R/releases/assets/$x"; done
+
+      # also when nothing was rebuilt: the notes match this version of the workflow, and no Intel file is offered
+      - name: Tidy the release
+        if: ${{ !cancelled() }}
+        run: |
+          VER=${{ steps.v.outputs.ver }}; R=$GITHUB_REPOSITORY
+          gh release view "v$VER" >/dev/null 2>&1 || exit 0
+          node build/release-notes.mjs && gh release edit "v$VER" --notes-file notes.md
+          # Intel Macs are not supported: remove any Intel build an older run left behind, and any half-finished upload
+          for x in $(gh api "repos/$R/releases/tags/v$VER" --jq '.assets[] | select((.name | test("mac-x64")) or (.name | startswith("next-"))) | .id'); do gh api -X DELETE "repos/$R/releases/assets/$x"; done
           gh release view "v$VER" --json assets --jq '.assets[] | .name + "  " + .label'
