@@ -42,8 +42,16 @@ async function page(want = () => true) {
   if (!browser || pid !== browserPid || !browser.isConnected()) {
     try { adb('forward', '--remove', 'tcp:9333') } catch {}
     adb('forward', 'tcp:9333', `localabstract:webview_devtools_remote_${pid}`)
-    browser = await until(() => chromium.connectOverCDP('http://127.0.0.1:9333'), 30000, 1000)
-    if (!browser) throw new Error('no DevTools socket for the WebView')
+    const errs = []
+    // the WebView's /json/version carries no browser WebSocket address, so connect to it directly
+    browser = await until(async () => {
+      try { return await chromium.connectOverCDP('ws://127.0.0.1:9333/devtools/browser') } catch (e) { errs.push(String(e.message).split('\n')[0]); return null }
+    }, 30000, 1000)
+    if (!browser) {
+      let info = ''
+      try { info = await (await fetch('http://127.0.0.1:9333/json/version')).text() } catch (e) { info = e.message }
+      throw new Error(`no DevTools connection to the WebView (pid ${pid}): ${errs.slice(-2).join(' / ')} :: ${info} :: ${adb('shell', 'cat', '/proc/net/unix').split('\n').filter((l) => l.includes('devtools')).join(' ')}`)
+    }
     browserPid = pid
   }
   const pg = await until(() => browser.contexts().flatMap((c) => c.pages()).find((p) => !p.isClosed() && !p.url().startsWith('about:') && want(p.url())), 20000)
