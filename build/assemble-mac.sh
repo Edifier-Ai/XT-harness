@@ -10,7 +10,7 @@ ditto -x -k dl/electron-mac-$ARCH.zip "$OUT"
 mv "$OUT/Electron.app" "$APP"
 # Electron counts itself as packaged only when its executable is not called Electron, and looks for
 # "<executable> Helper*.app" next to it: rename both (ASCII names; the name people see is CFBundleDisplayName).
-EXE=XiaotianBot; B=/usr/libexec/PlistBuddy
+EXE=XiaotianBot
 mv "$APP/Contents/MacOS/Electron" "$APP/Contents/MacOS/$EXE"
 plutil -replace CFBundleExecutable -string "$EXE" "$PL"
 for h in "$APP/Contents/Frameworks/Electron Helper"*.app; do
@@ -19,7 +19,7 @@ for h in "$APP/Contents/Frameworks/Electron Helper"*.app; do
   for k in CFBundleExecutable CFBundleName CFBundleDisplayName; do plutil -replace $k -string "$m" "$h/Contents/Info.plist"; done
   mv "$h" "$APP/Contents/Frameworks/$m.app"
 done
-ls "$APP/Contents/Frameworks"
+ls "$APP/Contents/Frameworks"; plutil -p "$PL" | head -40
 rm -f "$RES/default_app.asar"
 mkdir -p "$RES/app" "$RES/runtime"
 cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} "$RES/app/"
@@ -36,15 +36,18 @@ find "$RES" -maxdepth 1 -name '*.lproj' ! -name 'zh_CN.lproj' ! -name 'en.lproj'
 mkdir -p "$RES/zh_CN.lproj"
 # the app's name, id, version and icon
 cp icon.icns "$RES/electron.icns"
-$B -c "Set :CFBundleName 小天 Bot" "$PL"
-$B -c "Set :CFBundleDisplayName 小天 Bot" "$PL" 2>/dev/null || $B -c "Add :CFBundleDisplayName string 小天 Bot" "$PL"
-$B -c "Set :CFBundleIdentifier com.lenovo.tianxi.concept" "$PL"
-$B -c "Set :CFBundleShortVersionString $VER" "$PL"
-$B -c "Set :CFBundleVersion $VER" "$PL"
-$B -c "Add :CFBundleDevelopmentRegion string zh_CN" "$PL" 2>/dev/null || $B -c "Set :CFBundleDevelopmentRegion zh_CN" "$PL"
-$B -c "Add :LSApplicationCategoryType string public.app-category.productivity" "$PL" 2>/dev/null || true
+# plutil -replace sets a key and adds it when it is missing
+P() { plutil -replace "$1" -string "$2" "$PL"; }
+P CFBundleName '小天 Bot'
+P CFBundleDisplayName '小天 Bot'
+P CFBundleIdentifier com.lenovo.tianxi.concept
+P CFBundleShortVersionString "$VER"
+P CFBundleVersion "$VER"
+P CFBundleDevelopmentRegion zh_CN
+P LSApplicationCategoryType public.app-category.productivity
 # voice input and voice calls ask for the microphone
-$B -c "Add :NSMicrophoneUsageDescription string 小天用麦克风听你说话（语音输入和语音通话）。" "$PL" 2>/dev/null || $B -c "Set :NSMicrophoneUsageDescription 小天用麦克风听你说话（语音输入和语音通话）。" "$PL"
+P NSMicrophoneUsageDescription '小天用麦克风听你说话（语音输入和语音通话）。'
+plutil -lint "$PL"
 # No Apple developer certificate: sign ad hoc, which Apple-silicon Macs need to run the app and its native modules at all.
 find "$R" \( -name '*.node' -o -name '*.dylib' \) -type f -exec codesign --force --sign - {} \; 2>/dev/null
 find "$R" -type f -perm -u+x ! -name '*.js' ! -name '*.sh' -exec sh -c 'file -b "$1" | grep -q Mach-O && codesign --force --sign - "$1"' _ {} \; 2>/dev/null || true
