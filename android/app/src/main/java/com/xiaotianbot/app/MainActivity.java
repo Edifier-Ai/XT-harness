@@ -76,11 +76,20 @@ public class MainActivity extends Activity {
             return insets;
         });
 
-        web = new WebView(this);
-        web.setBackgroundColor(Color.BLACK);
-        root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         setContentView(root);
+        makeWeb();
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
 
+        Hosts.Host h = saved.current();
+        if (h != null) open(h);
+        else home(null);
+        link(getIntent());
+    }
+
+    private void makeWeb() {
+        web = new WebView(this);
+        web.setBackgroundColor(((ColorDrawable) root.getBackground()).getColor());
+        root.addView(web, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
         s.setDomStorageEnabled(true);
@@ -89,15 +98,9 @@ public class MainActivity extends Activity {
         s.setAllowContentAccess(false);
         s.setSupportMultipleWindows(false);
         s.setUserAgentString(s.getUserAgentString() + " XiaotianApp/" + BuildConfig.VERSION_NAME + " (" + Uri.encode(deviceName()) + ")");
-        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
         web.addJavascriptInterface(new Bridge(), "XiaotianNative");
         web.setWebViewClient(new Client());
         web.setWebChromeClient(new Chrome());
-
-        Hosts.Host h = saved.current();
-        if (h != null) open(h);
-        else home(null);
-        link(getIntent());
     }
 
     /** what the computer lists this phone as: the name set in the phone's settings, else its maker and model */
@@ -278,6 +281,19 @@ public class MainActivity extends Activity {
             }
             ready = url != null && !url.startsWith("file:");
             deliver();
+        }
+
+        // the system ended the page's process (low memory, or it crashed): start a new WebView instead of closing the App
+        @Override
+        public boolean onRenderProcessGone(WebView v, android.webkit.RenderProcessGoneDetail d) {
+            if (v != web) return true;
+            root.removeView(web);
+            web.destroy();
+            makeWeb();
+            Hosts.Host h = saved.current();
+            if (h != null) open(h);
+            else home(null);
+            return true;
         }
 
         @Override

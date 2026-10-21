@@ -162,9 +162,16 @@ async function main() {
   shot('uu-error')
   check((await toastText(pg)).includes('电脑不在线'), 'a UU 远程 failure shows its reason', await toastText(pg))
 
+  // how long a page takes to show in the emulator (its fade-in runs on a software GPU here)
   await pg.click('#mtabs [data-mtab=me]')
-  await sleep(900)
-  shot('me')
+  const t0 = Date.now(), seen = []
+  for (let i = 0; i < 16; i++) {
+    seen.push(await pg.evaluate((t) => ({ t: Date.now() - t, op: getComputedStyle(document.querySelector('#pg')).opacity, view: document.querySelector('#vPage')?.hidden, kids: document.querySelector('#pg')?.children.length, anims: document.getAnimations().map((a) => (a.animationName || a.constructor.name) + ':' + a.playState + ':' + Math.round(a.currentTime || 0)).slice(0, 6) }), t0))
+    if (i === 4) shot('me')
+    await sleep(150)
+  }
+  check(seen.at(-1).op === '1', 'the 我的 page shows', seen)
+  shot('me-later')
 
   // the light theme: the status bar follows the page
   await pg.evaluate(() => localStorage.setItem('tx.theme', '"light"'))
@@ -215,6 +222,7 @@ try {
   check(false, 'test run', String(e && e.stack || e))
   try { shot('crash') } catch {}
 }
+try { fs.writeFileSync(path.join(OUT, 'logcat.txt'), execFileSync('adb', ['logcat', '-d', '-v', 'time'], { maxBuffer: 256 << 20 })) } catch {}
 try { await device?.close() } catch {}
 fs.writeFileSync(path.join(OUT, 'results.json'), JSON.stringify(results, null, 1))
 const bad = results.filter((r) => !r.ok)
