@@ -16,6 +16,12 @@ fs.mkdirSync(path.join(WORK, 'home'), { recursive: true })
 fs.mkdirSync(path.join(WORK, 'data'), { recursive: true })
 const log = (...a) => console.log('[host]', ...a)
 
+// the 小天 plugins import DSH packages: let them find the runtime's (the installers put them side by side)
+if (!fs.existsSync(path.join(ROOT, 'node_modules')) && !fs.existsSync(path.join(ROOT, 'tianxi/node_modules'))) {
+  fs.symlinkSync(path.join(ROOT, 'build/runtime/node_modules'), path.join(ROOT, 'tianxi/node_modules'), 'dir')
+  log('linked tianxi/node_modules to build/runtime/node_modules')
+}
+
 // the runtime's plugin bundle, with the plugins loaded from this checkout and the fake model as the only model
 const B = path.join(ROOT, 'tianxi')
 const bundle = fs.readFileSync(path.join(B, 'cordis.patch.yml'), 'utf8').replace(/name: dsh-tianxi\/plugins\/([\w-]+\.js)/g, (_m, f) => 'name: ' + JSON.stringify(pathToFileURL(path.join(B, 'plugins', f)).href))
@@ -93,6 +99,6 @@ http.createServer(async (req, res) => {
     else if (u.pathname === '/takeover') r = (await (await api('state')).json()).takeover ?? null
     else { res.writeHead(404); return res.end() }
   } catch (e) { r = { error: e.message } }
-  res.writeHead(200, { 'content-type': 'application/json' })
+  res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' })
   res.end(JSON.stringify(r))
 }).listen(3092, '127.0.0.1', () => log('control on 3092'))

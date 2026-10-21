@@ -1248,4 +1248,4 @@ button:focus:not(:focus-visible){outline:none}
 .pqr .m span{font-size:14px;color:var(--tx2);line-height:1.6}
 .pqr .m .hint{margin:0;font-size:13px;color:var(--tx3)}
 #phoneBox .scard+.scard{margin-top:10px}
-.pqr .pcode{font-size:14px;font-weight:600;letter-spacing:1px;color:var(--tx)}
+.pqr .m .pcode{font-size:14px;font-weight:600;letter-spacing:1px;color:var(--tx)}

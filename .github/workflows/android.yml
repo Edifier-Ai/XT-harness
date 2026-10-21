@@ -61,7 +61,7 @@ jobs:
           nohup node dev/phone-e2e/host.mjs "$RUNNER_TEMP/e2e" > "$RUNNER_TEMP/e2e-host.log" 2>&1 &
           for i in $(seq 1 90); do curl -sf http://127.0.0.1:3092/state >/dev/null && break; sleep 2; done
           cat "$RUNNER_TEMP/e2e-host.log"
-          curl -sf http://127.0.0.1:3092/state
+          if ! curl -sf http://127.0.0.1:3092/state; then tail -60 "$RUNNER_TEMP/e2e/runtime.log"; tail -20 "$RUNNER_TEMP/e2e/fake-llm.log"; exit 1; fi
 
       - name: Enable KVM
         run: |
@@ -78,7 +78,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back emulated
-          script: adb install -r android/app/build/outputs/apk/debug/app-debug.apk && node dev/phone-e2e/android.mjs "$RUNNER_TEMP/shots" android/fakeuu/build/outputs/apk/debug/fakeuu-debug.apk
+          script: adb install -r android/app/build/outputs/apk/debug/app-debug.apk && node dev/phone-e2e/android.mjs "$RUNNER_TEMP/shots" android/fakeuu/build/outputs/apk/debug/fakeuu-debug.apk || { tail -40 "$RUNNER_TEMP/e2e-host.log"; tail -40 "$RUNNER_TEMP/e2e/runtime.log"; exit 1; }
 
       - name: Keep screenshots and logs
         if: always()
