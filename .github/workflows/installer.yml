@@ -1,0 +1,67 @@
+# Builds the Windows installer for each new version and attaches it to a GitHub Release.
+# Runs when release/manifest.json changes on main (node build/release.mjs x.y.z), or by hand from the Actions tab.
+# Download link for the newest one: https://github.com/Edifier-Ai/XT-harness/releases/latest
+name: Windows installer
+
+on:
+  push:
+    branches: [main]
+    paths: [release/manifest.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: installer
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version
+        id: v
+        run: |
+          VER=$(node -p "require('./release/manifest.json').version")
+          echo "ver=$VER" >> "$GITHUB_OUTPUT"
+          if gh release view "v$VER" >/dev/null 2>&1; then echo "exists=1" >> "$GITHUB_OUTPUT"; echo "v$VER already has a release"; fi
+
+      - uses: actions/setup-node@v4
+        if: steps.v.outputs.exists != '1'
+        with:
+          node-version: 22
+
+      - name: Electron and DSH runtime
+        if: steps.v.outputs.exists != '1'
+        run: |
+          mkdir -p build/dl build/runtime
+          curl -sSfL -o build/dl/electron.zip https://github.com/electron/electron/releases/download/v44.7.0/electron-v44.7.0-win32-x64.zip
+          cp build/runtime-lock/package.json build/runtime-lock/package-lock.json build/runtime/
+          (cd build/runtime && npm ci --no-audit --no-fund)
+          (cd build/tools && ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci --no-audit --no-fund)
+
+      - name: NSIS
+        if: steps.v.outputs.exists != '1'
+        run: |
+          if ! command -v makensis >/dev/null && [ ! -f "/c/Program Files (x86)/NSIS/makensis.exe" ]; then choco install nsis -y --no-progress; fi
+          echo "C:\\Program Files (x86)\\NSIS" >> "$GITHUB_PATH"
+
+      - name: Assemble and build installer
+        if: steps.v.outputs.exists != '1'
+        run: bash build/assemble.sh ${{ steps.v.outputs.ver }}
+
+      - name: Publish release
+        if: steps.v.outputs.exists != '1'
+        run: |
+          VER=${{ steps.v.outputs.ver }}
+          NOTES=$(node -p "require('./release/manifest.json').notes")
+          printf '%s\n\n下载 XiaotianBot-Setup-%s.exe，双击安装（完整版，不需要管理员权限）。装好后有新版本会自动更新。\n' "$NOTES" "$VER" > notes.md
+          gh release create "v$VER" "build/out/XiaotianBot-Setup-$VER.exe" --target "$GITHUB_SHA" --title "小天 Bot $VER" --notes-file notes.md
