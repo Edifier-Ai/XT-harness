@@ -1,8 +1,8 @@
 {
- "version": "0.14.0",
- "notes": "桌面悬浮图标换成红色小天：随处可拖动、眼睛跟着鼠标转；想事、找东西、干活、要你确认、做完、出错、打盹各有表情；有事等你定时右下角显示数字，右键可回到右下角或隐藏",
+ "version": "0.14.1",
+ "notes": "桌面小天的眼睛改成白色",
  "minBase": "0.4.0",
- "at": "2026-10-21T07:27:01.141Z",
+ "at": "2026-10-21T07:28:40.878Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -526,8 +526,8 @@
   },
   "bundle/web/orb.html": {
    "path": "tianxi/web/orb.html",
-   "sha256": "905aae5da10d8c3c22b559370b25089aa3fd35b25afe3bd56bddff27c2b02000",
-   "size": 16695
+   "sha256": "8fe2351651a2a18e556b0c32cc55091256963e6770dcce41408b9d3c7cceaac6",
+   "size": 16665
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
