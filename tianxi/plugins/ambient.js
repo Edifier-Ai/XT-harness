@@ -67,7 +67,7 @@ export function apply(ctx) {
       try {
         const seen = new Set(fs.readdirSync(dir))
         watchers.push(fs.watch(dir, (_ev, file) => {
-          if (!file || seen.has(file) || file.startsWith('.') || /\.(crdownload|part|tmp)$/i.test(file)) return
+          if (!file || seen.has(file) || settings().watchOn === false || file.startsWith('.') || /\.(crdownload|part|tmp)$/i.test(file)) return
           setTimeout(() => {
             if (!fs.existsSync(path.join(dir, file))) return
             seen.add(file)
@@ -87,7 +87,7 @@ export function apply(ctx) {
     try {
       const s = settings(); const st = load('state', {})
       const hhmm = localISO().slice(11)
-      if (st.lastBriefDate !== today() && hhmm >= s.briefTime) { await runBrief('例行'); return }
+      if (s.briefOn !== false && st.lastBriefDate !== today() && hhmm >= s.briefTime) { await runBrief('例行'); return }
       const h = new Date().getHours()
       const night = s.nightFrom > s.nightTo ? (h >= s.nightFrom || h < s.nightTo) : (h >= s.nightFrom && h < s.nightTo)
       const away = flags.idleSec >= s.idleMinutes * 60

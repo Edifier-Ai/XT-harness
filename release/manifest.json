@@ -1,8 +1,8 @@
 {
- "version": "0.5.0",
- "notes": "界面改成 GrokBot 样式：Bot 名单、它的电脑和日常任务面板、会动的头像；简报、记忆、反思、操作记录收进“我的”",
+ "version": "0.6.0",
+ "notes": "界面按 GrokBot 截图逐屏还原：分组的 Bot 列表、聊天气泡和问题卡、右侧详情/资料库/电脑、头像菜单、连接应用和设置弹窗",
  "minBase": "0.4.0",
- "at": "2026-10-21T00:13:50.909Z",
+ "at": "2026-10-21T01:38:53.182Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -391,8 +391,8 @@
   },
   "bundle/plugins/ambient.js": {
    "path": "tianxi/plugins/ambient.js",
-   "sha256": "9544fb5a181cdd6760a2ba3e8f44515e1d9c5288226951b74bd10c995ce41d9e",
-   "size": 6196
+   "sha256": "91630e85d6cfc7055aef0ef98b8dd2d38280f2cf1c34740fdd329bbdb123c81e",
+   "size": 6251
   },
   "bundle/plugins/eval.js": {
    "path": "tianxi/plugins/eval.js",
@@ -401,8 +401,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "fb7f92303297915d2bcd268f4c5657ccc347fa0669c1912ea175268e7a670984",
-   "size": 23568
+   "sha256": "5cfdc3a185bd30b1f90cc8caad3339d39650763f9489294217c93c5976aec24a",
+   "size": 23575
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -421,8 +421,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "df10d929d3a27a91d49f746ca6087b05cb798afc10b229b25a32b4a81c7a01ac",
-   "size": 96239
+   "sha256": "58374490c59a0fd081e614f66f4820e93cf3cd1390a3e839cf6ad39c8740fab7",
+   "size": 115333
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -446,8 +446,8 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "60c2d623a4a3caa0c9947c3d1b3d1268697586ec2f139de9c4e2e05358a2000d",
-   "size": 6790
+   "sha256": "9999225f98ca6b2c6f2057aec720ac83492ab4cbe9a9b26f0232f7c663d30804",
+   "size": 6930
   },
   "bundle/web/pill.html": {
    "path": "tianxi/web/pill.html",
@@ -456,8 +456,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "09fc7efbf7ca5ad55e984a24cefa8c03ecc729be789be4c3d1ea7276ee2d41e6",
-   "size": 45649
+   "sha256": "beba17a6a0ab1ba7f5ffb35de472ecd74878326e41e46f8fe2b15d3c37252d85",
+   "size": 62870
   }
  }
 }
