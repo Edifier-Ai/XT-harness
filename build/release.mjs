@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { execFileSync } from 'node:child_process'
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
 const [version, notes = ''] = process.argv.slice(2)
@@ -22,7 +23,10 @@ const add = (logical, repoPath) => {
 }
 for (const f of APP_FILES) add('app/' + f, 'desktop/' + f)
 const walk = (dir) => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((d) => d.isDirectory() ? walk(dir + '/' + d.name) : [dir + '/' + d.name])
-for (const f of walk('tianxi')) add('bundle/' + f.slice('tianxi/'.length), f)
+// Only files git ignores are left out: clients fetch every listed file from the repository, so one
+// that never reached GitHub would fail the whole update with 404s.
+const ignored = new Set(execFileSync('git', ['-c', 'core.quotepath=off', 'ls-files', '--others', '--ignored', '--exclude-standard', 'tianxi'], { cwd: ROOT }).toString().split('\n').filter(Boolean))
+for (const f of walk('tianxi').filter((f) => !ignored.has(f))) add('bundle/' + f.slice('tianxi/'.length), f)
 
 fs.mkdirSync(path.join(ROOT, 'release'), { recursive: true })
 const man = { version, notes, minBase: MIN_BASE, at: new Date().toISOString(), files }

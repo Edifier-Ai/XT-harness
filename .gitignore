@@ -4,3 +4,4 @@ build/dl/
 build/runtime/
 *.zip
 *.log
+!tianxi/eval/fixtures/**/*.zip
