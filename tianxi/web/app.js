@@ -209,7 +209,7 @@ function renderRail() {
     const items = transcript(a.id).filter((i) => !i.internal && (i.role === 'user' || i.role === 'assistant' || i.kind === 'mail') && (i.text || i.mail))
     const last = items[items.length - 1]
     const st = stateOf(a.id)
-    const preview = st === 'wait' ? '需要你确认一件事' : busy(a.id) ? nowDoing(a.id) : last ? (last.role === 'user' ? '你：' + last.text : last.kind === 'mail' ? '收到邮件：' + (last.mail?.subject || '') : last.text) : (a.role || '')
+    const preview = st === 'wait' ? '需要你确认一件事' : busy(a.id) ? nowDoing(a.id) : last ? (last.role === 'user' ? '你：' + last.text : last.kind === 'mail' ? '收到邮件：' + (last.mail?.subject || '') : GU.plain(last.text)) : (a.role || '')
     const unread = a.id === cur && view === 'chat' ? 0 : items.filter((i) => i.role !== 'user' && (!seen[a.id] || i.at > seen[a.id])).length
     return `<button class="ag ${a.id === cur && view === 'chat' ? 'on' : ''} ${st === 'wait' ? 'need' : ''}" data-act="agent-open" data-id="${a.id}" title="${esc(busy(a.id) ? nowDoing(a.id) : a.role || '')}">${avatar(a, 42)}
       <span class="tx"><b><span class="nm">${esc(a.name)}</span>${busy(a.id) ? '<span class="tdots"><i></i><i></i><i></i></span>' : ''}</b><span class="pv">${esc(String(preview).replace(/[*`#]/g, '').replace(/\s+/g, ' ').slice(0, 48))}</span></span>
@@ -294,7 +294,7 @@ function renderMsgs(keepScroll) {
     }
     const chip = procChip(t); if (chip) body += chip
     for (const it of t.items) {
-      if (it.role === 'assistant' && it.text) body += `<div class="bw"><div class="bub ${it.live ? 'live' : ''}" id="m_${it.id}" data-k="${it.id}" data-mid="${it.id}">${md(it.text)}</div>${it.live ? '' : MACTS}${reacts[it.id] ? '<span class="rx">👍</span>' : ''}</div>`
+      if (it.role === 'assistant' && it.text) body += `<div class="aw" id="m_${it.id}" data-k="${it.id}">${replyHtml(it)}</div>`
       else if (it.role === 'ui') body += `<div class="uiw" data-k="${it.id}">${renderUI(it)}</div>`
       else if (it.role === 'error') body += `<div class="bub err" data-k="${it.id}">${esc(it.text)}</div>`
     }
@@ -303,7 +303,7 @@ function renderMsgs(keepScroll) {
   }
   for (const x of S.approvals.filter((y) => y.agent === cur)) h += `<div class="mrow" data-k="ask${x.id}"><div class="body">${askCard(x)}</div></div>`
   const M = $('#msgs')
-  M.innerHTML = h
+  GU.keepFocus(() => { M.innerHTML = h })
   // Switching to another agent fades the whole conversation in; afterwards only new messages move.
   const switched = M.dataset.agent !== cur
   M.dataset.agent = cur
@@ -312,6 +312,17 @@ function renderMsgs(keepScroll) {
   if (!keepScroll || atBottom) feed.scrollTop = feed.scrollHeight
   if (view === 'chat') { seen[cur] = new Date().toISOString(); store.set('seen', seen) }
 }
+
+// A reply: its prose in bubbles and any ```openui-lang block as a live interface (genui.js)
+function replyHtml(it) {
+  const parts = GU.split(it.text, it.live)
+  const last = parts.length - 1
+  const h = parts.map((p, i) => p.md != null
+    ? `<div class="bub ${it.live && i === last ? 'live' : ''}" data-mid="${it.id}">${md(p.md)}</div>`
+    : `<div class="uiw">${GU.render(it.id, p.ui, it.live && p.open)}</div>`).join('')
+  return `<div class="bw">${h || `<div class="bub ${it.live ? 'live' : ''}" data-mid="${it.id}"></div>`}${it.live ? '' : MACTS}${reacts[it.id] ? '<span class="rx">👍</span>' : ''}</div>`
+}
+GU.send = (hidden, shown) => say(hidden, shown)
 
 function askCard(x) {
   const yes = `data-act="ask" data-id="${x.id}" data-allow="1"`, no = `data-act="ask" data-id="${x.id}"`
@@ -535,7 +546,7 @@ function renderComputer() {
       const ic = it.state === 'running' ? '<span class="spin"></span>' : it.state === 'error' ? '<span class="xdot">!</span>' : `<span class="okdot">${CHECK}</span>`
       const d = toolDetail(it.args)
       h += `<div class="step" data-k="${it.id}"><span class="ic">${ic}</span><div class="m"><div class="l">${esc(toolLabel(it.name))}</div>${d ? `<div class="d">${esc(d)}</div>` : ''}${it.args?.reason ? `<div class="d">为什么：${esc(it.args.reason)}</div>` : ''}${it.error ? `<div class="e">${esc(it.error)}</div>` : ''}</div></div>`
-    } else if (it.role === 'assistant' && it.text) h += `<div class="step say"><span class="ic"></span><div class="m"><div class="l">${esc(it.text.replace(/\s+/g, ' ').slice(0, 160))}</div></div></div>`
+    } else if (it.role === 'assistant' && it.text) h += `<div class="step say"><span class="ic"></span><div class="m"><div class="l">${esc(GU.plain(it.text).replace(/\s+/g, ' ').slice(0, 160))}</div></div></div>`
     else if (it.role === 'ui') h += `<div class="step"><span class="ic"><span class="okdot">${CHECK}</span></span><div class="m"><div class="l">生成了卡片</div><div class="d">${esc(it.ui?.title || '')}</div></div></div>`
     else if (it.role === 'error') h += `<div class="step"><span class="ic"><span class="xdot">!</span></span><div class="m"><div class="e">${esc(it.text)}</div></div></div>`
   }
@@ -1244,7 +1255,7 @@ function connect() {
       renderRail(); renderProc()
     } else if (m.type === 'delta') {
       const t = (S.transcripts[m.agent || S.mainId] || []).find((x) => x.id === m.id)
-      if (t) { t.text = m.text; const el = document.getElementById('m_' + m.id); if (el) { el.innerHTML = md(m.text); const f = $('#feed'); if (f.scrollHeight - f.scrollTop - f.clientHeight < 140) f.scrollTop = f.scrollHeight } else if (view === 'chat' && (m.agent || S.mainId) === cur) renderMsgs(true) }
+      if (t) { t.text = m.text; const el = document.getElementById('m_' + m.id); if (el) { GU.keepFocus(() => { el.innerHTML = replyHtml(t) }); const f = $('#feed'); if (f.scrollHeight - f.scrollTop - f.clientHeight < 140) f.scrollTop = f.scrollHeight } else if (view === 'chat' && (m.agent || S.mainId) === cur) renderMsgs(true) }
     } else if (m.type === 'status') {
       const aid = m.agent || S.mainId
       if (busy(aid) && m.status === 'idle') { doneAt[aid] = Date.now(); setTimeout(() => renderAll(true), 5200) }
@@ -1339,7 +1350,7 @@ function shareChat() {
   const a = agentOf(cur), lines = [`# 和 ${a.name} 的对话`, '']
   for (const t of turnsOf(cur).filter((x) => !x.internal)) {
     if (t.head?.role === 'user') lines.push(`**${S.settings?.callMe || '我'}** · ${stamp(t.at)}`, '', t.head.text, '')
-    const said = t.items.filter((i) => i.role === 'assistant' && i.text).map((i) => i.text).join('\n\n')
+    const said = t.items.filter((i) => i.role === 'assistant' && i.text).map((i) => GU.plain(i.text)).join('\n\n')
     if (said) lines.push(`**${a.name}**`, '', said, '')
   }
   const url = URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/markdown' }))
@@ -1412,8 +1423,9 @@ document.addEventListener('click', async (e) => {
   else if (act === 'copy') copyText(el.dataset.v || '')
   else if (act === 'm-copy' || act === 'm-quote' || act === 'm-react') {
     const b = el.closest('.bw')?.querySelector('[data-mid]'); if (!b) return
-    if (act === 'm-copy') copyText(b.innerText)
-    else if (act === 'm-quote') { inp.value = '> ' + b.innerText.replace(/\s+/g, ' ').slice(0, 80) + '\n' + inp.value; grow(); inp.focus() }
+    const it = transcript(cur).find((x) => x.id === b.dataset.mid), txt = it?.text ? GU.plain(it.text) : b.innerText
+    if (act === 'm-copy') copyText(txt)
+    else if (act === 'm-quote') { inp.value = '> ' + txt.replace(/\s+/g, ' ').slice(0, 80) + '\n' + inp.value; grow(); inp.focus() }
     else { const k = b.dataset.mid; reacts[k] ? delete reacts[k] : reacts[k] = 1; store.set('reacts', reacts); renderMsgs(true) }
   }
   else if (act === 'agent-new') { draftAgent = null; setView('agent', 'new') }

@@ -1,8 +1,8 @@
 {
- "version": "0.11.0",
- "notes": "免费模式改为直接复用 Magpie 的开源插件：在天禧里登录 Qoder、WorkBuddy 就能用它们的模型，免费模型用 Magpie 的标识，可以只选免费；Bot 头像换成 13 种形状、11 种颜色，支持一句话生成和上传图片，换头像时眼睛跟着鼠标转",
+ "version": "0.12.0",
+ "notes": "回复里能直接出可交互的界面（参考 OpenUI）：表格、图表、日程、方案卡片、表单，边说边画，点按钮或提交表单就把选择交回给智能体",
  "minBase": "0.4.0",
- "at": "2026-10-21T05:15:58.466Z",
+ "at": "2026-10-21T06:20:58.977Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -414,15 +414,20 @@
    "sha256": "ff5f2ae569ab5333cb0da4d754b0b7ac66675d1355a433ca5a50283491b7d15e",
    "size": 12064
   },
+  "bundle/plugins/genui-prompt.md": {
+   "path": "tianxi/plugins/genui-prompt.md",
+   "sha256": "ec99cd4e089b5e80d01b8abae7cc52fb92205789af04d70f78236db3bc775718",
+   "size": 14244
+  },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "395dd393ae977d21fb7dd78a3a40d14fcc0a4a2dea706e2d2c9ad0bc3b38b3d9",
-   "size": 31094
+   "sha256": "ad880626b3ce7d85b94a60dff7e7eb11917703b186239b5d25c509bfc76d651b",
+   "size": 31791
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
-   "sha256": "8376088124b5961e87b92cca8bd3b06717f5af1257d0dff104f96bdb075e8a85",
-   "size": 6348
+   "sha256": "c297355e6212838d9a6ad1506452ae2d06f0163f116063ae489846c5050655a1",
+   "size": 6373
   },
   "bundle/plugins/memory.js": {
    "path": "tianxi/plugins/memory.js",
@@ -461,13 +466,28 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "26d2fb7d9d1d24951cb23b276e2ea86a23573020d9e36f3bc14d6e0f36ac956c",
-   "size": 143241
+   "sha256": "3576fb7f56cdc2016fc2022e5d336e93aa2a0fad0168c2f89ac632ea5d4fbf56",
+   "size": 143945
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
    "sha256": "03d42a0a3610257ccf6c78c668379e17297643378f668c7d2f64dd2d81dc4dce",
    "size": 2280
+  },
+  "bundle/web/genui/LICENSE-openui": {
+   "path": "tianxi/web/genui/LICENSE-openui",
+   "sha256": "b6bdd2d3d161722fb3f3afc039114cfa9f3236f036e1c98e0853bc3a85f6cd9e",
+   "size": 1083
+  },
+  "bundle/web/genui/openui.js": {
+   "path": "tianxi/web/genui/openui.js",
+   "sha256": "bf937343aa0ee83bc28c848312025ddabf9dbe901f06360e051e089c90e34737",
+   "size": 531871
+  },
+  "bundle/web/genui.js": {
+   "path": "tianxi/web/genui.js",
+   "sha256": "5da245f4617c05978c8126768e11cf528aa8cce4c66b54ef34df03c461a6ee98",
+   "size": 32348
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -491,18 +511,18 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "3276b2ec44c45051c53c1339775e35e9947eeee164f9f10ce0fcfd2bdb8b00e5",
-   "size": 8266
+   "sha256": "b7e9d683e0a65fc31f99b959278eed25bc9c03b556be17dadd7f5a4831af59cc",
+   "size": 8339
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "7eec95e58c69b04c7706c27d733dcb4b4cef73a43b8559f514b12fc2f7f4e099",
-   "size": 15867
+   "sha256": "571e4f3046473ad9a28340a337f1d33fdd7f3a2880b8b6e1d0d94863083f9be5",
+   "size": 19182
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
-   "sha256": "af90204e6f29dbbf4876fb164b744f85730b3ae274c49965901005e5d5321df0",
-   "size": 13273
+   "sha256": "87046887f5d5cb759cec216e7739881cc6047e5f92819671e73ef20c9f62b0ec",
+   "size": 13346
   },
   "bundle/web/pill.html": {
    "path": "tianxi/web/pill.html",
@@ -511,8 +531,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "36732d4d2f06c4d608599966d46fabbfee83b77960f667506a432769249380ef",
-   "size": 72782
+   "sha256": "86fb8f931ee39016792b4f083e83e12d5140f327bc8799a3ca4471c3aeb1aa2d",
+   "size": 84432
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",
@@ -521,8 +541,8 @@
   },
   "bundle/web/voice.js": {
    "path": "tianxi/web/voice.js",
-   "sha256": "41000a68b7146b0172ab1d806349e4cc25693c30eb8503d2e101a2b0c7d53149",
-   "size": 18915
+   "sha256": "d4c7e9eb39d9522f8bacc3bdb69fb60d8df43e0c0827b384eaae7b5c76aae916",
+   "size": 18929
   }
  }
 }

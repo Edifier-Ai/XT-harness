@@ -1,0 +1,12 @@
+{
+  "name": "tianxi-genui",
+  "private": true,
+  "type": "module",
+  "description": "Builds 天禧's generative UI: the OpenUI Lang library, its prompt and the browser bundle.",
+  "scripts": { "build": "node build.mjs" },
+  "dependencies": {
+    "@openuidev/lang-core": "1.0.1",
+    "esbuild": "^0.28.2",
+    "zod": "^4.6.7"
+  }
+}

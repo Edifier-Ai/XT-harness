@@ -181,7 +181,7 @@ async function heard(seg) {
 // Follows the bot's reply through the same live updates the chat uses.
 function replyOf(c) {
   const l = S.transcripts[c.aid] || []
-  return l.filter((t) => t.role === 'assistant' && t.at >= c.sentAt && !t.internal).map((t) => t.text).join('\n')
+  return l.filter((t) => t.role === 'assistant' && t.at >= c.sentAt && !t.internal).map((t) => GU.plain(t.text, '')).join('\n')
 }
 function drawCallLive() {
   const c = call; if (!c) return

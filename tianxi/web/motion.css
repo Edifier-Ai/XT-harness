@@ -123,3 +123,4 @@
 :root[data-theme=light] .callov .cst,:root[data-theme=light] .callov .cyou,:root[data-theme=light] .callov .ctop{color:rgba(20,24,51,.55)}
 :root[data-theme=light] .callov .cbot{color:#141833}
 :root[data-theme=light] .gl:not(.end):not(.on){color:#141833;background:linear-gradient(180deg,#fff,#eceef8)}
+:root[data-theme=light] .ou-fc .ctl input[type=date]{color-scheme:light}

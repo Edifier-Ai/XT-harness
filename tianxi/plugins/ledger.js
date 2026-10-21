@@ -80,7 +80,7 @@ export function apply(ctx) {
 
   const snapshots = new Map() // callId -> { path, before }
   // The 天禧 client answers through generated UI, not DSH's question / plan-mode dialogs.
-  const REDIRECT = { ask_user_question: '天禧客户端不支持这个工具。需要用户选择或填写时，请调用 show_ui 生成按钮或表单。', exit_plan_mode: '天禧不使用计划模式，直接动手做，做完说结果。' }
+  const REDIRECT = { ask_user_question: '天禧客户端不支持这个工具。需要用户选择或填写时，请在回复里写一段 openui-lang 界面（按钮或表单）。', exit_plan_mode: '天禧不使用计划模式，直接动手做，做完说结果。' }
   ctx.on('tools/pre-execute', async (exec, next) => {
     if (REDIRECT[exec.name]) return { kind: 'deny', reason: REDIRECT[exec.name], displayReason: { en: REDIRECT[exec.name], zh: REDIRECT[exec.name] } }
     const args = exec.arguments || {}

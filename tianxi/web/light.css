@@ -207,3 +207,35 @@
 :where(:root[data-theme=light]) .ave-q{background:var(--s2,#ffffff)}
 :where(:root[data-theme=light]) .ave-q:focus{border-color:var(--tx3,#ceced6)}
 :where(:root[data-theme=light]) .ave-drop.over{background:var(--s2,#ffffff)}
+:where(:root[data-theme=light]) .ou-t{color:#2d2d33}
+:where(:root[data-theme=light]) .ou-t b{color:#16161c}
+:where(:root[data-theme=light]) .ou-t code{background:#ececf2}
+:where(:root[data-theme=light]) .ou-call{border-left:3px solid #ceced6}
+:where(:root[data-theme=light]) .ou-gal figcaption{color:#38383e}
+:where(:root[data-theme=light]) .ou-tags span{color:#35353b}
+:where(:root[data-theme=light]) .ou-ent .r b{color:#2b2b31}
+:where(:root[data-theme=light]) .ou-chart .gl{stroke:#e2e2ea}
+:where(:root[data-theme=light]) .ou-chart text{fill:#adadb5}
+:where(:root[data-theme=light]) .ou-chart rect.s0,:where(:root[data-theme=light]) .ou-chart .sl.s0,:where(:root[data-theme=light]) .ou-leg i.s0,:where(:root[data-theme=light]) .ou-hb i.s0{fill:#222228;background:#222228}
+:where(:root[data-theme=light]) .ou-chart rect.s1,:where(:root[data-theme=light]) .ou-chart .sl.s1,:where(:root[data-theme=light]) .ou-leg i.s1,:where(:root[data-theme=light]) .ou-hb i.s1{fill:#8d8d95;background:#8d8d95}
+:where(:root[data-theme=light]) .ou-chart rect.s2,:where(:root[data-theme=light]) .ou-chart .sl.s2,:where(:root[data-theme=light]) .ou-leg i.s2,:where(:root[data-theme=light]) .ou-hb i.s2{fill:#d4d4dc;background:#d4d4dc}
+:where(:root[data-theme=light]) .ou-chart rect.s3,:where(:root[data-theme=light]) .ou-chart .sl.s3,:where(:root[data-theme=light]) .ou-leg i.s3,:where(:root[data-theme=light]) .ou-hb i.s3{fill:#62626a;background:#62626a}
+:where(:root[data-theme=light]) .ou-chart rect.s4,:where(:root[data-theme=light]) .ou-chart .sl.s4,:where(:root[data-theme=light]) .ou-leg i.s4,:where(:root[data-theme=light]) .ou-hb i.s4{fill:#d4d4dc;background:#d4d4dc}
+:where(:root[data-theme=light]) .ou-chart .ln.s0,:where(:root[data-theme=light]) .ou-chart .pt.s0{stroke:#28282e}
+:where(:root[data-theme=light]) .ou-chart .ln.s1,:where(:root[data-theme=light]) .ou-chart .pt.s1{stroke:#28282e}
+:where(:root[data-theme=light]) .ou-chart .ln.s2,:where(:root[data-theme=light]) .ou-chart .pt.s2{stroke:#ceced6}
+:where(:root[data-theme=light]) .ou-chart .ln.s3,:where(:root[data-theme=light]) .ou-chart .pt.s3{stroke:#28282e}
+:where(:root[data-theme=light]) .ou-chart .ln.s4,:where(:root[data-theme=light]) .ou-chart .pt.s4{stroke:#ceced6}
+:where(:root[data-theme=light]) .ou-chart .pt{fill:#f3f3f9}
+:where(:root[data-theme=light]) .ou-chart .sl{stroke:#e2e2ea}
+:where(:root[data-theme=light]) .ou-chart .hole{fill:#f3f3f9}
+:where(:root[data-theme=light]) .ou-steps li::before{border:1.5px solid #ceced6}
+:where(:root[data-theme=light]) .ou .btn.picked{box-shadow:0 0 0 2px var(--s1),0 0 0 3.5px #8d8d95}
+:where(:root[data-theme=light]) .ou-fc .ctl input[type=range]{accent-color:#212127}
+:where(:root[data-theme=light]) .ou-opt input{accent-color:#212127}
+:where(:root[data-theme=light]) .ou-chips button{color:#3a3a40}
+:where(:root[data-theme=light]) .ou-chips button:hover:not(:disabled){border-color:#ceced6}
+:where(:root[data-theme=light]) .ou-chips button.on{background:#202026;border-color:#28282e;color:#fafafc}
+:where(:root[data-theme=light]) .ou-cards button:hover:not(:disabled){border-color:#ceced6}
+:where(:root[data-theme=light]) .ou-cards button.on{border-color:#28282e;box-shadow:inset 0 0 0 1px #202026;background:#ffffff}
+:where(:root[data-theme=light]) .ou-tabs .strip button.on{border-bottom-color:#28282e}
