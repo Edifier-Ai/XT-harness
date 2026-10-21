@@ -6,7 +6,7 @@ name: Mac app
 on:
   push:
     branches: [main]
-    paths: [release/manifest.json, .github/workflows/mac.yml]
+    paths: [release/manifest.json, .github/workflows/mac.yml, build/assemble-mac.sh]
   workflow_dispatch:
 
 permissions:
