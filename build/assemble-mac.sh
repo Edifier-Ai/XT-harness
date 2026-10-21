@@ -85,6 +85,10 @@ echo assembled; du -sm "$APP"
 
 # the disk image: drag 小天 Bot into Applications (LZMA, macOS 10.15 and later)
 STAGE="$OUT/dmg"; mkdir -p "$STAGE"; ditto "$APP" "$STAGE/$NAME.app"; ln -s /Applications "$STAGE/应用程序"
-hdiutil create -volname "$NAME" -srcfolder "$STAGE" -ov -format ULMO "$OUT/XiaotianBot-$VER-mac-$ARCH.dmg"
+# hdiutil sometimes fails with "Resource busy" on build machines while the system scans new files: try again
+for i in 1 2 3 4 5 6; do
+  hdiutil create -volname "$NAME" -srcfolder "$STAGE" -ov -format ULMO "$OUT/XiaotianBot-$VER-mac-$ARCH.dmg" && break
+  [ $i = 6 ] && exit 1; echo "hdiutil failed, retry $i"; sleep $((i * 10))
+done
 rm -rf "$STAGE"
 ls -la "$OUT"
