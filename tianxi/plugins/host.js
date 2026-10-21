@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
-import { load, update, save, id, now, localISO, today, flags, bus, onChange, settings, HOME, EVAL, MAIN, STYLES, agentList, agentById, transcriptKey } from './store.js'
+import { load, update, save, id, now, localISO, today, flags, bus, onChange, settings, HOME, EVAL, MAIN, STYLES, agentList, agentById, transcriptKey, fileFact, IMG_MIME } from './store.js'
 import { entries, undoEntry, undoLast, pendingArgs } from './ledger.js'
 import { memories, editMemory, forgetMemory, addMemory, reflections, runReflect, applyProposal } from './memory.js'
 import { runBrief } from './ambient.js'
@@ -73,6 +73,8 @@ export const name = 'tianxi-host'
 export const inject = ['agents', 'agentDefaultModel', 'systemPrompt']
 
 
+// The brief's file cards say what each file is and whether it is still there, read fresh each time.
+const withFacts = (b) => b && { ...b, items: (b.items || []).map((it) => ({ ...it, blocks: (it.blocks || []).map((bl) => bl?.type === 'files' ? { ...bl, items: (bl.items || []).map((f) => { const p = typeof f === 'string' ? f : f?.path; return { ...(typeof f === 'object' ? f : {}), path: p, fact: fileFact(p) } }) } : bl) })) }
 const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事' }
 const INTERNAL = new Set(['brief', 'job', 'reflect', 'act'])   // turns kept out of the chat; their process is still viewable
 const MAX_HOPS = 3                                      // agent-to-agent mail stops waking agents after this many hops
@@ -267,7 +269,7 @@ export function apply(ctx) {
       agentStatus: Object.fromEntries(list.map((a) => [a.id, R.get(a.id)?.status || 'idle'])),
       agents: list, styles: STYLES, mainId: MAIN,
       privateMode: flags.privateMode, today: today(), now: localISO(),
-      brief: load('brief', null), transcripts: Object.fromEntries(list.map((a) => [a.id, transcript(a.id).slice(-300)])),
+      brief: withFacts(load('brief', null)), transcripts: Object.fromEntries(list.map((a) => [a.id, transcript(a.id).slice(-300)])),
       ledger: entries().slice(-300), memories: memories(), reflections: reflections().slice(0, 10),
       calendar: load('calendar', []), todos: load('todos', []), outbox: load('outbox', []).slice(-200), inbox: load('inbox', []).slice(-200),
       later: load('later', []), observations: load('observations', []).slice(-50),
@@ -400,10 +402,11 @@ export function apply(ctx) {
       }
       if (url.pathname === '/api/file') {
         // Thumbnails for the brief and generated cards: local images under the user's home only.
-        const f = path.resolve(String(url.searchParams.get('path') || '').replace(/^~/, os.homedir()))
-        if (!f.startsWith(os.homedir()) || !IMG.has(path.extname(f).toLowerCase()) || !fs.existsSync(f)) { res.writeHead(404); return res.end() }
-        res.writeHead(200, { 'content-type': MIME[path.extname(f).toLowerCase()] || 'application/octet-stream', 'cache-control': 'max-age=300' })
-        return fs.createReadStream(f).pipe(res)
+        // what the file is comes from its bytes, so a picture saved without the right extension still shows
+        const x = fileFact(url.searchParams.get('path'))
+        if (!x.path.startsWith(os.homedir()) || !x.exists || x.kind !== 'img' || !IMG_MIME[x.ext]) { res.writeHead(404); return res.end() }
+        res.writeHead(200, { 'content-type': IMG_MIME[x.ext], 'cache-control': 'no-cache' })
+        return fs.createReadStream(x.path).pipe(res)
       }
       const fn = routes[req.method + ' ' + url.pathname]
       if (!fn) return json(res, 404, { error: 'not found' })

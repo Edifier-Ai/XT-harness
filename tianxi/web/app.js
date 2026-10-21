@@ -389,6 +389,18 @@ function renderUI(t) {
   return h + '</div>'
 }
 function extOf(p) { const e = String(p || '').split('.').pop().toLowerCase(); return /^(docx?|txt|md|rtf)$/.test(e) ? 'doc' : /^(xlsx?|csv)$/.test(e) ? 'xls' : /^pptx?$/.test(e) ? 'ppt' : e === 'pdf' ? 'pdf' : /^(zip|rar|7z)$/.test(e) ? 'zip' : '' }
+// A file tile shows what the file really is (read from its bytes by the host) and says so when it has moved away.
+const KIND_LABEL = { img: 'IMG', pdf: 'PDF', zip: 'ZIP', doc: 'DOC', xls: 'XLS', ppt: 'PPT', dir: '文件夹' }
+function fileTile(i) {
+  const p = typeof i === 'string' ? i : i?.path, f = (typeof i === 'object' && i.fact) || null
+  const n = String(p || '').split(/[\\/]/).pop()
+  const kind = f ? f.kind : (isImg(p) ? 'img' : extOf(p))
+  const gone = f && !f.exists
+  const label = KIND_LABEL[kind] || (n.includes('.') ? n.split('.').pop().toUpperCase().slice(0, 4) : '文件')
+  const th = kind === 'img' && !gone ? `<img src="${esc(fileUrl(p))}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'IMG'}))">` : esc(label)
+  const note = gone ? '已不在原处' : (typeof i === 'object' && i.note) || ''
+  return `<div class="file${gone ? ' gone' : ''}" title="${esc(p)}"><div class="th ${kind === 'img' ? '' : kind}">${th}</div><div class="n">${esc(n)}</div>${note ? `<div class="no">${esc(note)}</div>` : ''}</div>`
+}
 function block(b, tid, bi) {
   if (!b || typeof b !== 'object') return ''
   const items = Array.isArray(b.items) ? b.items : []
@@ -400,7 +412,7 @@ function block(b, tid, bi) {
     case 'timeline': return `<div class="tl">${items.map((i) => `<div class="it"><span class="tm">${esc(i.time)}</span><div class="m">${esc(i.title)}${i.sub ? `<small>${esc(i.sub)}</small>` : ''}</div>${i.tag ? `<span class="tag">${esc(i.tag)}</span>` : ''}</div>`).join('')}</div>`
     case 'metric': return `<div class="metrics">${items.map((i) => `<div class="metric"><div class="l">${esc(i.label)}</div><div class="v">${esc(i.value)}</div>${i.note ? `<div class="n">${esc(i.note)}</div>` : ''}</div>`).join('')}</div>`
     case 'image': { const src = /^https?:/.test(b.src || '') ? b.src : fileUrl(b.src || ''); return `<div class="gimg"><img src="${esc(src)}" alt="" onerror="this.parentElement.style.display='none'">${b.caption ? `<div class="c">${esc(b.caption)}</div>` : ''}</div>` }
-    case 'files': return `<div class="files">${items.map((i) => { const p = typeof i === 'string' ? i : i.path; const n = String(p || '').split(/[\\/]/).pop(); const e = extOf(p); return `<div class="file" title="${esc(p)}"><div class="th ${e}">${isImg(p) ? `<img src="${esc(fileUrl(p))}" alt="">` : esc((n.split('.').pop() || '').toUpperCase().slice(0, 4))}</div><div class="n">${esc(n)}</div>${i.note ? `<div class="no">${esc(i.note)}</div>` : ''}</div>` }).join('')}</div>`
+    case 'files': return `<div class="files">${items.map((i) => fileTile(i)).join('')}</div>`
     case 'bar': { const max = Math.max(...items.map((i) => +i.value || 0), 1); const top = Math.max(...items.map((i) => +i.value || 0)); return `<div class="bars">${items.map((i) => `<div class="bar ${+i.value === top ? 'top' : ''}"><span class="l">${esc(i.label)}</span><span class="tr"><i style="width:${Math.max(2, (+i.value || 0) / max * 100)}%"></i></span><span class="v">${esc(i.value)}${esc(b.unit || '')}</span></div>`).join('')}</div>` }
     case 'progress': return `<div class="prog">${items.map((i) => `<div class="it">${esc(i.label)}<div class="tr"><i style="width:${Math.round(Math.min(1, Math.max(0, +i.value || 0)) * 100)}%"></i></div></div>`).join('')}</div>`
     case 'quote': return `<div class="quote">${esc(b.text)}${b.from ? `<small>${esc(b.from)}</small>` : ''}</div>`

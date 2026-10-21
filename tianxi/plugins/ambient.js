@@ -15,7 +15,8 @@ export function observe(kind, text, data) {
 }
 
 export function briefPrompt(reason = '例行') {
-  const obs = load('observations', []).filter((o) => !o.seen).slice(-30)
+  // a new file that has since been moved or deleted is no longer news
+  const obs = load('observations', []).filter((o) => !o.seen && !(o.kind === 'file' && o.data?.path && !fs.existsSync(o.data.path))).slice(-30)
   const jobs = load('later', []).filter((j) => j.status === 'done' && !j.reported)
   const since = Date.now() - 18 * 3600e3
   const acts = entries().filter((e) => Date.parse(e.at) > since && e.status === 'done').slice(-30)
@@ -26,7 +27,7 @@ export function briefPrompt(reason = '例行') {
     '3. 调用一次 brief_publish。summary 一句话说清今天；hero 点出最要紧的事；sections 按重要程度排：要拍板的事用 decide（每张都要给按钮），今天的日程用 schedule 块画成时间轴（冲突标 conflict），新文件用 files 块，做完的事用 done，还在做的用 doing。能用图文块的就不要只写文字。',
     '只写真实存在的事，不要编造。没有要定的事就不要硬凑。',
     '',
-    '新发现：', ...(obs.length ? obs.map((o) => `- ${o.at.slice(0, 16).replace('T', ' ')} ${o.text}`) : ['- 无']),
+    '新发现（新文件只写下面还在的，files 块的 path 原样照抄）：', ...(obs.length ? obs.map((o) => `- ${o.at.slice(0, 16).replace('T', ' ')} ${o.text}${o.data?.path ? `（path：${o.data.path}）` : ''}`) : ['- 无']),
     '后台做完的事：', ...(jobs.length ? jobs.map((j) => `- ${j.title}：${j.result || ''}`) : ['- 无']),
     '最近替用户做过的动作：', ...(acts.length ? acts.map((e) => `- ${e.title}`) : ['- 无']),
   ].join('\n')

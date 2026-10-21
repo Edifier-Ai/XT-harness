@@ -3,7 +3,7 @@
 // (genui/openui.js, window.OpenUI) turn it into a component tree as the text streams in, and this file
 // draws that tree in 小天's look. Buttons and forms answer the agent the way OpenUI's @ToAssistant does:
 // a user message carrying the button's words, the form's values and the button's context.
-// The page's esc, md, fileUrl, isImg, extOf and say come from app.js.
+// The page's esc, md, fileUrl, isImg, extOf, fileTile and say come from app.js.
 'use strict'
 const GU = (() => {
   const O = window.OpenUI
@@ -123,7 +123,7 @@ const GU = (() => {
       }).join('')}</div>`,
       Steps: (p) => `<ol class="ou-steps">${arr(p.items).filter(isEl).map((s) => `<li><b>${inl(str(s.props?.title))}</b><div>${inl(str(s.props?.details))}</div></li>`).join('')}</ol>`,
       Timeline: (p) => `<div class="tl ou-tl">${arr(p.items).filter(isEl).map((t) => { const x = t.props || {}; return `<div class="it ${x.conflict ? 'cf' : ''}"><span class="tm">${esc(x.time)}</span><div class="m">${inl(str(x.title))}${x.subtitle ? `<small>${inl(str(x.subtitle))}</small>` : ''}</div>${x.tag ? `<span class="tag">${esc(x.tag)}</span>` : ''}${x.conflict ? '<span class="tag cf">冲突</span>' : ''}</div>` }).join('')}</div>`,
-      Files: (p) => `<div class="files">${arr(p.paths).map((f) => { const pth = str(f), nm = pth.split(/[\\/]/).pop(), e = extOf(pth); return `<div class="file" title="${esc(pth)}"><div class="th ${e}">${isImg(pth) ? `<img src="${esc(fileUrl(pth))}" alt="">` : esc((nm.split('.').pop() || '').toUpperCase().slice(0, 4))}</div><div class="n">${esc(nm)}</div></div>` }).join('')}</div>`,
+      Files: (p) => `<div class="files">${arr(p.paths).map((f) => fileTile(str(f))).join('')}</div>`,
       Buttons: (p) => `<div class="ou-btns ${p.direction === 'column' ? 'col' : ''}">${arr(p.buttons).filter(isEl).map((b) => node(b, 'x')).join('')}</div>`,
       Button: (p) => {
         const steps = p.action?.steps || [{ type: 'continue_conversation', message: p.label }]

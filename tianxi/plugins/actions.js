@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { load, update, save, id, now, localISO, today, bus, agentById, agentByEmail, agentList } from './store.js'
+import { load, update, save, id, now, localISO, today, bus, agentById, agentByEmail, agentList, fileFact } from './store.js'
 import { record, defineUndo, markRisky } from './ledger.js'
 
 const J = { schema: { type: 'json' }, render: (_a, v) => [{ type: 'text', text: JSON.stringify(v) }] }
@@ -206,11 +206,29 @@ export function apply(ctx) {
     parameters: { greeting: { type: 'string' }, summary: { type: 'string', required: true }, hero: { type: 'json' }, sections: { type: 'array', items: { type: 'json' } }, items: { type: 'array', items: { type: 'json' } } },
     async execute(a) {
       const list = a.sections || a.items || []
-      const items = list.map((x) => ({ id: id('it'), status: 'open', size: 'm', ...x }))
+      const items = list.map((x) => ({ id: id('it'), status: 'open', size: 'm', ...x, blocks: realFiles(x.blocks) }))
       save('brief', { date: today(), at: now(), greeting: a.greeting || '', summary: a.summary, hero: a.hero || null, items })
       return { ok: true, sections: items.length }
     },
   })
+  // A files block lists only files that exist: a path the model got slightly wrong is matched to a file it was told about.
+  function realFiles(blocks) {
+    if (!Array.isArray(blocks)) return blocks
+    const told = load('observations', []).filter((o) => o.kind === 'file' && o.data?.path).map((o) => o.data.path)
+    const near = (p) => {
+      const n = path.basename(String(p || '')), stem = n.replace(/\.[^.]*$/, '')
+      return told.find((t) => path.basename(t) === n) || (stem.length >= 4 && told.find((t) => path.basename(t).replace(/\.[^.]*$/, '') === stem)) || ''
+    }
+    return blocks.map((b) => {
+      if (b?.type !== 'files') return b
+      const items = (b.items || []).map((f) => {
+        const o = typeof f === 'string' ? { path: f } : { ...f }
+        if (!fileFact(o.path).exists) { const m = near(o.path); if (m && fileFact(m).exists) o.path = m; else return null }
+        return o
+      }).filter(Boolean)
+      return items.length ? { ...b, items } : null
+    }).filter(Boolean)
+  }
   reg({
     name: 'brief_resolve', description: '把首页上的一张“需要你定”卡片标为已处理，并写明结果。',
     parameters: { id: { type: 'string', required: true }, result: { type: 'string', required: true } },

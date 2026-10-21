@@ -347,6 +347,7 @@ table.gt{width:100%;border-collapse:collapse;font-size:13.5px}
 .file .th.doc{background:#1b2333;color:#8fb0ff}.file .th.xls{background:#16261d;color:#6fd3a0}.file .th.ppt{background:#2b1c16;color:#ff9f7a}.file .th.pdf{background:#2b1717;color:#ff8f8f}.file .th.zip{background:#262318;color:#e8c46a}
 .file .n{font-size:12.5px;color:#d8d8dc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .file .no{font-size:11.5px;color:var(--tx3);margin-top:-4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file.gone{opacity:.45}.file.gone .th{background:transparent;box-shadow:inset 0 0 0 1px var(--s3,#333);color:var(--tx3)}.file.gone .n{text-decoration:line-through}
 .bars{display:flex;flex-direction:column;gap:8px}
 .bar{display:grid;grid-template-columns:minmax(60px,max-content) 1fr max-content;gap:10px;align-items:center;font-size:13px}
 .bar .l{color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}

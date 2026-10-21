@@ -1,8 +1,8 @@
 {
- "version": "0.13.1",
- "notes": "「我的」里的后台任务改名为系统感知",
+ "version": "0.13.2",
+ "notes": "简报文件卡：按文件内容识别类型（存成 .pdf 的图片也能显示缩略图），已挪走的文件不再列出、已列的标“已不在原处”，图片读不出时显示类型而不是裂图",
  "minBase": "0.4.0",
- "at": "2026-10-21T07:12:29.232Z",
+ "at": "2026-10-21T07:20:27.291Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
@@ -396,13 +396,13 @@
   },
   "bundle/plugins/actions.js": {
    "path": "tianxi/plugins/actions.js",
-   "sha256": "9f3668491d609d094948caa4d36219c084d84d3cdb8f92cd782ed7a809d688cc",
-   "size": 17138
+   "sha256": "2bd89c20aea3c9c8deb6c628d45774ab9475ae7ea819e57cbce20356dea562e6",
+   "size": 18188
   },
   "bundle/plugins/ambient.js": {
    "path": "tianxi/plugins/ambient.js",
-   "sha256": "66c8e0d402bda7735268291f2adbf5c2776a571c031353ddf582f98a93293253",
-   "size": 6251
+   "sha256": "225fbef1cde77a55c0b40a31e07d7d4cb4864f5aafff673726af5e582ae3bca7",
+   "size": 6514
   },
   "bundle/plugins/apps.js": {
    "path": "tianxi/plugins/apps.js",
@@ -421,8 +421,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "a24f5bd05d9aa5e35ed125b66e3d058fa3926381da60cb546e2054e16ec20fee",
-   "size": 31799
+   "sha256": "ab48b418cc97a647454b6853c252f5958589e5e02c06069c9c422fc445b22ae4",
+   "size": 32269
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -436,8 +436,8 @@
   },
   "bundle/plugins/store.js": {
    "path": "tianxi/plugins/store.js",
-   "sha256": "0b8eaae44c3b140d2c18e0af1e50337ab5277e9f3b1a1b1b263df8f292211798",
-   "size": 4074
+   "sha256": "4eef0539349707654d34a21c477ee0b10792409b871951539ae2bcf0da84c55b",
+   "size": 6035
   },
   "bundle/plugins/voice.js": {
    "path": "tianxi/plugins/voice.js",
@@ -466,8 +466,8 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "4fd628aab834dacd091a475ac11d82a5c7ffebea98096811e5417c1ac82fd681",
-   "size": 148551
+   "sha256": "de71d6653ea9bfed345deeda39009bd7b946bc85c285e50ead6c6606857d3a14",
+   "size": 149246
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
@@ -486,8 +486,8 @@
   },
   "bundle/web/genui.js": {
    "path": "tianxi/web/genui.js",
-   "sha256": "3b62adaf5f073bb0598b52ea7856851b645537300c6059acaa59937076ca45ee",
-   "size": 32348
+   "sha256": "ddc2ab81c9fe303e57e19b0a8ba618efef32cfc4acf73a8fa45308343cd9ab2c",
+   "size": 32074
   },
   "bundle/web/img/wall-evening.jpg": {
    "path": "tianxi/web/img/wall-evening.jpg",
@@ -516,8 +516,8 @@
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "70955af707975e657f2ffad0455f7f210e73191ef66a90eee7a325c57deac543",
-   "size": 19224
+   "sha256": "e11fddcbf242f9f74af1047cd98f12f6c1fdfdf7e15b6423f934677b7a3b7e79",
+   "size": 19317
   },
   "bundle/web/motion.css": {
    "path": "tianxi/web/motion.css",
@@ -531,8 +531,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "6036044613f579236baffdc6f5b85f41acfee462157f904b18cf76fa62db6218",
-   "size": 85807
+   "sha256": "8a93c377bc35ad0f77c2bffff96f9c6a1064c19fe029f86c1b13112cbc695859",
+   "size": 85971
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

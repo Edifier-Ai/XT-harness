@@ -85,3 +85,29 @@ export function agentList() {
 export const agentById = (aid) => agentList().find((a) => a.id === aid) || agentList()[0]
 export const agentByEmail = (addr) => agentList().find((a) => a.email && String(addr || '').toLowerCase().includes(a.email.toLowerCase())) || (String(addr || '').toLowerCase().includes(OLD_MAIN.email) ? agentById(MAIN) : undefined)
 export const transcriptKey = (aid) => (!aid || aid === MAIN ? 'transcript' : 'transcript_' + aid)
+
+// ---------- what a file really is: its first bytes decide, the extension only when they say nothing ----------
+const MAGIC = [
+  ['img', 'png', (b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47],
+  ['img', 'jpg', (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff],
+  ['img', 'gif', (b) => b.toString('latin1', 0, 4) === 'GIF8'],
+  ['img', 'webp', (b) => b.toString('latin1', 0, 4) === 'RIFF' && b.toString('latin1', 8, 12) === 'WEBP'],
+  ['img', 'bmp', (b) => b[0] === 0x42 && b[1] === 0x4d],
+  ['pdf', 'pdf', (b) => b.toString('latin1', 0, 5) === '%PDF-'],
+  ['zip', '7z', (b) => b.toString('latin1', 0, 6) === '7z\xbc\xaf\x27\x1c'],
+  ['zip', 'rar', (b) => b.toString('latin1', 0, 4) === 'Rar!'],
+]
+const BY_EXT = { doc: /^(docx?|txt|md|rtf|wps)$/, xls: /^(xlsx?|csv|et)$/, ppt: /^(pptx?|dps|key)$/, pdf: /^pdf$/, zip: /^(zip|rar|7z|gz|tar)$/, img: /^(png|jpe?g|gif|webp|bmp|heic|svg)$/ }
+export const IMG_MIME = { png: 'image/png', jpg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml' }
+export function fileFact(p) {
+  const f = path.resolve(String(p || '').replace(/^~/, os.homedir()))
+  const name = path.basename(f), ext = path.extname(f).slice(1).toLowerCase()
+  let st; try { st = fs.statSync(f) } catch { return { path: f, name, exists: false, kind: Object.keys(BY_EXT).find((k) => BY_EXT[k].test(ext)) || '', ext } }
+  if (st.isDirectory()) return { path: f, name, exists: true, kind: 'dir', ext: '', size: 0 }
+  let head = Buffer.alloc(0)
+  try { const fd = fs.openSync(f, 'r'); head = Buffer.alloc(12); fs.readSync(fd, head, 0, 12, 0); fs.closeSync(fd) } catch {}
+  const m = MAGIC.find(([, , t]) => head.length >= 4 && t(head))
+  // a zip may be an Office file: its extension says which
+  const kind = m ? m[0] : Object.keys(BY_EXT).find((k) => BY_EXT[k].test(ext)) || ''
+  return { path: f, name, exists: true, kind, ext: m && m[0] === 'img' ? m[1] : ext, size: st.size }
+}
