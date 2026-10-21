@@ -8,6 +8,20 @@ OUT=$PWD/out-mac; APP="$OUT/小天 Bot.app"; RES="$APP/Contents/Resources"; PL="
 rm -rf "$OUT" && mkdir -p "$OUT"
 ditto -x -k dl/electron-mac-$ARCH.zip "$OUT"
 mv "$OUT/Electron.app" "$APP"
+# Electron counts itself as packaged only when its executable is not called Electron, and looks for
+# "<executable> Helper*.app" next to it: rename both (ASCII names; the name people see is CFBundleDisplayName).
+EXE=XiaotianBot; B=/usr/libexec/PlistBuddy
+mv "$APP/Contents/MacOS/Electron" "$APP/Contents/MacOS/$EXE"
+$B -c "Set :CFBundleExecutable $EXE" "$PL"
+for h in "$APP/Contents/Frameworks/Electron Helper"*.app; do
+  n=$(basename "$h" .app); m="$EXE${n#Electron}"
+  mv "$h/Contents/MacOS/$n" "$h/Contents/MacOS/$m"
+  $B -c "Set :CFBundleExecutable $m" "$h/Contents/Info.plist"
+  $B -c "Set :CFBundleName $m" "$h/Contents/Info.plist"
+  $B -c "Set :CFBundleDisplayName $m" "$h/Contents/Info.plist" 2>/dev/null || true
+  mv "$h" "$APP/Contents/Frameworks/$m.app"
+done
+ls "$APP/Contents/Frameworks"
 rm -f "$RES/default_app.asar"
 mkdir -p "$RES/app" "$RES/runtime"
 cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} "$RES/app/"
@@ -24,7 +38,6 @@ find "$RES" -maxdepth 1 -name '*.lproj' ! -name 'zh_CN.lproj' ! -name 'en.lproj'
 mkdir -p "$RES/zh_CN.lproj"
 # the app's name, id, version and icon
 cp icon.icns "$RES/electron.icns"
-B=/usr/libexec/PlistBuddy
 $B -c "Set :CFBundleName 小天 Bot" "$PL"
 $B -c "Set :CFBundleDisplayName 小天 Bot" "$PL" 2>/dev/null || $B -c "Add :CFBundleDisplayName string 小天 Bot" "$PL"
 $B -c "Set :CFBundleIdentifier com.lenovo.tianxi.concept" "$PL"

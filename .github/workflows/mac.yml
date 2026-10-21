@@ -64,7 +64,7 @@ jobs:
           # a dummy model so the runtime starts and the home page shows (no model call is made)
           U="$HOME/Library/Application Support/TianxiAI-Concept"; mkdir -p "$U"
           printf '{"provider":"deepseek","baseURL":"https://api.deepseek.com/v1","model":"deepseek-chat","key":"%s","keyEnc":false,"pill":true}' "$(printf test | base64)" > "$U/config.json"
-          "build/out-mac/小天 Bot.app/Contents/MacOS/Electron" > start.log 2>&1 &
+          "build/out-mac/小天 Bot.app/Contents/MacOS/XiaotianBot" > start.log 2>&1 &
           ok=0
           for i in $(seq 1 120); do
             c=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3090/api/ping || true)
