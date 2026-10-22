@@ -1,0 +1,290 @@
+[
+ {
+  "ok": true,
+  "what": "start page reaches the App (XiaotianNative)"
+ },
+ {
+  "ok": true,
+  "what": "scan opens the QR scanner",
+  "extra": "topResumedActivity=ActivityRecord{e5d35f1 u0 com.xiaotianbot.app/.ScanActivity t8}"
+ },
+ {
+  "ok": true,
+  "what": "Back leaves the scanner"
+ },
+ {
+  "ok": true,
+  "what": "a wrong code shows the computer's message"
+ },
+ {
+  "ok": true,
+  "what": "Back from the message returns to the start page"
+ },
+ {
+  "ok": true,
+  "what": "paired: the computer's 小天 page is open",
+  "extra": "http://10.0.2.2:3091/"
+ },
+ {
+  "ok": true,
+  "what": "the computer lists this phone",
+  "extra": [
+   "Android SDK built for x86_64"
+  ]
+ },
+ {
+  "ok": true,
+  "what": "the App remembers the computer"
+ },
+ {
+  "ok": true,
+  "what": "小天 asks before sending the mail"
+ },
+ {
+  "ok": true,
+  "what": "approved on the phone, 小天 finishes"
+ },
+ {
+  "ok": true,
+  "what": "Back leaves the chat for the list"
+ },
+ {
+  "ok": true,
+  "what": "no UU 远程 on the phone yet"
+ },
+ {
+  "ok": true,
+  "what": "taking over without UU 远程 says to install it",
+  "extra": "手机上还没装 UU 远程\n去下载"
+ },
+ {
+  "ok": true,
+  "what": "the App sees UU 远程"
+ },
+ {
+  "ok": true,
+  "what": "UU 远程 opens full screen on the bound computer",
+  "extra": "topResumedActivity=ActivityRecord{39ff28b u0 com.xiaotianbot.fakeuu/.FakeUU t10}"
+ },
+ {
+  "ok": true,
+  "what": "taking over pauses the Bots on the computer"
+ },
+ {
+  "ok": true,
+  "what": "while UU 远程 is in front, the Bots stay paused",
+  "extra": [
+   "paired",
+   "takeover:true"
+  ]
+ },
+ {
+  "ok": true,
+  "what": "the computer is bound in UU 远程 (anonymous_device_id kept)"
+ },
+ {
+  "ok": true,
+  "what": "back in the App, the computer goes back to the Bots"
+ },
+ {
+  "ok": true,
+  "what": "Back from UU 远程 returns to the App"
+ },
+ {
+  "ok": true,
+  "what": "the computer got take-over then hand-back",
+  "extra": [
+   true,
+   false
+  ]
+ },
+ {
+  "ok": true,
+  "what": "the small window: UU 远程 answers and the App stays in front",
+  "extra": "topResumedActivity=ActivityRecord{5d2b6d9 u0 com.xiaotianbot.app/.MainActivity t8}"
+ },
+ {
+  "ok": true,
+  "what": "a UU 远程 failure shows its reason",
+  "extra": "电脑不在线：UU 远程没打开或者没联网。"
+ },
+ {
+  "ok": true,
+  "what": "the 我的 page shows",
+  "extra": [
+   {
+    "t": -79,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 124,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 277,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 430,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 594,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280",
+     "tout:running:17"
+    ]
+   },
+   {
+    "t": 1257,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 1411,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 1565,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 1719,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 1871,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 2025,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 2179,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 2332,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 2485,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 2638,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   },
+   {
+    "t": 2791,
+    "op": "1",
+    "view": false,
+    "kids": 5,
+    "anims": [
+     "mslide:finished:280"
+    ]
+   }
+  ]
+ },
+ {
+  "ok": true,
+  "what": "the light theme loads"
+ },
+ {
+  "ok": true,
+  "what": "reopened, the App goes straight to the computer"
+ },
+ {
+  "ok": true,
+  "what": "computer unreachable: the start page says so"
+ },
+ {
+  "ok": true,
+  "what": "重试 opens the computer again"
+ },
+ {
+  "ok": true,
+  "what": "unpaired: back to the start page"
+ },
+ {
+  "ok": true,
+  "what": "the computer no longer lists the phone"
+ },
+ {
+  "ok": true,
+  "what": "the App forgot the computer"
+ }
+]

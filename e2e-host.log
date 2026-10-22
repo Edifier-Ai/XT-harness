@@ -1,0 +1,20 @@
+[host] linked tianxi/node_modules to build/runtime/node_modules
+[host] runtime up on 3090
+[host] phone: listening on 3091
+[host] phone connection on 3091 http://10.1.1.94:3091/pair?c=075350
+[host] control on 3092
+[host] event {"type":"paired","name":"Race Phone"}
+[host] phone: paired Race Phone
+[host] event {"type":"takeover","on":true,"how":"full","phone":"Race Phone"}
+[host] event {"type":"takeover","on":false,"how":"full","phone":"Race Phone"}
+[host] event {"type":"takeover","on":true,"how":"full","phone":"Race Phone"}
+[host] event {"type":"takeover","on":false,"how":"full","phone":"Race Phone"}
+[host] event {"type":"takeover","on":true,"how":"full","phone":"Race Phone"}
+[host] event {"type":"takeover","on":false,"how":"full","phone":"Race Phone"}
+[host] event {"type":"paired","name":"Android SDK built for x86_64"}
+[host] phone: paired Android SDK built for x86_64
+[host] event {"type":"takeover","on":true,"how":"full","phone":"Android SDK built for x86_64"}
+[host] event {"type":"takeover","on":false,"how":"full","phone":"Android SDK built for x86_64"}
+[host] phone: stopped
+[host] phone: listening on 3091
+[host] event {"type":"unpaired","name":"Android SDK built for x86_64"}

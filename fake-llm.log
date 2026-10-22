@@ -1,0 +1,9 @@
+[fake] listening 4010
+[fake] /v1/chat/completions msgs 3 tools 37 -> calendar_list
+[fake] /v1/chat/completions msgs 2 tools 0 -> text
+[fake] /v1/chat/completions msgs 5 tools 37 -> todo_list
+[fake] /v1/chat/completions msgs 7 tools 37 -> brief_publish
+[fake] /v1/chat/completions msgs 9 tools 37 -> text
+[fake] /v1/chat/completions msgs 11 tools 37 -> mail_draft
+[fake] /v1/chat/completions msgs 13 tools 37 -> mail_send
+[fake] /v1/chat/completions msgs 15 tools 37 -> text
