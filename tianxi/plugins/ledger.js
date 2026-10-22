@@ -1,7 +1,7 @@
 // 操作记录: every action 小天 takes is written here with why it did it and how to undo it.
 import fs from 'node:fs'
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { load, update, id, now, flags } from './store.js'
+import { load, update, id, now, flags, bus, MAIN, WORKER } from './store.js'
 
 const undoers = new Map()          // undo kind -> async (data) => note shown to the user
 const RISKY = new Map()            // tool name -> reason shown when asking
@@ -15,9 +15,14 @@ const RISKY_MATCH = new Set()      // (toolName, args) -> reason or ''
 /** Mark a family of tools (e.g. an outside app's write tools) as needing approval; returns the disposer. */
 export function markRiskyMatch(fn) { RISKY_MATCH.add(fn); return () => RISKY_MATCH.delete(fn) }
 
-/** Append one action. `undo` is { kind, data, label } or null when it cannot be reversed. */
-export function record({ tool, title, why, undo = null, risk = 'low', detail }) {
-  const entry = { id: id('act'), at: now(), tool, title, why: why || '', detail, risk, undo, status: 'done', private: flags.privateMode }
+// tool calls running now: callId -> { name, aid }, so an action knows which Bot did it
+const inflight = new Map()
+const byWhom = (tool) => { let aid = ''; for (const x of inflight.values()) if (x.name === tool) aid = x.aid; return aid === WORKER ? MAIN : aid }
+
+/** Append one action. `undo` is { kind, data, label } or null when it cannot be reversed. `agent`: the Bot that did it
+ *  (found from the tool call running now when not given; '' for things the user did or no Bot did). */
+export function record({ tool, title, why, undo = null, risk = 'low', detail, agent }) {
+  const entry = { id: id('act'), at: now(), tool, title, why: why || '', detail, risk, undo, status: 'done', private: flags.privateMode, agent: agent ?? byWhom(tool) }
   update('ledger', [], (l) => { l.push(entry); if (l.length > 2000) l.splice(0, l.length - 2000) })
   return entry
 }
@@ -53,6 +58,19 @@ defineUndo('file-restore', async ({ path, before }) => {
 /** Arguments of risky calls waiting for approval, by callId (read by the host to preview them). */
 export const pendingArgs = new Map()
 
+// ---------- looking without touching ----------
+// A Bot on 试用期 or speaking at a 圆桌 may only look things up. Tools that only read are let through; everything
+// else is turned down with the reason, so the Bot proposes instead of doing.
+const LOOKS = new Set(['read', 'grep', 'glob', 'ls', 'find', 'web_search', 'web_fetch', 'memory_search', 'ledger_recent', 'calendar_list', 'todo_list', 'mail_inbox', 'folder_list', 'show_ui', 'todo_write', 'plan_propose', 'roundtable_start', 'doc_read'])
+export function onlyLooks(name) {
+  const n = String(name || '').split('__').pop()
+  return LOOKS.has(n) || /^(get|list|search|read|fetch|query|find|view|show|lookup)(_|$)/i.test(n) || /_(list|search|get|read|inbox|recent|query|fetch|view|find|status|info)$/i.test(n)
+}
+const lookOnly = new Set()   // (aid) -> why this Bot may only look now, or ''
+/** Add a rule that keeps a Bot to looking; returns the disposer. */
+export function keepLooking(fn) { lookOnly.add(fn); return () => lookOnly.delete(fn) }
+export function lookOnlyWhy(aid) { for (const fn of lookOnly) { const w = fn(aid); if (w) return w } return '' }
+
 export const name = 'tianxi-ledger'
 export const inject = ['tools']
 
@@ -83,6 +101,11 @@ export function apply(ctx) {
   const REDIRECT = { ask_user_question: '小天 Bot 客户端不支持这个工具。需要用户选择或填写时，请在回复里写一段 openui-lang 界面（按钮或表单）。', exit_plan_mode: '小天不使用计划模式，直接动手做，做完说结果。' }
   ctx.on('tools/pre-execute', async (exec, next) => {
     if (REDIRECT[exec.name]) return { kind: 'deny', reason: REDIRECT[exec.name], displayReason: { en: REDIRECT[exec.name], zh: REDIRECT[exec.name] } }
+    const aid = bus.aidOf(exec.agent)
+    const only = aid && !onlyLooks(exec.name) && lookOnlyWhy(aid)
+    if (only) return { kind: 'deny', reason: only, displayReason: { en: only, zh: only } }
+    inflight.set(exec.callId, { name: exec.name, aid })
+    if (inflight.size > 200) inflight.delete(inflight.keys().next().value)
     const args = exec.arguments || {}
     if ((exec.name === 'write' || exec.name === 'edit') && typeof (args.path || args.file_path) === 'string') {
       const p = args.path || args.file_path
@@ -102,6 +125,8 @@ export function apply(ctx) {
     return next()
   })
   ctx.on('tools/result', (exec, result) => {
+    // after the tool's own record() calls: a moment later, so one written in the same tick still finds its Bot
+    setTimeout(() => inflight.delete(exec.callId), 50)
     const snap = snapshots.get(exec.callId)
     if (!snap) return
     snapshots.delete(exec.callId)

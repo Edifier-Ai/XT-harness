@@ -33,7 +33,7 @@ const TOOL = {
   mail_draft: '起草邮件', mail_send: '发邮件', mail_inbox: '看收件箱', folder_list: '查看文件夹', file_move: '移动文件',
   brief_publish: '发布每日简报', brief_resolve: '处理简报卡片', later_add: '放进后台队列', reflection_publish: '写下反思',
   memory_save: '记下来', memory_search: '翻记忆', memory_update: '改记忆', memory_forget: '忘掉一条记忆',
-  ledger_recent: '翻操作记录', undo_actions: '撤回',
+  ledger_recent: '翻操作记录', undo_actions: '撤回', plan_propose: '交方案', roundtable_start: '开圆桌',
   read: '读取文件', write: '写文件', edit: '修改文件', bash: '运行命令', shell: '运行命令', ls: '查看文件夹', glob: '查找文件', grep: '搜索文件内容',
   web_search: '搜索网页', web_fetch: '打开网页', fetch: '打开网页', read_image: '看图片', pwsh: '运行命令', powershell: '运行命令',
   subagent: '派一个助手去做', subagent_fork: '派一个助手去做', send_message: '和助手沟通', list_agents: '查看助手', todo_write: '拆解步骤',
@@ -158,14 +158,19 @@ const transcript = (aid) => S.transcripts[aid] || []
 
 // turns: a user message (or a system wake-up) and everything the agent did after it
 function turnsOf(aid) {
-  const turns = []; let t = null
+  const turns = [], byId = new Map(); let t = null
   for (const it of transcript(aid)) {
-    if (it.role === 'user' || it.role === 'system') { t = { id: it.id, agent: aid, head: it, items: [], at: it.at, endAt: it.endAt, internal: !!it.internal, kind: it.kind || 'user' }; turns.push(t); continue }
+    if (it.role === 'user' || it.role === 'system') { t = { id: it.id, agent: aid, head: it, items: [], at: it.at, endAt: it.endAt, internal: !!it.internal, kind: it.kind || 'user' }; turns.push(t); byId.set(it.id, t); continue }
+    // a turn queued behind this one (a 圆桌 round, a mail) already put its head in: the rest of this turn still belongs here
+    const own = it.turn && byId.get(it.turn)
+    if (own) { own.items.push(it); continue }
     if (!t) { t = { id: 'pre_' + it.id, agent: aid, head: null, items: [], at: it.at, endAt: it.at, internal: !!it.internal, kind: 'user' }; turns.push(t) }
     t.items.push(it)
   }
-  const last = turns[turns.length - 1]
-  for (const x of turns) x.running = x === last && busy(aid) && !x.endAt
+  // the running one is the first of the turns at the end that have not finished (the ones after it are queued)
+  let run = turns.length - 1
+  while (run > 0 && !turns[run - 1].endAt && turns[run - 1].head) run--
+  for (const [i, x] of turns.entries()) x.running = i === run && busy(aid) && !x.endAt
   return turns
 }
 const toolsOf = (t) => t.items.filter((i) => i.role === 'tool')
@@ -227,10 +232,10 @@ function renderRail() {
     const preview = st === 'wait' ? '需要你确认一件事' : busy(a.id) ? nowDoing(a.id) : last ? (last.role === 'user' ? '你：' + last.text : last.kind === 'mail' ? '收到邮件：' + (last.mail?.subject || '') : GU.plain(last.text)) : (a.role || '')
     const unread = a.id === cur && view === 'chat' ? 0 : items.filter((i) => i.role !== 'user' && (!seen[a.id] || i.at > seen[a.id])).length
     return `<button class="ag ${a.id === cur && view === 'chat' ? 'on' : ''} ${st === 'wait' ? 'need' : ''}" data-act="agent-open" data-id="${a.id}" title="${esc(busy(a.id) ? nowDoing(a.id) : a.role || '')}">${avatar(a, 42)}
-      <span class="tx"><b><span class="nm">${esc(a.name)}</span>${busy(a.id) ? '<span class="tdots"><i></i><i></i><i></i></span>' : ''}</b><span class="pv">${esc(String(preview).replace(/[*`#]/g, '').replace(/\s+/g, ' ').slice(0, 48))}</span></span>
+      <span class="tx"><b><span class="nm">${esc(a.name)}</span>${a.trial ? '<i class="ttag">试用</i>' : ''}${busy(a.id) ? '<span class="tdots"><i></i><i></i><i></i></span>' : ''}</b><span class="pv">${esc(String(preview).replace(/[*`#]/g, '').replace(/\s+/g, ' ').slice(0, 48))}</span></span>
       ${unread ? '<span class="udot"></span>' : ''}</button>`
   }
-  $('#agentList').innerHTML = groups.map((x) => `<div class="grp">${esc(x.g)}</div>${x.l.map(row).join('')}`).join('') || '<div class="hint" style="padding:10px 14px">没有找到</div>'
+  $('#agentList').innerHTML = (window.railTop ? railTop() : '') + (groups.map((x) => `<div class="grp">${esc(x.g)}</div>${x.l.map(row).join('')}`).join('') || '<div class="hint" style="padding:10px 14px">没有找到</div>')
   const { open, nr } = openCount()
   setCount($('#nMe'), open + nr)
   $('#meAv').textContent = userInitial()
@@ -243,7 +248,7 @@ function renderRail() {
 function renderHead() {
   const a = agentOf(cur)
   $('#cAvatar').innerHTML = avatar(a, 28, false, false)
-  $('#cName').textContent = a.name
+  $('#cName').innerHTML = esc(a.name) + (a.trial ? `<i class="ttag">试用期 ${a.trial.ok || 0}/${a.trial.need || 3}</i>` : '')
   $('#pmBadge').classList.toggle('on', !!S.privateMode)
   $('#bPriv').classList.toggle('on', !!S.privateMode)
   $('#ring').classList.toggle('priv', !!S.privateMode)
@@ -350,12 +355,14 @@ function renderMsgs(keepScroll) {
     if (t.head?.role === 'user') h += `<div class="mrow me" id="m_${t.head.id}" data-k="${t.head.id}"><div class="body"><div class="bub" data-mid="${t.head.id}">${esc(t.head.text)}</div></div></div>`
     let body = ''
     if (t.kind === 'mail' && t.head.mail) body += mailHead(t)
+    if (t.kind === 'trial' && window.trialNote) body += trialNote(t.head)
     const chip = procChip(t); if (chip) body += chip
     for (const it of t.items) {
       if (it.role === 'assistant' && it.text) body += `<div class="aw" id="m_${it.id}" data-k="${it.id}">${replyHtml(it)}</div>`
       else if (it.role === 'ui') body += `<div class="uiw" data-k="${it.id}">${renderUI(it)}</div>`
       else if (it.role === 'error') body += `<div class="bub err" data-k="${it.id}">${esc(it.text)}</div>`
       else if (it.role === 'tool' && it.name === 'mail_send' && it.state !== 'error') { const h = handoff(it.args?.id); if (h) body += handoffCard(h, 'hand' + it.id) }
+      else if (it.role === 'tool' && it.state !== 'error' && window.BOTCARD?.[it.name]) body += BOTCARD[it.name](it)
     }
     if (t.running && !t.items.some((i) => i.role === 'assistant' && i.text) && !toolsOf(t).length) body += '<div class="bub typing"><i></i><i></i><i></i></div>'
     if (body) h += `<div class="mrow" data-k="a${t.id}"><div class="body">${body}</div></div>`
@@ -707,9 +714,14 @@ function renderPage() {
   if (view === 'chat') return
   const P = $('#pg')
   const keep = $('#vPage').scrollTop
-  const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, agent: pageAgent, tools: pageTools }[view]
+  const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, agent: pageAgent, tools: pageTools, feed: () => pageFeed(), table: () => pageTable() }[view]
+  // what you were typing on the page survives a redraw (the runtime pushes changes while you type)
+  const typed = [...P.querySelectorAll('input[id], textarea[id]')].filter((x) => x.type !== 'range' && x.type !== 'checkbox').map((x) => [x.id, x.value])
+  const fx = document.activeElement && P.contains(document.activeElement) && document.activeElement.id ? [document.activeElement.id, document.activeElement.selectionStart, document.activeElement.selectionEnd] : null
   if (fn) GU.keepFocus(() => { P.innerHTML = fn() })
-  const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap):not(.tgrid):not(.wrows), #pg .bgrid > *, #pg .tgrid > *, #pg .wrows > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent'
+  for (const [k, v] of typed) { const x = document.getElementById(k); if (x && !x.value && v) x.value = v }
+  if (fx) { const x = document.getElementById(fx[0]); if (x) { x.focus(); try { x.setSelectionRange(fx[1], fx[2]) } catch {} } }
+  const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap):not(.tgrid):not(.wrows):not(.fposts):not(.tbls), #pg .bgrid > *, #pg .tgrid > *, #pg .wrows > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent, #pg .fposts > *, #pg .tbls > *, #pg .tbl .tsay, #pg .tbl .tcard'
   const keyOf = (el) => view + ':' + (el.dataset.k || el.className.split(' ')[0] + ':' + hashText(el.textContent.slice(0, 600)))
   if (entering) {
     entering = false
@@ -923,7 +935,7 @@ function pageAgent() {
     <div class="setrow"><label>样子</label><div class="ctl shapes" id="agShape" data-val="${esc(shapeOf({ ...v, id: v.id || 'new' }))}">${SHAPES.map((sh) => `<button type="button" class="${sh === shapeOf({ ...v, id: v.id || 'new' }) ? 'on' : ''}" data-v="${sh}">${avatar({ ...v, id: v.id || 'new', shape: sh }, 34)}</button>`).join('')}</div></div>
     ${`<div class="setrow"><label>颜色</label><div class="ctl colors" id="agColor" data-val="${esc(colorOf({ ...v, id: v.id || 'new' }))}">${COLORS.map((c) => `<button type="button" class="${c === colorOf({ ...v, id: v.id || 'new' }) ? 'on' : ''}" data-v="${c}" style="background:${swatch(c)}"></button>`).join('')}</div></div>`}
     <div style="margin-top:12px;display:flex;gap:8px;align-items:center"><button class="btn pri" data-act="agent-save" data-id="${isNew ? '' : a.id}">${isNew ? '创建' : '保存'}</button>${!isNew && !a.main ? `<button class="btn warn" data-act="agent-del" data-id="${a.id}" style="margin-left:auto">删除这个 Bot</button>` : ''}<span class="hint" id="agMsg" style="margin:0"></span></div>
-    </div><div class="hint">改动从下一句话开始生效。所有 Bot 共用“我的记忆”和“操作记录”；每个 Bot 有自己的人设、对话、邮箱和日常任务，互相之间可以发邮件分工协作。</div></div>`
+    </div><div class="hint">改动从下一句话开始生效。所有 Bot 共用“我的记忆”和“操作记录”；每个 Bot 有自己的人设、对话、邮箱和日常任务，互相之间可以发邮件分工协作。${isNew ? '新建的 Bot 先试用：只交方案，你点头它才动手，做对几次再转正。' : ''}</div>${!isNew && window.trialPanel ? trialPanel(a) : ''}</div>`
   if (isNew) return h + '</div>'
   const inbox = S.inbox.filter((m) => m.agent === a.id).reverse()
   const outbox = S.outbox.filter((m) => (m.agent || S.mainId) === a.id).reverse()
@@ -1353,12 +1365,27 @@ function toast(entry) {
   const el = document.createElement('div'); el.className = 'toast'
   el.innerHTML = `<span>${esc(entry.title)}</span>${entry.undo ? `<button class="btn sm">${esc(entry.undo.label || '撤回')}</button>` : ''}`
   const b = el.querySelector('button'); if (b) b.onclick = async () => { b.disabled = true; await api('undo', { id: entry.id }); syncDesk(); dismiss(el) }
-  $('#toasts').appendChild(el); setTimeout(() => dismiss(el), 7000)
+  putToast(el, 7000)
+}
+// several things done at once (a plan carried out, a decision) are one toast, so they don't pile up over the chat
+function toastMany(list) {
+  const el = document.createElement('div'); el.className = 'toast'
+  const back = list.filter((e) => e.undo)
+  el.innerHTML = `<span>做了 ${list.length} 件事：${esc(list.map((e) => e.title).join('；'))}</span><button class="btn sm" data-k="see">看看</button>${back.length ? '<button class="btn sm" data-k="undo">都撤回</button>' : ''}`
+  el.querySelector('[data-k=see]').onclick = () => { setView('ledger'); dismiss(el) }
+  const u = el.querySelector('[data-k=undo]')
+  if (u) u.onclick = async () => { u.disabled = true; for (const e of [...back].reverse()) { try { await api('undo', { id: e.id }) } catch {} } syncDesk(); dismiss(el) }
+  putToast(el, 9000)
 }
 function toastText(t, act) {
   const el = document.createElement('div'); el.className = 'toast'; el.innerHTML = `<span>${esc(t)}</span>${act ? `<button class="btn sm">${esc(act[0])}</button>` : ''}`
   if (act) el.querySelector('button').onclick = () => { act[1](); dismiss(el) }
-  $('#toasts').appendChild(el); setTimeout(() => dismiss(el), 5000)
+  putToast(el, 5000)
+}
+function putToast(el, ms) {
+  const box = $('#toasts'); box.appendChild(el); setTimeout(() => dismiss(el), ms)
+  const live = [...box.children].filter((x) => !x.classList.contains('out'))
+  for (const x of live.slice(0, Math.max(0, live.length - 3))) dismiss(x)
 }
 function notify(title, body) {
   try { if (document.hidden && 'Notification' in window && Notification.permission !== 'denied') new Notification(title, { body, silent: false }).onclick = () => APP?.show() } catch {}
@@ -1370,9 +1397,11 @@ async function refresh() {
   const prevBrief = S.brief?.at, prevRef = S.reflections[0]?.id
   S = await api('state')
   if (!agents().some((a) => a.id === cur)) cur = S.mainId
+  const fresh = []
   for (const e of S.ledger) {
-    if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done' && e.tool !== 'tool_collect') toast(e) }
+    if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done' && e.tool !== 'tool_collect') fresh.push(e) }
   }
+  if (fresh.length > 1) toastMany(fresh); else if (fresh.length) toast(fresh[0])
   if (!firstLoad && S.brief?.at && S.brief.at !== prevBrief) { notify('每日简报', S.brief.summary || '今天的简报准备好了'); if (view !== 'brief') toastText('今天的简报准备好了', ['去看', () => setView('brief')]) }
   if (!firstLoad && S.reflections[0] && S.reflections[0].id !== prevRef && view !== 'reflect') toastText(`${agentOf(S.mainId).name}反思完了`, ['去看', () => setView('reflect')])
   if (firstLoad && !REDUCED) { $('#app').classList.add('boot'); setTimeout(() => $('#app').classList.remove('boot'), 1500) }
@@ -1433,6 +1462,7 @@ function connect() {
       plusTools()
     }
     else if (m.type === 'widgets') soon()
+    else if (m.type === 'table' || m.type === 'post' || m.type === 'trial' || m.type === 'nudge') window.onBots?.(m)
     else if (m.type === 'tool-added') {
       const w = m.widget
       toastText(`「${w.kind}」用了两次，收进我的工具了`, ['去看', () => setView('tools', w.id)])

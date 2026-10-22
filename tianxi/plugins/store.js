@@ -61,7 +61,43 @@ export const flags = { privateMode: false, idleSec: 0, lastSeen: Date.now(), tak
 
 // Message bus between plugins: host.js installs `say`, ambient.js uses it to wake 小天 on its own.
 // routes: more HTTP routes ('POST /api/x': fn) served by the host; onCard: told of every card 小天 puts in a chat reply.
-export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () => 'tianxi', hopsOf: () => -1, deliver: null, routes: {}, onCard: null }
+export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () => 'tianxi', hopsOf: () => -1, deliver: null, routes: {}, onCard: null,
+  // aidOf: which 小天 agent a DSH agent object is; addItem: put a line into an agent's chat; pick: the model picked now
+  aidOf: () => '', addItem: null, pick: () => null,
+  // told when an agent finishes a turn: ({ aid, kind, turn, text, at })
+  turnEnd: new Set(),
+  // more of the client's state, from other plugins: name -> () => value
+  state: new Map() }
+
+// ---------- one plain question to the model picked now, outside any agent (a JSON answer, a sentence) ----------
+// The client gives the runtime its model routes (TIANXI_ROUTES); without one, the background 小天 answers instead.
+export async function quick(system, user, { max = 1200, timeout = 90000 } = {}) {
+  let routes = []; try { routes = JSON.parse(process.env.TIANXI_ROUTES || '[]') } catch {}
+  const pick = bus.pick?.(), r = pick && routes.find((x) => x.id === pick.provider)
+  if (!r) {
+    if (!bus.say) throw new Error('小天还没准备好')
+    return String(await bus.say(system + '\n\n' + user, { worker: true, kind: 'quick' }) || '')
+  }
+  const res = await fetch(String(r.baseURL).replace(/\/+$/, '') + '/chat/completions', {
+    method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (process.env[r.keyEnv] || '') },
+    body: JSON.stringify({ model: pick.model, stream: false, max_tokens: max, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
+    signal: AbortSignal.timeout(timeout),
+  })
+  const text = await res.text()
+  if (!res.ok) throw new Error(`模型没有回应（HTTP ${res.status}）`)
+  try { return JSON.parse(text).choices?.[0]?.message?.content || '' } catch {}
+  // some routes stream even when asked not to
+  return text.split('\n').map((l) => { try { return JSON.parse(l.replace(/^data:\s*/, '')).choices?.[0]?.delta?.content || '' } catch { return '' } }).join('')
+}
+/** The first JSON object in a model's answer, or null. */
+export function jsonOf(text) {
+  const s = String(text || '').replace(/```(?:json)?/g, '')
+  const a = s.indexOf('{'), b = s.lastIndexOf('}')
+  if (a < 0 || b <= a) return null
+  try { return JSON.parse(s.slice(a, b + 1)) } catch { return null }
+}
+/** A reply as plain words: its card and Markdown marks taken out. */
+export const plainOf = (text) => String(text || '').replace(/```[\s\S]*?(```|$)/g, ' ').replace(/^\s*root\s*=\s*Card\([\s\S]*$/m, ' ').replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim()
 
 export function settings() {
   return { briefTime: '08:00', watch: ['~/Downloads', '~/Desktop'], idleMinutes: 10, nightFrom: 23, nightTo: 6, callMe: '', reflectAtNight: true, ...load('settings', {}) }

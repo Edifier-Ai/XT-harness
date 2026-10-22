@@ -62,7 +62,8 @@ run('fake-llm', process.execPath, ['fake-llm.mjs'], { cwd: path.join(ROOT, 'dev/
 run('runtime', process.execPath, [path.join(ROOT, 'build/runtime/node_modules/@deepseek-ai/dsh/lib/bin.js'), '--profile', 'web', '--patch', PATCH, '--no-open', '--port', '0'], {
   cwd: WORK,
   env: { ...process.env, DSH_HOME: path.join(WORK, 'home'), TIANXI_HOME: path.join(WORK, 'data'), TIANXI_PORT: String(PORT), TIANXI_TOKEN: TOKEN, TIANXI_API_KEY: 'x',
-    TIANXI_MODELS: JSON.stringify([{ provider: 'tianxi', model: 'fake-tianxi', label: '测试模型', group: '测试', efforts: [] }]), TIANXI_PICK: JSON.stringify({ provider: 'tianxi', model: 'fake-tianxi' }) },
+    TIANXI_MODELS: JSON.stringify([{ provider: 'tianxi', model: 'fake-tianxi', label: '测试模型', group: '测试', efforts: [] }]), TIANXI_PICK: JSON.stringify({ provider: 'tianxi', model: 'fake-tianxi' }),
+    TIANXI_ROUTES: JSON.stringify([{ id: 'tianxi', baseURL: 'http://127.0.0.1:4010/v1', keyEnv: 'TIANXI_API_KEY' }]) },
 })
 
 const api = (p, body) => fetch(`http://127.0.0.1:${PORT}/api/${p}`, { method: body ? 'POST' : 'GET', headers: { 'content-type': 'application/json', 'x-tianxi-token': TOKEN }, body: body ? JSON.stringify(body) : undefined })

@@ -2,14 +2,17 @@
 import fs from "node:fs"; const require_dump=b=>fs.writeFileSync("last-req.json",JSON.stringify(b,null,1));
 import http from 'node:http'
 const PORT = +process.env.FAKE_PORT || 4010
-const RULES = [] // [{re, tool, args(text)}] loaded from rules.mjs
-try { const m = await import(process.env.FAKE_RULES || './rules.mjs'); RULES.push(...m.default) } catch (e) { console.error('no rules', e.message) }
+const ALL = [] // [{re, sys?, tool, args(text)}] loaded from rules.mjs
+try { const m = await import(process.env.FAKE_RULES || './rules.mjs'); ALL.push(...m.default) } catch (e) { console.error('no rules', e.message) }
 const log = (...a) => console.error('[fake]', ...a)
 const isCtx=t=>/^(Current runtime context|Time sampled)/.test(t.trim())
 function lastUser(msgs){for(let i=msgs.length-1;i>=0;i--){const m=msgs[i];if(m.role==='user'&&!isCtx(textOf(m.content)))return i}return -1}
 function textOf(c){ if(typeof c==='string')return c; if(Array.isArray(c))return c.map(p=>p.text||'').join(''); return '' }
 function decide(body){
   const msgs = body.messages||[]; const last = msgs[msgs.length-1]||{}
+  // a rule may also ask for something in the system prompt (rule.sys), e.g. which Bot is answering
+  const sysText = msgs.filter(m=>m.role==='system'||m.role==='developer').map(m=>textOf(m.content)).join('\n')
+  const RULES = ALL.filter(r=>!r.sys || r.sys.test(sysText))
   const tools = (body.tools||[]).map(t=>t.function?.name)
   if (last.role==='tool' || (last.role==='user' && isCtx(textOf(last.content)) && msgs.slice(lastUser(msgs)).some(m=>m.role==='tool'))) {
     // count tool messages after last user to allow chained calls
@@ -25,7 +28,7 @@ function decide(body){
 }
 let n=0
 http.createServer((req,res)=>{
-  let raw=''; req.on('data',d=>raw+=d); req.on('end',()=>{
+  const parts=[]; req.on('data',d=>parts.push(d)); req.on('end',()=>{ const raw=Buffer.concat(parts).toString('utf8');
     if (req.url.endsWith('/models')) { res.writeHead(200,{'content-type':'application/json'}); return res.end(JSON.stringify({data:[{id:'fake-tianxi'}]})) }
     let body={}; try{body=JSON.parse(raw)}catch{}; if(process.env.FAKE_DUMP && (body.tools||[]).length) require_dump(body)
     const d = decide(body); const id='c'+(++n)

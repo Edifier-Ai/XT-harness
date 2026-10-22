@@ -222,7 +222,16 @@
 :where(:root[data-theme=light]) .tu-opts span{border:1px solid rgba(20,20,40,0.126)}
 :where(:root[data-theme=light]) .tp-plug b{box-shadow:0 6px 16px rgba(80,70,120,0.105)}
 :where(:root[data-theme=light]) .tp-plug span > i::after{background:#1c1c22}
+:where(:root[data-theme=light]) .pqr .qr{background:#1c1c22}
 :where(:root[data-theme=light]) .oubar button{color:#717177}
 :where(:root[data-theme=light]) .oubar button:hover{background:#ffffff;color:#25252b}
-:where(:root[data-theme=light]) .tcard.hl{border-color:#b9b9c4;box-shadow:0 0 0 3px rgba(0,0,0,.04)}
+:where(:root[data-theme=light]) .tcard.hl{border-color:#ceced6;box-shadow:0 0 0 3px rgba(20,20,40,0.045)}
 :where(:root[data-theme=light]) .ib{color:#717177}
+:where(:root[data-theme=light]) .ag .ucount{color:#16161c}
+:where(:root[data-theme=light]) .fpost .ftx{color:#2a2a30}
+:where(:root[data-theme=light]) .frx .cm span{color:#34343a}
+:where(:root[data-theme=light]) .seat:hover{border-color:#ceced6}
+:where(:root[data-theme=light]) .seat.on{border-color:#ceced6}
+:where(:root[data-theme=light]) .tsay .b{color:#2a2a30}
+:where(:root[data-theme=light]) .tsay.sm .b{color:#404046}
+:where(:root[data-theme=light]) .psteps{color:#34343a}

@@ -36,6 +36,7 @@ export const PERSONA = (agentId = MAIN) => () => {
       ? `你是“${me.name}”，${me.role || '用户的个人智能体'}，是联想的小天 Bot。你住在用户的这台电脑里，一直在运行；手机、平板上的${me.name}和你是同一个。`
       : `你是“${me.name}”，用户的${me.role || '助手'}。你是小天 Bot 智能体家族的一员，主智能体叫“${main.name}”。你有自己的身份和分工，只做和你分工有关的事；别的事交给合适的智能体。`,
     me.intro ? `你的人设：${me.intro}` : '',
+    me.trial ? `你在试用期：用户还在看你靠不靠谱。你只能查看（读文件、查日程、搜网页这类），不能动手改任何东西；遇到要动手的事，用 plan_propose 交一个方案（做什么、分几步、为什么），用户点“照这个做”后你才去做。方案被用户同意满 ${me.trial.need || 3} 次，你可以申请转正。` : '',
     s.callMe ? `称呼用户为“${s.callMe}”。` : '',
     `你有自己的邮箱 ${me.email}。用 mail_draft / mail_send 发出的邮件，发件人都是你；mail_inbox 看你的收件箱。`,
     others.length ? '智能体通讯录（需要别的智能体帮忙时，直接给它发邮件说清楚要什么，它会自己处理并回信）：\n' + others.map((x) => `- ${x.name}（${x.role || '助手'}）${x.email}`).join('\n') : '',
@@ -75,8 +76,8 @@ export const inject = ['agents', 'agentDefaultModel', 'systemPrompt']
 
 // The brief's file cards say what each file is and whether it is still there, read fresh each time.
 const withFacts = (b) => b && { ...b, items: (b.items || []).map((it) => ({ ...it, blocks: (it.blocks || []).map((bl) => bl?.type === 'files' ? { ...bl, items: (bl.items || []).map((f) => { const p = typeof f === 'string' ? f : f?.path; return { ...(typeof f === 'object' ? f : {}), path: p, fact: fileFact(p) } }) } : bl) })) }
-const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事', widget: '在处理桌面小组件' }
-const INTERNAL = new Set(['brief', 'job', 'reflect', 'act', 'widget'])   // turns kept out of the chat; their process is still viewable
+const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事', widget: '在处理桌面小组件', table: '在圆桌上发言', feedfix: '在看你的评论', quick: '在想', trial: '申请转正' }
+const INTERNAL = new Set(['brief', 'job', 'reflect', 'act', 'widget', 'table', 'feedfix', 'quick'])   // turns kept out of the chat; their process is still viewable
 const MAX_HOPS = 3                                      // agent-to-agent mail stops waking agents after this many hops
 
 export function apply(ctx) {
@@ -108,6 +109,9 @@ export function apply(ctx) {
     return R.get(aid)
   }
   const byAgent = (agent) => { for (const r of R.values()) if (r.handle && agent && r.handle.agent.id === agent.id) return r; return null }
+  bus.aidOf = (agent) => byAgent(agent)?.aid || ''
+  bus.addItem = addItem
+  bus.patchItem = patchItem
   const bySession = (sid) => { for (const r of R.values()) if (r.handle && r.handle.agent.id === sid) return r; return null }
   bus.hopsOf = (aid) => rt(aid || MAIN).hops
 
@@ -124,6 +128,7 @@ export function apply(ctx) {
     const m = known(p), effort = m.efforts.includes(p.effort) ? p.effort : undefined
     return { provider: p.provider, model: p.model, ...(effort ? { effort } : {}) }
   }
+  bus.pick = pickNow
   const asSelection = (p) => p && { provider: p.provider, model: p.model, ...(p.effort && p.effort !== 'off' ? { reasoningEffort: ReasoningEffortId(p.effort) } : {}) }
   const select = (r) => {
     if (!r.handle || r.sel) return
@@ -251,7 +256,11 @@ export function apply(ctx) {
           const tail = [st && `HTTP ${st}`, code && `错误码 ${code}`, r.sel?.current && `模型 ${r.sel.current.model}`].filter(Boolean).join(' · ')
           addItem(r.aid, { role: 'error', text: msg + (tail ? `（${tail}）` : ''), internal: h?.internal || false, turn: h?.turn })
         }
-        if (h) { patchItem(r.aid, h.turn, { endAt: now() }); h.resolve(h.last); r.hidden.delete(r.currentMsg) }
+        if (h) {
+          patchItem(r.aid, h.turn, { endAt: now() }); h.resolve(h.last); r.hidden.delete(r.currentMsg)
+          const end = { aid: r.aid, kind: h.kind, turn: h.turn, text: h.last, error: d.reason?.kind === 'error', at: now() }
+          for (const f of bus.turnEnd) { try { f(end) } catch (e) { console.error('[tianxi] turn end', e) } }
+        }
         r.currentMsg = null; r.streamItem = null; r.streamText = ''; r.hops = -1
         push({ type: 'turn-end', agent: r.aid })
         break
@@ -304,7 +313,7 @@ export function apply(ctx) {
 
   // ---------- HTTP ----------
   const json = (res, code, v) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(v)) }
-  const body = async (req) => { let b = ''; for await (const d of req) b += d; try { return JSON.parse(b || '{}') } catch { return {} } }
+  const body = async (req) => { const l = []; for await (const d of req) l.push(d); const b = Buffer.concat(l).toString('utf8'); try { return JSON.parse(b || '{}') } catch { return {} } }
   const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp', '.json': 'application/json' }
   const IMG = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg'])
 
@@ -326,6 +335,8 @@ export function apply(ctx) {
       voice: bus.voice?.state() || { available: false, phase: 'missing' },
       takeover: flags.takeover || null,
       widgets: bus.widgets?.() || [],
+      // more from the other plugins (圆桌, 动态, 试用期…)
+      ...Object.fromEntries([...(bus.state || new Map())].map(([k, f]) => { try { return [k, f()] } catch { return [k, null] } })),
     }
   }
 
@@ -376,7 +387,8 @@ export function apply(ctx) {
       let cur = list.find((x) => x.id === a.id)
       if (!cur) {
         const aid = 'ag' + randomUUID().slice(0, 6)
-        cur = { id: aid, createdAt: now() }; list.push(cur)
+        // a new Bot starts on 试用期: it proposes, you say yes, and after a few right ones it asks to be made regular
+        cur = { id: aid, createdAt: now(), ...(a.trial === false ? {} : { trial: { since: now(), need: 3, ok: 0, no: 0 } }) }; list.push(cur)
       }
       for (const k of ['name', 'role', 'style', 'intro', 'color', 'shape', 'tag']) if (a[k] !== undefined) cur[k] = String(a[k]).slice(0, 600)
       // the avatar: an uploaded picture (a small data URL) or a body the model drew, '' to go back to the shapes

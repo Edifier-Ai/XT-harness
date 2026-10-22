@@ -11,6 +11,12 @@
       name: dsh-tianxi/plugins/apps.js
     - id: tianxi-widgets
       name: dsh-tianxi/plugins/widgets.js
+    - id: tianxi-trial
+      name: dsh-tianxi/plugins/trial.js
+    - id: tianxi-table
+      name: dsh-tianxi/plugins/table.js
+    - id: tianxi-feed
+      name: dsh-tianxi/plugins/feed.js
     - id: speech-to-text
       name: '@deepseek-ai/dsh-experimental-speech-to-text'
       config:

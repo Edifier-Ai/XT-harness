@@ -16,7 +16,7 @@ const CODE_MS = 10 * 60e3
 const MAX_PHONES = 8
 const sha = (s) => crypto.createHash('sha256').update(String(s)).digest('hex')
 const json = (res, code, v) => { res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }); res.end(JSON.stringify(v)) }
-const body = async (req) => { let b = ''; for await (const d of req) { b += d; if (b.length > 1e5) break } try { return JSON.parse(b || '{}') } catch { return {} } }
+const body = async (req) => { const l = []; let n = 0; for await (const d of req) { l.push(d); n += d.length; if (n > 4e5) break } try { return JSON.parse(Buffer.concat(l).toString('utf8') || '{}') } catch { return {} } }
 const page = (res, code, title, text) => {
   res.writeHead(code, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' })
   res.end(`<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>小天 Bot</title><style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:#f2f2f3;font:16px/1.6 'PingFang SC','Noto Sans SC',system-ui,sans-serif}div{max-width:320px;padding:24px}b{display:block;font-size:20px;margin-bottom:10px}span{color:#a3a3a8}button{display:none;margin-top:22px;height:46px;padding:0 22px;border:0;border-radius:23px;background:#f2f2f3;color:#0b0b0c;font:inherit;font-weight:700}</style></head><body><div><b>${title}</b><span>${text}</span><br><button id="s" onclick="XiaotianNative.scan()">重新扫码</button></div><script>if(window.XiaotianNative)document.getElementById('s').style.display='inline-block'</script></body></html>`)

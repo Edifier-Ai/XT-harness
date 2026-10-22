@@ -17,7 +17,26 @@ const weather = (city, now, note) => '```openui-lang 城市天气\n' + [
   'btns = Buttons([Button("看这个城市", @ToAssistant("换成这个城市的天气"), "primary")])',
 ].join('\n') + '\n```'
 const cityOf = (u) => /北京|bj/.test(u) ? '北京' : /深圳|sz/.test(u) ? '深圳' : '上海'
+// 圆桌: who is speaking comes from the Bot's own system prompt
+const said = (u) => [...u.split('发言：')[1]?.split('\n\n')[0].matchAll(/^(?:（回应）)?([^：\n]+)：/gm) || []].map((m) => m[1])
 export default [
+  { sys: /你是“小天”/, re: /【圆桌·第一轮】/, final: () => '我倾向坐高铁：深圳北站离华贸近，路上还能改材料，晚点也不怕。' },
+  { re: /【圆桌·第一轮】/, final: () => '我建议坐飞机：北京到深圳高铁要 8 小时，飞机 3 个多小时，能省下半天。' },
+  { sys: /你是“小天”/, re: /【圆桌·第二轮】/, final: () => '飞机确实省时间，但要避开红眼航班；我还是偏高铁。' },
+  { re: /【圆桌·第二轮】/, final: () => '同意不坐红眼，选白天的航班就行，我还是选飞机。' },
+  { re: /整理成一张分歧卡/, final: (u) => { const [a, b] = [...new Set(said(u))]; return JSON.stringify({ agree: ['不坐红眼航班'], splits: [{ point: '坐飞机还是高铁', sides: [{ agent: a, stance: '高铁，离客户近、路上能干活' }, { agent: b, stance: '飞机，省下半天' }] }], options: [{ label: '坐高铁', agents: [a], memory: '去深圳出差优先坐高铁' }, { label: '坐白天的航班', agents: [b], memory: '去深圳出差坐白天的航班' }] }) } },
+  { re: /用户点了赞/, final: (u) => (/^(.+?)（/.exec(u) || [, '小天'])[1] + '：后台汇总周报时，把要点加进待办' },
+  { re: /【动态里的纠正】/, steps: [{ tool: 'memory_save', args: (u) => ({ text: '周报要点不要加进待办，发邮件给我', kind: '偏好', quote: (/「(.+?)」/.exec(u.split('评论：')[1] || '') || [, ''])[1] }) }], final: () => '好的，以后周报要点直接发邮件给你，不再加进待办。' },
+  { re: /【试用期·方案没通过】/, final: () => '明白了，下次我先问你哪些文件不能动。' },
+  { re: /让大家讨论一下/, tool: 'roundtable_start', args: (u) => ({ question: after(u, '讨论一下') }), final: () => '好，我叫上大家开了个圆桌，讨论完你来拍板。' },
+  { re: /【试用期·方案通过】/, steps: [
+      { tool: 'folder_list', args: () => ({ path: process.env.FAKE_DIR || '~/Downloads' }) },
+      { tool: 'file_move', args: (u, msgs) => { const r = lastToolJSON(msgs); const f = r?.items?.find(i => !i.dir); return { from: r.dir + '/' + (f?.name || 'none'), to: r.dir + '/文档/' + (f?.name || 'none'), reason: '照你同意的方案' } } } ],
+    final: () => '照方案做好了，文档已经归到“文档”里。' },
+  { sys: /你在试用期/, re: /^(?![\s\S]*【试用期)[\s\S]*整理/, steps: [
+      { tool: 'folder_list', args: () => ({ path: process.env.FAKE_DIR || '~/Downloads' }) },
+      { tool: 'plan_propose', args: (u, msgs) => { const r = lastToolJSON(msgs); const f = r?.items?.find(i => !i.dir); return { title: '把下载文件夹里的文档归到“文档”', steps: [`把 ${f?.name || '文件'} 移到 文档/`], why: '你说要整理下载文件夹' } } } ],
+    final: () => '我先交了一个方案，你看看行不行。' },
   { re: /【桌面小组件·更新】/, final: (u) => /会议倒计时/.test(u) ? '退场：评审会已经开完了'
     : `刷新：每 30 分钟\n到期：不会到期\n${weather(cityOf(u.split('它现在是这样')[1] || u), 20 + (new Date().getSeconds() % 7), hm() + ' 的天气')}` },
   { re: /【桌面小组件·用户操作】/, final: (u) => { const c = cityOf(u.split('当初用户说的是')[0].split('它现在是这样')[0].replace(/「[^」]*」/, '')); return `已经换成${c}了。\n${weather(c, 18, hm() + ' 的天气')}` } },

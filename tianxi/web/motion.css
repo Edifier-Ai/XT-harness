@@ -137,3 +137,15 @@ html.mac .rtop{padding-left:80px}
 html.mac .chead,html.mac .proc .ph{padding-right:14px}
 html.mac .phead{padding-right:0}
 html.mac .setup::before{content:'';position:fixed;top:0;left:0;right:0;height:40px;-webkit-app-region:drag}
+/* 动态 · 圆桌 · 试用期 in the light theme */
+:root[data-theme=light] .ttag,:root[data-theme=light] .tst.open{background:#fbefd9;color:#99620f}
+:root[data-theme=light] .fdid .r .ok{background:#e1f3ea}
+:root[data-theme=light] .tbl,:root[data-theme=light] .fdid,:root[data-theme=light] .frx{background:#fff;border-color:rgba(120,110,170,.14)}
+:root[data-theme=light] .tbl{box-shadow:0 8px 24px -16px rgba(70,60,140,.22)}
+:root[data-theme=light] .tcard{background:#f7f6fb;border-color:rgba(120,110,170,.14)}
+:root[data-theme=light] .tsay .b{background:#f3f2f8}
+:root[data-theme=light] .ag.disc .dic{background:#fff;box-shadow:0 1px 2px rgba(60,50,120,.08)}
+:root[data-theme=light] .avs .av,:root[data-theme=light] .ag.disc .whos .av{box-shadow:0 0 0 2px #fff}
+:root[data-theme=light] .topt .avs .av{box-shadow:0 0 0 2px #f7f6fb}
+:root[data-theme=light] .seat.on{background:#fff;border-color:rgba(120,110,170,.3)}
+:root[data-theme=light] .fft button.on{background:#fff}
