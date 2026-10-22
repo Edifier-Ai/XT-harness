@@ -545,6 +545,12 @@ ipcMain.handle('tianxi:freeSignOut', (e, site) => {
   return { ok: true }
 })
 ipcMain.handle('tianxi:open', (e, url) => { if (/^https:\/\//.test(String(url))) shell.openExternal(url) })
+// only a document the app itself saved under 文档/小天
+ipcMain.handle('tianxi:openFile', (e, p) => {
+  const f = path.resolve(String(p || '')), base = path.join(os.homedir(), 'Documents', '小天')
+  if (f.startsWith(base + path.sep) && /\.(docx|pptx)$/i.test(f) && fs.existsSync(f)) return shell.openPath(f)
+  return 'not allowed'
+})
 // Test one model: { route: a signed-in site ('qoder-cn', 'workbuddy', ...) | 'zhipu', model, effort, apiKey? }
 ipcMain.handle('tianxi:freeTest', async (e, c = {}) => {
   if (gate.siteOf(c.route)) {

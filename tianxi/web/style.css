@@ -1295,3 +1295,122 @@ button:focus:not(:focus-visible){outline:none}
 .manner .mnow b{display:block;font-weight:600;color:var(--tx)}
 .manner .mnow small{display:block;color:var(--tx3);font-size:12.5px;margin-top:3px}
 .manner .hint{margin:4px 0 8px}
+
+/* ---------- 同场共创: the document or deck beside the chat (desk.js) ---------- */
+.desk{width:0;flex:none;overflow:hidden;background:var(--bg);border-left:1px solid transparent;display:flex;flex-direction:column;position:relative;transition:width .38s cubic-bezier(.2,.9,.25,1)}
+.app.deskon .desk{width:clamp(460px,calc(100vw - 272px - 440px),980px);border-left-color:var(--line)}
+.app.deskon .chead{padding-left:18px;padding-right:18px}
+.desk>*{min-width:460px}
+.dk-h{height:64px;flex:none;display:flex;align-items:center;gap:10px;padding:0 150px 0 14px;-webkit-app-region:drag}
+.dk-h button,.dk-h input,.dk-who{-webkit-app-region:no-drag}
+.dk-drag{flex:1;align-self:stretch}
+.dk-kind{display:flex;align-items:center;gap:3px;height:36px;padding:0 8px 0 10px;border:0;border-radius:10px;background:none;color:var(--tx2)}
+.dk-kind:hover{background:var(--s2);color:var(--tx)}
+.dk-title{field-sizing:content;min-width:80px;max-width:48%;height:36px;padding:0 8px;border:0;border-radius:8px;background:none;color:var(--tx);font-size:17px;font-weight:600;outline:0;text-overflow:ellipsis}
+.dk-title:hover{background:var(--s1)}.dk-title:focus{background:var(--s2)}
+.dk-who{display:flex;align-items:center}
+.dk-who .pz{display:flex;align-items:center;height:30px;border-radius:15px}
+.dk-who .pz.me .uav{width:26px;height:26px;font-size:12px;box-shadow:0 0 0 2px var(--bg)}
+.dk-who .pz.bot{margin-left:-6px;padding:0 2px;box-shadow:0 0 0 2px var(--bg);border-radius:15px;transition:background .25s var(--ease),padding .25s var(--ease)}
+.dk-who .pz.bot.on{background:color-mix(in srgb,var(--c) 16%,transparent);padding-right:11px}
+.dk-who .pz.bot em{font-style:normal;font-size:13px;color:var(--tx);margin-left:6px;white-space:nowrap;animation:fadeIn .25s var(--ease)}
+.dk-tb{height:44px;flex:none;display:flex;align-items:center;gap:6px;padding:0 14px;border-bottom:1px solid var(--line)}
+.dk-tg{display:flex;align-items:center;gap:6px;height:30px;padding:0 12px 0 10px;border:0;border-radius:15px;background:none;color:var(--tx2);font-size:13.5px;white-space:nowrap}
+.dk-tg:hover{background:var(--s1);color:var(--tx)}
+.dk-tg.on{background:var(--s2);color:var(--tx)}
+.dk-tg:last-child{margin-left:auto}
+.dk-b{flex:1;overflow-y:auto;padding:40px 0 0;position:relative}
+.dk-pad{height:40vh;cursor:text}
+.dk-wrap{max-width:740px;margin:0 auto;padding:0 64px}
+.blk{position:relative;margin:0 0 12px}
+.blk .bx{outline:0;font-size:16px;line-height:1.85;color:var(--tx);white-space:pre-wrap;overflow-wrap:anywhere;min-height:1.85em;border-radius:6px;transition:background-color 1.4s var(--ease),box-shadow 1.4s var(--ease)}
+.blk.t-h1{margin:0 0 20px}
+.blk.t-h1 .bx{font-size:28px;line-height:1.35;font-weight:700;min-height:1.35em}
+.blk.t-h2{margin:26px 0 8px}
+.blk.t-h2 .bx{font-size:20px;line-height:1.5;font-weight:600;min-height:1.5em}
+.blk.t-li{padding-left:24px;margin-bottom:6px}
+.blk.t-li::before{content:"";position:absolute;left:8px;top:.82em;width:5px;height:5px;border-radius:50%;background:var(--tx2)}
+.blk.t-quote .bx{border-left:3px solid var(--line2);border-radius:0;padding-left:14px;color:var(--tx2)}
+.bx.empty::before,.sl .bx.empty::before{content:attr(data-ph);color:var(--tx3);pointer-events:none}
+.bx[data-ghost]::after{content:attr(data-ghost);color:var(--tx3)}
+/* who wrote what: a bar in the margin, the writer on hover */
+.mk{display:none}
+.desk.marks .blk .mk{display:block;position:absolute;left:-20px;top:.5em;bottom:.5em;width:3px;border-radius:2px;background:var(--c,var(--line2));opacity:.75;transition:opacity .2s}
+.desk.marks .blk .mk[data-by=me]{background:var(--line2)}
+.desk.marks .blk:hover .mk{opacity:1}
+.desk.marks .blk:hover .mk::after{content:attr(data-t);position:absolute;right:12px;top:-3px;white-space:nowrap;font-size:12px;line-height:18px;color:var(--tx3)}
+/* the Bot's paragraph while it writes: tinted, with its cursor and name */
+.blk.live .bx,.blk.enter .bx{background:color-mix(in srgb,var(--c) 11%,transparent);box-shadow:0 0 0 6px color-mix(in srgb,var(--c) 11%,transparent);transition:none}
+.blk.grow,.sl.grow{animation:fadeIn .3s var(--ease) both}
+.blk.enter{animation:none}
+.cur{display:inline-block;position:relative;width:2px;height:1.2em;margin:0 1px 0 2px;vertical-align:-.22em;background:var(--c);border-radius:1px;font-style:normal}
+.cur b{position:absolute;left:-1px;bottom:100%;margin-bottom:2px;padding:1px 6px;border-radius:4px 4px 4px 0;background:var(--c);color:#fff;font-size:11.5px;line-height:16px;font-weight:600;white-space:nowrap;letter-spacing:0}
+.blk.held .bx{box-shadow:inset 0 -1px 0 color-mix(in srgb,var(--c,#888) 60%,transparent)}
+.blk.held::after{content:attr(data-wait);position:absolute;right:0;top:-24px;padding:2px 9px;border-radius:10px;background:var(--s2);color:var(--tx2);font-size:12px;line-height:18px;white-space:nowrap;animation:fadeIn .25s var(--ease)}
+.dk-jump{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;height:32px;padding:0 14px;border:1px solid var(--line2);border-radius:16px;background:var(--s2);color:var(--tx);font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.35);animation:rise .3s var(--ease-out) both;z-index:3}
+.dk-f{height:36px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 18px;border-top:1px solid var(--line);font-size:13px;color:var(--tx3)}
+.dk-f .st{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-f .lk{border:0;background:none;padding:0 0 0 6px;font-size:13px;cursor:pointer}
+.dk-f kbd{font-family:inherit;font-size:11.5px;padding:0 5px;border:1px solid var(--line2);border-radius:4px;color:var(--tx2)}
+.dk-f .dot,.dk-jump .dot{width:7px;height:7px;border-radius:50%;flex:none;animation:pulse 1.4s infinite}
+.dk-menu{position:absolute;left:12px;top:56px;width:320px;max-height:60vh;overflow:auto;padding:6px;border:1px solid var(--line2);border-radius:14px;background:var(--s2);box-shadow:0 18px 50px rgba(0,0,0,.5);z-index:10;transform-origin:top left}
+.dk-menu.in{animation:pop .22s var(--ease-out) both}
+.dk-menu .pg{font-size:12.5px;color:var(--tx3);padding:8px 10px 6px}
+.dk-menu .row{display:flex;align-items:center;border-radius:9px}
+.dk-menu .row:hover,.dk-menu .row.on{background:var(--s3)}
+.dk-menu .row>button:first-child,.dk-menu .nw{flex:1;min-width:0;display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;border:0;background:none;color:var(--tx);font-size:14.5px;text-align:left;border-radius:9px}
+.dk-menu .row span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk-menu .row small{color:var(--tx3);font-size:12px}
+.dk-menu .row .x{width:30px;height:30px;border:0;background:none;color:var(--tx3);border-radius:8px;opacity:0;flex:none;display:flex;align-items:center;justify-content:center}
+.dk-menu .row:hover .x{opacity:1}.dk-menu .row .x:hover{color:var(--bad)}
+.dk-menu .nw{width:100%}.dk-menu .nw:hover{background:var(--s3)}
+.dk-menu .sep{height:1px;background:var(--line2);margin:6px 8px}
+/* a slide: white like the deck it becomes, text sized to the slide */
+.dk-wrap.slides{max-width:800px;padding:0 48px 0 30px}
+.sl{display:flex;gap:12px;margin:0 0 22px;position:relative}
+.sl-n{width:18px;flex:none;padding-top:2px;text-align:right;font-size:13px;color:var(--tx3)}
+.sl-pg{flex:1;min-width:0;aspect-ratio:16/9;container-type:inline-size;display:flex;flex-direction:column;padding:5.5% 6.5%;border-radius:8px;background:rgb(255 255 255);color:rgb(31 31 34);box-shadow:0 0 0 1px rgba(0,0,0,.25),0 10px 30px rgba(0,0,0,.28);overflow:hidden;transition:box-shadow .3s var(--ease)}
+.sl.live .sl-pg{box-shadow:0 0 0 2px var(--c),0 10px 30px rgba(0,0,0,.28)}
+.sl-t{font-size:4.2cqw;line-height:1.3;font-weight:700;outline:0;margin-bottom:3cqw;white-space:pre-wrap;color:rgb(31 31 34)}
+.sl-p{font-size:2.45cqw;line-height:1.6;outline:0;color:rgb(74 74 80);white-space:pre-wrap;flex:1}
+.sl-p .spt{position:relative;padding-left:1.3em;margin-bottom:.45em}
+.sl-p .spt::before{content:"";position:absolute;left:.3em;top:.66em;width:.36em;height:.36em;border-radius:50%;background:rgb(138 138 144)}
+.sl .bx.empty::before{color:rgb(170 170 176)}
+.sl.cover .sl-pg{justify-content:center}
+.sl.cover .sl-t{font-size:6cqw;margin:0}
+.sl.cover .sl-t::after{content:"";display:block;width:8cqw;height:.5cqw;margin-top:3cqw;background:rgb(31 31 34)}
+.sl.cover .sl-p{display:none}
+.sl .cur b{font-size:11.5px}
+.sl-x{position:absolute;right:-40px;top:0;width:30px;height:30px;border:0;border-radius:8px;background:none;color:var(--tx3);opacity:0;display:flex;align-items:center;justify-content:center}
+.sl:hover .sl-x{opacity:1}.sl-x:hover{color:var(--bad);background:var(--s1)}
+.desk.marks .sl .mk{display:block;position:absolute;left:6px;top:26px;width:6px;height:6px;border-radius:50%;background:var(--c,var(--line2))}
+.desk.marks .sl .mk[data-by=me]{background:var(--tx3)}
+.dk-add{display:flex;align-items:center;justify-content:center;gap:8px;margin-left:30px;width:calc(100% - 30px);height:48px;border:1px dashed var(--line2);border-radius:10px;background:none;color:var(--tx2);font-size:14px}
+.dk-add:hover{border-color:var(--tx3);color:var(--tx)}
+/* 放映 */
+.dk-show{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;cursor:none}
+.dk-show .sh-pg{width:min(100vw,177.78vh);aspect-ratio:16/9;container-type:inline-size;display:flex;flex-direction:column;padding:6% 7%;background:rgb(255 255 255);color:rgb(31 31 34);position:relative}
+.dk-show .sh-t{font-size:4.4cqw;line-height:1.3;font-weight:700;margin-bottom:3cqw}
+.dk-show .sh-p{font-size:2.6cqw;line-height:1.6;color:rgb(74 74 80)}
+.dk-show .sh-p .spt{position:relative;padding-left:1.3em;margin-bottom:.5em}
+.dk-show .sh-p .spt::before{content:"";position:absolute;left:.3em;top:.66em;width:.36em;height:.36em;border-radius:50%;background:rgb(138 138 144)}
+.dk-show .cover{justify-content:center}
+.dk-show .cover .sh-t{font-size:6cqw;margin:0}
+.dk-show .cover .sh-t::after{content:"";display:block;width:8cqw;height:.5cqw;margin-top:3cqw;background:rgb(31 31 34)}
+.dk-show .sh-n{position:absolute;right:4cqw;bottom:3cqw;font-size:1.2cqw;color:rgb(138 138 144)}
+/* in the chat: the document a Bot opened */
+.dkcard{display:flex;align-items:center;gap:12px;width:min(440px,100%);padding:11px 12px 11px 11px;border:1px solid var(--line);border-radius:16px;background:var(--s1);color:var(--tx);text-align:left;transition:background .2s,border-color .2s}
+.dkcard:hover{background:var(--s2)}
+.dkcard.on{border-color:var(--line2)}
+.dkcard .ic{width:42px;height:42px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgb(233 236 245);color:#3a4a8c}
+.dkcard .ic.slides{background:#f5ebe4;color:#9a5a2a}
+.dkcard .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.dkcard .t b{font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dkcard .t small{font-size:13px;color:var(--tx2);display:flex;align-items:center;gap:6px}
+.dkcard .t small .tdots{padding:0}
+.dkcard .go{flex:none;height:30px;line-height:30px;padding:0 14px;border-radius:15px;background:var(--s3);font-size:13.5px;color:var(--tx)}
+.dkcard.on .go{background:none;color:var(--tx3)}
+.mob .desk{position:fixed;inset:0;z-index:50;width:auto!important;border:0}
+.mob .app:not(.deskon) .desk{display:none}
+.mob .dk-h{padding-right:12px}
+.mob .dk-wrap{padding:0 22px}

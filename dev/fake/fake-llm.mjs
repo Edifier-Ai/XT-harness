@@ -19,16 +19,17 @@ function decide(body){
     const lu = lastUser(msgs)
     const user = textOf(msgs[lu]?.content)
     const done = msgs.slice(lu).filter(m=>m.role==='assistant').flatMap(m=>(m.tool_calls||[]).map(t=>t.function.name))
-    for (const r of RULES) { if (r.re.test(user)) { const steps = r.steps || [r]; const next = steps[done.length]; if (next && tools.includes(next.tool)) return { tool: next.tool, args: next.args(user, msgs) } ; return { text: r.final ? r.final(user, msgs) : '好的，已经办好了。' } } }
+    for (const r of RULES) { if (r.re.test(user)) { const steps = r.steps || [r]; const next = steps[done.length]; if (next && tools.includes(next.tool)) return { tool: next.tool, args: next.args(user, msgs), drip: next.drip } ; return { text: r.final ? r.final(user, msgs) : '好的，已经办好了。' } } }
     return { text: '好的，已经办好了。' }
   }
   const user = textOf(msgs[lastUser(msgs)]?.content)
-  for (const r of RULES) { if (r.re.test(user)) { const s=(r.steps||[r])[0]; if (s.tool && tools.includes(s.tool)) return { tool: s.tool, args: s.args(user, msgs) }; if (r.final) return {text:r.final(user,msgs)} } }
+  for (const r of RULES) { if (r.re.test(user)) { const s=(r.steps||[r])[0]; if (s.tool && tools.includes(s.tool)) return { tool: s.tool, args: s.args(user, msgs), drip: s.drip }; if (r.final) return {text:r.final(user,msgs)} } }
   return { text: `（假模型）收到：${user.slice(0,60)}` }
 }
 let n=0
+const wait=(ms)=>new Promise(r=>setTimeout(r,ms))
 http.createServer((req,res)=>{
-  const parts=[]; req.on('data',d=>parts.push(d)); req.on('end',()=>{ const raw=Buffer.concat(parts).toString('utf8');
+  const parts=[]; req.on('data',d=>parts.push(d)); req.on('end',async()=>{ const raw=Buffer.concat(parts).toString('utf8');
     if (req.url.endsWith('/models')) { res.writeHead(200,{'content-type':'application/json'}); return res.end(JSON.stringify({data:[{id:'fake-tianxi'}]})) }
     let body={}; try{body=JSON.parse(raw)}catch{}; if(process.env.FAKE_DUMP && (body.tools||[]).length) require_dump(body)
     const d = decide(body); const id='c'+(++n)
@@ -37,7 +38,13 @@ http.createServer((req,res)=>{
     if (body.stream) {
       res.writeHead(200,{'content-type':'text/event-stream'})
       const send=o=>res.write('data: '+JSON.stringify({id,object:'chat.completion.chunk',created:Date.now()/1000|0,model:body.model,...o})+'\n\n')
-      if (call) send({choices:[{index:0,delta:{role:'assistant',tool_calls:call},finish_reason:null}]})
+      // drip: the arguments arrive a few characters at a time, like a model writing them (ms between pieces)
+      if (call && d.drip) {
+        const a = call[0].function.arguments
+        send({choices:[{index:0,delta:{role:'assistant',tool_calls:[{...call[0],function:{name:d.tool,arguments:''}}]},finish_reason:null}]})
+        for (const piece of a.match(/[\s\S]{1,4}/g)) { await wait(d.drip); send({choices:[{index:0,delta:{tool_calls:[{index:0,function:{arguments:piece}}]},finish_reason:null}]}) }
+      }
+      else if (call) send({choices:[{index:0,delta:{role:'assistant',tool_calls:call},finish_reason:null}]})
       else for (const piece of d.text.match(/.{1,12}/gs)) send({choices:[{index:0,delta:{content:piece},finish_reason:null}]})
       send({choices:[{index:0,delta:{},finish_reason:call?'tool_calls':'stop'}],usage:{prompt_tokens:100,completion_tokens:20,total_tokens:120}})
       res.write('data: [DONE]\n\n'); res.end()

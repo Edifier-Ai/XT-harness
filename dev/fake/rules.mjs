@@ -21,6 +21,26 @@ const cityOf = (u) => /北京|bj/.test(u) ? '北京' : /深圳|sz/.test(u) ? '�
 // 圆桌: who is speaking comes from the Bot's own system prompt
 const said = (u) => [...u.split('发言：')[1]?.split('\n\n')[0].matchAll(/^(?:（回应）)?([^：\n]+)：/gm) || []].map((m) => m[1])
 export default [
+  // 同场共创: the Bot opens a document beside the chat and writes it a section at a time, slowly (drip), so the test can
+  // type in it meanwhile; what it says at the end comes from what the doc tools told it
+  { re: /^帮我写一份华南市场推广方案/, steps: [
+      { tool: 'doc_open', args: () => ({ title: '华南市场推广方案', kind: 'doc' }) },
+      { tool: 'doc_write', drip: 20, args: () => ({ blocks: [{ type: 'h1', text: '华南市场推广方案' }, { type: 'h2', text: '一、为什么是华南' }, { type: 'p', text: '先从华东的上海、杭州两座城市试点，看渠道和用户的反馈，再决定要不要铺到更多城市。' }], reason: '先写背景' }) },
+      { tool: 'doc_write', drip: 45, args: () => ({ blocks: [{ type: 'h2', text: '二、怎么做' }, { type: 'p', text: '试点分三步走，每一步结束都回头看一次数据，再决定下一步投入多少。' }, { type: 'li', text: '第一步：选城市、谈渠道' }, { type: 'li', text: '第二步：开业活动和线上投放' }, { type: 'li', text: '第三步：复盘，决定要不要扩大' }], reason: '接着写做法' }) },
+    ],
+    final: (u, msgs) => { const t = lastToolText(msgs); const m = /用户把 \[(b\d+)\] 改成了：“([^”]*)”/.exec(t); return m ? `初稿写好了。看到你把 ${m[1]} 改成了“${m[2].slice(0, 24)}”，后面都照你的来。` : '初稿写好了，你看看哪里要改。' } },
+  { re: /^把为什么是华南那段改短一点/, steps: [
+      { tool: 'doc_read', args: () => ({}) },
+      { tool: 'doc_edit', args: (u, msgs) => ({ block: (/\[(b\d+)\] 正文/.exec(lastToolText(msgs)) || [])[1] || 'b3', text: '先在两座城市试点，看反馈再决定要不要扩大。', reason: '你让我改短一点' }) },
+    ],
+    final: (u, msgs) => { const t = lastToolText(msgs); return /没改：用户正在改/.test(t) ? '你正在改这一段，我先不动，等你写完再说。' : /已改好/.test(t) ? '改短了。' : t.slice(0, 60) } },
+  { re: /^做一份介绍小天 Bot 的三页幻灯片/, steps: [
+      { tool: 'doc_open', args: () => ({ title: '认识小天 Bot', kind: 'slides' }) },
+      { tool: 'doc_write', drip: 15, args: () => ({ blocks: [{ type: 'slide', text: '认识小天 Bot' }, { type: 'slide', text: '它能做什么\n管日程、待办和邮件\n整理电脑里的文件\n和你一起写文档、做幻灯片' }, { type: 'slide', text: '为什么放心\n做的每件事都记在操作记录里\n随时能撤回\n要对外发送的先问你' }], reason: '三页：封面、能做什么、为什么放心' }) },
+    ],
+    final: () => '三页做好了，可以放映，也能存成 PPT。' },
+  // 续写提示 (a plain question to the model, answered by the background 小天 here)
+  { sys: /光标停在这段的末尾/, re: /正在写的这一段/, final: (u) => /再决定$/.test(u.trim()) ? '要不要铺到更多城市。' : '，一步一步来。' },
   // 拖给小天: a file is read first; what it says and offers comes from what was read
   { re: /【拖给你】[\s\S]*- (表格|文档|文件)：/, steps: [{ tool: 'read', args: (u) => ({ file_path: /- (?:表格|文档|文件)：(.+?)（/.exec(u)[1] }) }],
     final: (u, msgs) => { const t = lastToolText(msgs); const n = new Set(t.match(/供应商[A-Z]/g) || []).size

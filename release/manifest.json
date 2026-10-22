@@ -1,13 +1,13 @@
 {
- "version": "0.23.0",
- "notes": "会察言观色的小天：有事先憋着，全屏、开会、打字时不打扰，你停下来才说，每天主动开口有上限；拖给小天：把文件、文字、图片拖到桌面小天身上，它先看一眼，再长出两三个能直接点的动作，拖到旁边的 Bot 上就交给那个 Bot；把小天拖到一个窗口上停一下，松手它就看这个窗口",
+ "version": "0.24.0",
+ "notes": "同场共创：右边开一份文档或幻灯片，小天和你同时在上面写，看得见它的光标和正在写的段落；你正在写的那段它不动；能撤回、续写提示、放映，存成 Word / PPT",
  "minBase": "0.4.0",
- "at": "2026-10-22T11:37:10.281Z",
+ "at": "2026-10-22T12:54:34.872Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "17f2d9662a4bce3b670d64af0ee2178be0aaf3a406c8744779c45acc2829aa8b",
-   "size": 49089
+   "sha256": "b862bf397725f5b2a7ff3fe7c5277c887d56f124559ef82843c61510cdfe4dc3",
+   "size": 49429
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -16,8 +16,8 @@
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
-   "sha256": "c024a03c8a1baed57253fb4adb6059b421551d9fc7ba906de6885520d6f80ef6",
-   "size": 2880
+   "sha256": "b5770071d238e2f8535371c80d7d7318b027871b744324cb98ba634282089209",
+   "size": 3018
   },
   "app/freegate.js": {
    "path": "desktop/freegate.js",
@@ -61,8 +61,8 @@
   },
   "bundle/cordis.patch.yml": {
    "path": "tianxi/cordis.patch.yml",
-   "sha256": "5710526caf482adda13919fb9101af58481a07d9b5f547bfb8ca80d4b2ecc645",
-   "size": 2924
+   "sha256": "7609b56ffbbc02dc5fe76b71e55d73deb26775bc1f40ece66c4454f194ec97eb",
+   "size": 2991
   },
   "bundle/eval/fixtures/01/下载/IMG_0012.jpg": {
    "path": "tianxi/eval/fixtures/01/下载/IMG_0012.jpg",
@@ -424,6 +424,11 @@
    "sha256": "ba2930d0bfff05fa94701b712b1fad1a24d8e71282c177f9aa3a31e6949c0411",
    "size": 10541
   },
+  "bundle/plugins/cowrite.js": {
+   "path": "tianxi/plugins/cowrite.js",
+   "sha256": "ef0946379c2e14ba2dfa8acfae0af395248946e2859f9d8b4c08c0d18966fe0a",
+   "size": 26230
+  },
   "bundle/plugins/drop.js": {
    "path": "tianxi/plugins/drop.js",
    "sha256": "a654b77d013d0c523df41c8a9795d35dd0705ac37c2ce642be90a8207df064cb",
@@ -446,8 +451,8 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "68cdd2bcd4e09253358cd5f22ae5c3d873d6675daf268f1b76a9da9575b54ade",
-   "size": 37403
+   "sha256": "08741c7d74217dac8d7b24d38ed78847e5425db59d7a53fe270a193e75dc57bc",
+   "size": 38486
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
@@ -464,10 +469,15 @@
    "sha256": "a6d7049c6bebdd718c8a4ad099d188e3603cd02db2bf85ffa7e368d2ef6597f1",
    "size": 14496
   },
+  "bundle/plugins/ooxml.js": {
+   "path": "tianxi/plugins/ooxml.js",
+   "sha256": "d569e49176aacb3c1a4b75cb3062c8081ab8ff4376f18bd94cc07c22451b5f3b",
+   "size": 18480
+  },
   "bundle/plugins/store.js": {
    "path": "tianxi/plugins/store.js",
-   "sha256": "204a2cb036dee807d3da2ba16ac92e6aa8483c92af5142f74f05a864783bd1da",
-   "size": 9007
+   "sha256": "6993368d85082e4a909749c5681ef8ad7eac464cbbb636c8fbd8479480724b91",
+   "size": 9261
   },
   "bundle/plugins/table.js": {
    "path": "tianxi/plugins/table.js",
@@ -511,13 +521,18 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "651995acb490b3273c9c06d7548893c83c510832c90e1c87070c6386f3cf3796",
-   "size": 169612
+   "sha256": "ad1fba6d484af21e9cd113d61edd2430114fa4c0ed5b3f3ddc7bb9a2e84d882f",
+   "size": 170107
   },
   "bundle/web/bots.js": {
    "path": "tianxi/web/bots.js",
    "sha256": "7e9b05e1887506d44e86b2a8abd32164d7d32bf2feacf2bbb2cf3d80451d152b",
    "size": 22937
+  },
+  "bundle/web/desk.js": {
+   "path": "tianxi/web/desk.js",
+   "sha256": "d538f3dd597504179a2737df3cfacf9181cabae8b74c7a74f7ee837f9957e217",
+   "size": 34501
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
@@ -566,13 +581,13 @@
   },
   "bundle/web/index.html": {
    "path": "tianxi/web/index.html",
-   "sha256": "7e746fe12718edb302e3a801a8ca803a363e46e7c12b5b6975367683c3e4609a",
-   "size": 10277
+   "sha256": "e231af39fd6cc2e30c613ee78eb1a6b3cbaf29b8333e023e213872174c3083c0",
+   "size": 11239
   },
   "bundle/web/light.css": {
    "path": "tianxi/web/light.css",
-   "sha256": "253be10a56fed4408addedee6c902b8da7dfe7acd3691f5741fcfaeb62355793",
-   "size": 17867
+   "sha256": "ac5326c56b0e781715d50f1418a08c45c39f8029755ddb580d337bc8fac0a4c7",
+   "size": 18510
   },
   "bundle/web/mobile.css": {
    "path": "tianxi/web/mobile.css",
@@ -601,8 +616,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "32567d59a62499d90bdfb8013fa3c5bf3733a78505a9f506fc953a85aa201f1a",
-   "size": 96774
+   "sha256": "38f5bd26d583796743048e7ec5521e4e2c6e520fd61fb93294d7279c9dd9e755",
+   "size": 108237
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

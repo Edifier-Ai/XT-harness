@@ -13,3 +13,4 @@ android/local.properties
 dev/phone-e2e/node_modules/
 /node_modules
 tianxi/node_modules
+dev/fake/last-req.json

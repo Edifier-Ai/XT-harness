@@ -71,7 +71,11 @@ export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () =
   // something to tell you, held until a good moment (manners.js); unnudge: it no longer needs saying
   nudge: () => null, unnudge: () => {},
   // what kind of turn an agent is in now ('user', 'table', 'drop'…), '' between turns
-  kindNow: () => '' }
+  kindNow: () => '',
+  // told of a tool call's arguments while they stream in: ({ aid, id, name, args }) with args the JSON so far
+  toolStream: new Set(),
+  // more for the Bot to read with a message you send (what is open beside the chat): (body) => text
+  sayNote: null }
 
 // ---------- one plain question to the model picked now, outside any agent (a JSON answer, a sentence) ----------
 // The client gives the runtime its model routes (TIANXI_ROUTES); without one, the background 小天 answers instead.

@@ -37,6 +37,8 @@ contextBridge.exposeInMainWorld('tianxiApp', {
   freeTest: (c) => ipcRenderer.invoke('tianxi:freeTest', c),
   freeSave: (c) => ipcRenderer.invoke('tianxi:freeSave', c),
   open: (url) => ipcRenderer.invoke('tianxi:open', url),
+  // a file the app saved for you (存成 Word / PPT): opened in its own app
+  openFile: (p) => ipcRenderer.invoke('tianxi:openFile', p),
   runEval: (o) => ipcRenderer.invoke('tianxi:runEval', o),
   evalStop: () => ipcRenderer.invoke('tianxi:evalStop'),
   evalStatus: () => ipcRenderer.invoke('tianxi:evalStatus'),

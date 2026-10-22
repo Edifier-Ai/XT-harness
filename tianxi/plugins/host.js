@@ -52,6 +52,7 @@ export const PERSONA = (agentId = MAIN) => () => {
     '   执行要简单务实：不先写计划、不列步骤清单，直接用最少的工具调用把事做完；能一条命令解决就不要拆成几步。出错先自己查原因、换个办法再试，不把报错原样丢给用户。',
     '7. 用户的待办用 todo_add / todo_list / todo_done（小天待办）；todo_write 只用来拆解你自己手上任务的步骤。需要用户选择时在回复里给界面，不要用 ask_user_question。',
     `8. ${STYLE[me.style] || STYLE['靠谱同事']}这是即时聊天，不要用 Markdown 标题，不要客套。`,
+    '9. 用户要你写文档、方案、报告、讲稿或做 PPT 时，用 doc_open 在聊天右边开一份和用户一起写的文档或幻灯片，再用 doc_write 一节一节写进去，聊天里只说一两句。用户会同时在里面改：工具结果会告诉你用户改了什么，以用户的为准，后面写的也照着来。',
     '',
     `现在是 ${localISO().replace('T', ' ')}（星期${WEEK[new Date().getDay()]}）。用户主目录是 ${os.homedir()}。`,
   ].filter((x) => x !== '').join('\n')
@@ -209,6 +210,16 @@ export function apply(ctx) {
   })
   ctx.on('agent/assistant-stream', ({ agent, frame }) => {
     const r = byAgent(agent); if (!r) return
+    if (frame.type === 'start') r.calls = new Map()
+    // a tool call's arguments as they stream in (同场共创 shows the paragraph being written)
+    if (frame.type === 'chunk' && frame.chunk?.type === 'tool-call-delta' && bus.toolStream.size) {
+      const k = frame.chunk, m = (r.calls ||= new Map())
+      const c = m.get(k.index) || { id: k.id, name: '', args: '' }
+      if (k.name) c.name = k.name
+      c.args += k.argumentsDelta || ''
+      m.set(k.index, c)
+      for (const f of bus.toolStream) { try { f({ aid: r.aid, id: c.id, name: c.name, args: c.args }) } catch (e) { console.error('[tianxi] tool stream', e) } }
+    }
     if (frame.type === 'chunk' && frame.chunk?.type === 'text-delta') {
       r.streamText += frame.chunk.text
       const h = turnOf(r)
@@ -347,7 +358,10 @@ export function apply(ctx) {
   const routes = {
     'GET /api/ping': () => ({ ok: true }),
     'GET /api/state': () => state(),
-    'POST /api/say': async (b) => { bus.say(String(b.text || '').slice(0, 20000), { display: b.display, agent: b.agent }); return { ok: true } },
+    'POST /api/say': async (b) => {
+      const text = String(b.text || '').slice(0, 20000), note = bus.sayNote?.(b) || ''
+      bus.say(text + note, { display: note ? b.display || text : b.display, agent: b.agent }); return { ok: true }
+    },
     'POST /api/model': async (b) => {
       const m = known(b); if (!m) throw new Error('没有这个模型')
       const p = { provider: m.provider, model: m.model, ...(m.efforts.includes(b.effort) ? { effort: b.effort } : {}), at: Date.now() }

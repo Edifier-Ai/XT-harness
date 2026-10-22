@@ -39,10 +39,11 @@ const TOOL = {
   subagent: '派一个助手去做', subagent_fork: '派一个助手去做', send_message: '和助手沟通', list_agents: '查看助手', todo_write: '拆解步骤',
   schedule_create: '设定时任务', schedule_list: '查看定时任务', schedule_update: '改定时任务', schedule_delete: '删定时任务', working_directory: '切换文件夹',
   create_goal: '定目标', update_goal: '更新目标', get_goal: '看目标', job_list: '查看后台进程', job_output: '查看进程输出', job_kill: '停掉进程', skill: '用技能', workflow: '跑工作流', present: '展示文件',
+  doc_open: '打开共创文档', doc_read: '看文档', doc_write: '写文档', doc_edit: '改文档',
 }
 const toolLabel = (n) => { if (TOOL[n]) return TOOL[n]; const m = /^mcp__([\w-]+?)__(.+)$/.exec(String(n || '')); if (m) { const a = (S.apps?.apps || []).find((x) => (x.catalogId || '') === m[1] || ('app_' + x.id.slice(-6)) === m[1]); return `用${a?.name || m[1]}：${m[2].replace(/_/g, ' ')}` } return String(n || '').replace(/_/g, ' ') }
 const toolDetail = (a = {}) => {
-  const v = a.title || a.subject || a.text || a.query || a.url || a.command || a.path || a.file_path || (a.from && String(a.from).split(/[\\/]/).pop()) || a.to || ''
+  const v = a.title || a.subject || a.text || a.query || a.url || a.command || a.path || a.file_path || (a.from && String(a.from).split(/[\\/]/).pop()) || a.to || (Array.isArray(a.blocks) && a.blocks[0]?.text) || ''
   return typeof v === 'string' ? v.slice(0, 80) : ''
 }
 const pad = (n) => String(n).padStart(2, '0')
@@ -655,11 +656,12 @@ function fileIcon(p) {
   return `<span class="fi doc ${extOf(p)}">${esc(e.slice(0, 4).toUpperCase())}</span>`
 }
 function renderFiles(a) {
-  const l = libraryOf(a.id)
+  const l = libraryOf(a.id), docs = window.deskFiles?.(a) || ''
+  if (!l.length && docs) return docs
   if (!l.length) return `<div class="pempty" style="margin-top:22px">${esc(a.name)}做出来的文件会放在这里：写的文档、整理好的表格、截图。</div>`
   const today = l.filter((x) => dayOf(x.at) === todayStr()), older = l.filter((x) => dayOf(x.at) !== todayStr())
   const grp = (n, xs) => xs.length ? `<div class="psec">${n}</div><div class="lib">${xs.map((x) => `<button class="li" data-act="file-open" data-p="${esc(x.p)}" title="${esc(x.p)}">${fileIcon(x.p)}<span>${esc(x.title || x.p.split(/[\\/]/).pop())}</span></button>`).join('')}</div>` : ''
-  return grp('今天', today) + grp('更早', older)
+  return docs + grp('今天', today) + grp('更早', older)
 }
 
 // 电脑: the bot's own screen and the steps of one task
@@ -1437,7 +1439,7 @@ async function refresh() {
   if (!agents().some((a) => a.id === cur)) cur = S.mainId
   const fresh = []
   for (const e of S.ledger) {
-    if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done' && e.tool !== 'tool_collect') fresh.push(e) }
+    if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done' && e.tool !== 'tool_collect' && !(e.detail?.doc && e.detail.doc === window.deskDoc?.())) fresh.push(e) }
   }
   if (fresh.length > 1) toastMany(fresh); else if (fresh.length) toast(fresh[0])
   if (!firstLoad && S.brief?.at && S.brief.at !== prevBrief && looking() && view !== 'brief') toastText('今天的简报准备好了', ['去看', () => setView('brief')])
@@ -1452,6 +1454,7 @@ function renderAll(keep) {
   const vis = view === 'chat' ? $('#vChat') : $('#vPage')
   if (vis.dataset.shown !== view) { vis.dataset.shown = view; (view === 'chat' ? $('#vPage') : $('#vChat')).dataset.shown = ''; replay(vis, 'fade') }
   if (view === 'chat') { renderHead(); renderMsgs(keep); renderChips() } else renderPage()
+  window.deskSync?.()
   renderProc(); renderMenu()
   if (modal?.tab === 'computer') renderModal()
   if (modal?.kind === 'apps') {
@@ -1506,6 +1509,7 @@ function connect() {
       toastText(`「${w.kind}」用了两次，收进我的工具了`, ['去看', () => setView('tools', w.id)])
       soon()
     }
+    else if (/^doc(-|$)/.test(m.type)) window.onDesk?.(m)
     else if (m.type === 'turn-end' || m.type === 'store') soon()
   }
   es.onerror = () => { const el = $('#cSub'); if (el) el.textContent = '正在重新连接…' }
@@ -1516,7 +1520,8 @@ const inp = $('#inp')
 const grow = () => { inp.style.height = 'auto'; inp.style.height = Math.min(180, inp.scrollHeight) + 'px'; renderHead() }
 inp.addEventListener('input', grow)
 inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send() } })
-async function say(text, display) { text = String(text || '').trim(); if (text) await api('say', { text, display, agent: cur }) }
+// a document open beside the chat goes along, so the Bot knows what "这段" means
+async function say(text, display) { text = String(text || '').trim(); if (text) await api('say', { text, display, agent: cur, doc: window.deskDoc?.() || undefined }) }
 async function send() {
   const v = inp.value.trim()
   if (!v) { if (busy(cur)) api('cancel', { agent: cur }); return }
