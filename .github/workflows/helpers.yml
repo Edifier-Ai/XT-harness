@@ -1,11 +1,12 @@
-# Checks the desktop helper that tells 小天 which window is in front and which window is under a point
-# (desktop/room.js) on real Windows and Mac desktops. Runs when that helper changes, or by hand.
+# Checks the desktop helpers on real Windows and Mac desktops: which window is in front and which is under a point
+# (desktop/room.js), and, in Electron, framing that window and taking a picture of it (desktop/look.js).
+# Runs when those helpers change, or by hand.
 name: Desktop helpers
 
 on:
   push:
     branches: [main]
-    paths: [desktop/room.js, build/room-check.mjs, .github/workflows/helpers.yml]
+    paths: [desktop/room.js, desktop/look.js, build/room-check.mjs, build/look-check.js, .github/workflows/helpers.yml]
   workflow_dispatch:
 
 jobs:
@@ -23,3 +24,37 @@ jobs:
           node-version: 22
       - name: Which window is in front, which is under a point
         run: node build/room-check.mjs
+
+  look:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            zip: electron-v44.7.0-win32-x64.zip
+            exe: el/electron.exe
+          - runner: macos-15
+            zip: electron-v44.7.0-darwin-arm64.zip
+            exe: el/Electron.app/Contents/MacOS/Electron
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Electron
+        run: |
+          curl -sSfL -o e.zip https://github.com/electron/electron/releases/download/v44.7.0/${{ matrix.zip }}
+          if [ "$RUNNER_OS" = macOS ]; then ditto -x -k e.zip el; else unzip -q e.zip -d el; fi
+      - name: Frame a window and take a picture of it
+        run: |
+          code=0
+          "${{ matrix.exe }}" build/look-check.js "$RUNNER_TEMP/look" || code=$?
+          cat "$RUNNER_TEMP/look/look-check.txt" || echo "no report"
+          exit $code
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: look-${{ matrix.runner }}
+          path: ${{ runner.temp }}/look
