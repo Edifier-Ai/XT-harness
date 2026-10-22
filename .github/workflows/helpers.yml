@@ -1,0 +1,25 @@
+# Checks the desktop helper that tells 小天 which window is in front and which window is under a point
+# (desktop/room.js) on real Windows and Mac desktops. Runs when that helper changes, or by hand.
+name: Desktop helpers
+
+on:
+  push:
+    branches: [main]
+    paths: [desktop/room.js, build/room-check.mjs, .github/workflows/helpers.yml]
+  workflow_dispatch:
+
+jobs:
+  room:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [windows-latest, macos-15]
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Which window is in front, which is under a point
+        run: node build/room-check.mjs
