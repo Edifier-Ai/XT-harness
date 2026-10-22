@@ -22,7 +22,11 @@ export function cardOf(text) {
   let info = '', code = '', at = 0
   const m = FENCE.exec(s)
   if (m) { info = m[1]; code = m[2]; at = m.index }
-  else if (/^\s*root\s*=\s*[A-Z]\w*\(/.test(s)) code = s
+  else {
+    // code written without its fence, alone or after some text
+    const bare = /^root\s*=\s*Card\(/m.exec(s)
+    if (bare) { code = s.slice(bare.index); at = bare.index }
+  }
   code = code.trim()
   if (!/(^|\n)\s*root\s*=/.test(code)) return null
   let title = ''

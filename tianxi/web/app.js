@@ -391,7 +391,7 @@ const wOf = (mid) => (S.widgets || []).find((w) => w.mid === mid)
 const wById = (wid) => (S.widgets || []).find((w) => w.id === wid)
 const myTools = () => (S.widgets || []).filter((w) => w.tool).sort((a, b) => Date.parse(b.lastUsed || b.toolAt || b.at) - Date.parse(a.lastUsed || a.toolAt || a.at))
 function cardBar(it) {
-  if (!GU.ready || !/```[ \t]*openui|^\s*root\s*=/.test(it.text || '')) return ''
+  if (!GU.ready || !/```[ \t]*openui|^\s*root\s*=\s*Card\(/m.test(it.text || '')) return ''
   const w = wOf(it.id), same = !w && myTools().find((x) => x.kind === GU.kindOf(it.text))
   const pin = APP && !window.MOB ? `<button data-act="w-pin" data-mid="${it.id}" class="${w?.pinned ? 'on' : ''}">${ico('pin', 14)}<span>${w?.pinned ? '在桌面上' : '钉到桌面'}</span></button>` : ''
   const tool = w?.tool || same ? `<button data-act="tool-open" data-id="${(w || same).id}" class="on">${ico('tools', 14)}<span>在我的工具里</span></button>`

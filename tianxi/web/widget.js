@@ -35,8 +35,14 @@ function draw() {
   const n = $('#wnote'); n.hidden = !(W.note && W.status === 'ok'); n.textContent = W.note || ''
 }
 // the window is as tall as its card
-const fit = () => { const h = Math.ceil(document.body.getBoundingClientRect().height); if (h) APP?.widgetFit?.(h) }
-new ResizeObserver(fit).observe(document.body)
+// (measured on the card, not the body: an open dropdown locks the body's scrolling and pads it, and resizing the
+// window then would close the dropdown again)
+const fit = () => {
+  if (document.querySelector('[data-radix-popper-content-wrapper]')) return
+  const h = Math.ceil($('#wg').getBoundingClientRect().bottom + 16); if (h > 16) APP?.widgetFit?.(h)
+}
+new ResizeObserver(fit).observe($('#wg'))
+new MutationObserver(() => { if (!document.querySelector('[data-radix-popper-content-wrapper]')) fit() }).observe(document.body, { childList: true })
 
 // 小天 took it away: fold up, say why, offer to keep it, then close the window
 let byeT = null

@@ -5,10 +5,10 @@ const hm = () => { const d = new Date(); return String(d.getHours()).padStart(2,
 const weather = (city, now, note) => '```openui-lang 城市天气\n' + [
   'root = Card([header, stats, form])',
   `header = CardHeader("${city}天气", "${note}")`,
-  'stats = StatBlock([s1, s2, s3])',
-  `s1 = Stat("现在", "${now}°", "小雨")`,
-  's2 = Stat("最高", "25°")',
-  's3 = Stat("降雨", "60%")',
+  'stats = SnippetCardBlock([s1, s2, s3], "grid", true)',
+  `s1 = SnippetCardItem("now", IconText(Icon("thermometer", "weather"), "neutral", "m", "现在", "小雨"), BoldText("number", "${now}°"))`,
+  's2 = SnippetCardItem("high", IconText(Icon("sun", "weather"), "neutral", "m", "最高"), BoldText("number", "25°"))',
+  's3 = SnippetCardItem("rain", IconText(Icon("umbrella", "weather"), "neutral", "m", "降雨"), BoldText("number", "60%"))',
   'form = Form("city", btns, [fc])',
   'fc = FormControl("换个城市", Select("city", [o1, o2, o3], "选城市"))',
   'o1 = SelectItem("sh", "上海")',
@@ -20,7 +20,7 @@ const cityOf = (u) => /北京|bj/.test(u) ? '北京' : /深圳|sz/.test(u) ? '�
 export default [
   { re: /【桌面小组件·更新】/, final: (u) => /会议倒计时/.test(u) ? '退场：评审会已经开完了'
     : `刷新：每 30 分钟\n到期：不会到期\n${weather(cityOf(u.split('它现在是这样')[1] || u), 20 + (new Date().getSeconds() % 7), hm() + ' 的天气')}` },
-  { re: /【桌面小组件·用户操作】/, final: (u) => { const c = cityOf(u.split('\n').slice(0, 2).join('\n').replace(/「[^」]*」/, '')); return `已经换成${c}了。\n${weather(c, 18, hm() + ' 的天气')}` } },
+  { re: /【桌面小组件·用户操作】/, final: (u) => { const c = cityOf(u.split('当初用户说的是')[0].split('它现在是这样')[0].replace(/「[^」]*」/, '')); return `已经换成${c}了。\n${weather(c, 18, hm() + ' 的天气')}` } },
   { re: /天气/, final: (u) => `${cityOf(u)}现在 21°，下午有小雨。\n\n${weather(cityOf(u), 21, hm() + ' 的天气')}` },
   { re: /倒计时/, final: () => '评审会还有 40 分钟。\n\n```openui-lang 会议倒计时\nroot = Card([h, t])\nh = CardHeader("评审会倒计时", "15:00 开始")\nt = TextContent("还有 40 分钟", "large-heavy")\n```' },
   { re: /天禧反思/, tool: 'reflection_publish', args: (u) => { const ids = [...u.matchAll(/\[(mem_[0-9a-f]+)\]/g)].map((m) => m[1]); return { profile: '你是做交互创新的人，做决定看证据，讨厌空话；最近在忙概念版天禧。', insights: [{ text: '你出差很在意时间成本：不坐红眼航班，但要离客户近。', memIds: ids.slice(0, 2), evidence: ['我出差不坐红眼航班'] }], proposals: [{ op: 'merge', ids: ids.slice(0, 2), text: '出差：不坐红眼航班，酒店离客户近', why: '两条说的是同一件事' }, { op: 'add', text: '汇报材料偏好白底黑字', kind: '偏好', why: '你说过两次' }], lessons: [{ text: '整理文件前先问一句要不要建子文件夹', why: '你撤回过一次整理' }] } }, final: () => '想完了。' },

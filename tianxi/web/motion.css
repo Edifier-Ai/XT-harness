@@ -123,7 +123,6 @@
 :root[data-theme=light] .callov .cst,:root[data-theme=light] .callov .cyou,:root[data-theme=light] .callov .ctop{color:rgba(20,24,51,.55)}
 :root[data-theme=light] .callov .cbot{color:#141833}
 :root[data-theme=light] .gl:not(.end):not(.on){color:#141833;background:linear-gradient(180deg,#fff,#eceef8)}
-:root[data-theme=light] .ou-fc .ctl input[type=date]{color-scheme:light}
 
 /* Bot eyes turn white in the light theme, except on a near-white body */
 :root[data-theme=light] .av:not(.pale) .eyes rect{fill:#fff}
@@ -132,9 +131,6 @@
 /* chart colours for generative UI: 小天's violet first, then blue, teal, amber, pink, lilac; light theme a touch deeper */
 :root{--c0:#7b6cff;--c1:#4aa3ff;--c2:#34c9ab;--c3:#ffb547;--c4:#ff6f91;--c5:#b39dff}
 :root[data-theme=light]{--c0:#5b47e6;--c1:#2f86f0;--c2:#16a88c;--c3:#f29a1f;--c4:#e8507a;--c5:#9a7cf0}
-.ou-stats .metric{padding-left:12px;box-shadow:inset 3px 0 0 var(--c0)}
-.ou-stats .metric:nth-child(2){box-shadow:inset 3px 0 0 var(--c1)}.ou-stats .metric:nth-child(3){box-shadow:inset 3px 0 0 var(--c2)}.ou-stats .metric:nth-child(4){box-shadow:inset 3px 0 0 var(--c3)}
-:root[data-theme=light] .ou-hb .tr i.s0{background:var(--c0)}:root[data-theme=light] .ou-hb .tr i.s1{background:var(--c1)}:root[data-theme=light] .ou-hb .tr i.s2{background:var(--c2)}:root[data-theme=light] .ou-hb .tr i.s3{background:var(--c3)}:root[data-theme=light] .ou-hb .tr i.s4{background:var(--c4)}:root[data-theme=light] .ou-hb .tr i.s5{background:var(--c5)}
 
 /* Mac: the window's traffic lights sit at the top-left over the rail; no page buttons at the top-right */
 html.mac .rtop{padding-left:80px}

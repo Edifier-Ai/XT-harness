@@ -18,6 +18,8 @@ async function until(fn, ms = 20000) { const t = Date.now(); for (;;) { try { co
 let n = 0
 const shot = async (pg, name, opts) => { await pg.screenshot({ path: path.join(OUT, `${String(++n).padStart(2, '0')}-${name}.png`), ...opts }) }
 const widgets = async () => (await api('widgets')).widgets
+// OpenUI's Select is a Radix listbox: open it, pick the option by its label
+const pick = async (pg, scope, label) => { await pg.click(`${scope} [role=combobox]`); await pg.click(`[role=option]:has-text("${label}")`) }
 
 // the desktop bridge: records calls, answers like the shell does
 const BRIDGE = (theme) => {
@@ -41,7 +43,7 @@ async function main() {
 
   // a card in the chat, with the two new actions under it
   await pg.fill('#inp', '上海天气怎么样'); await pg.keyboard.press('Enter')
-  const card = await until(() => pg.$('.bw .uiw .ou .ou-stats'), 30000)
+  const card = await until(() => pg.$('.bw .uiw .ou .openui-card .openui-value-card'), 30000)
   check(card, 'the weather card shows in the chat')
   await sleep(600)
   const bar = await pg.$$eval('.oubar button', (bs) => bs.map((x) => x.innerText.trim()))
@@ -65,7 +67,7 @@ async function main() {
   await wp.setViewportSize({ width: 384, height: 520 })
   wp.on('pageerror', (e) => errs.push('widget: ' + e.message))
   await wp.goto(`${BASE}/widget.html?t=${T}&id=${pinned.id}`)
-  await wp.waitForSelector('#wbody .ou-stats')
+  await wp.waitForSelector('#wbody .openui-value-card')
   await sleep(900)
   check((await wp.textContent('#wname')) === '城市天气', 'the widget shows its kind', await wp.textContent('#wname'))
   check(/更新/.test(await wp.textContent('#wsub')), 'and when it was updated', await wp.textContent('#wsub'))
@@ -81,8 +83,8 @@ async function main() {
 
   // use it: pick 北京 on the widget, 小天 does it and redraws the card
   await wp.evaluate(() => { window.__subs = []; new MutationObserver(() => window.__subs.push(document.querySelector('#wsub').innerText)).observe(document.querySelector('#wsub'), { childList: true, subtree: true, characterData: true }) })
-  await wp.selectOption('#wbody select', 'bj')
-  await wp.click('#wbody .ou-btns button')
+  await pick(wp, '#wbody', '北京')
+  await wp.click('#wbody button:has-text("看这个城市")')
   check(await until(() => wp.evaluate(() => window.__subs.some((t) => /正在/.test(t))), 8000), 'while 小天 works on it, the widget says so', await wp.evaluate(() => window.__subs))
   check(await until(() => wp.evaluate(() => document.querySelector('#wbody').innerText.includes('北京天气')), 30000), 'the widget now shows 北京')
   check(await until(() => wp.evaluate(() => !document.querySelector('#wnote').hidden && document.querySelector('#wnote').innerText.includes('北京'))), 'with 小天 saying what it did', await wp.textContent('#wnote'))
@@ -105,12 +107,12 @@ async function main() {
   // 我的工具: open it, use it there
   await pg.click('#meBtn'); await sleep(300)
   await pg.click('#umenu [data-v=tools]')
-  await pg.waitForSelector('.tcard .ou-stats')
+  await pg.waitForSelector('.tcard .openui-value-card')
   await sleep(900)
   check((await pg.$$('.tcard')).length === 1, '我的工具 lists the tool, its card open and usable')
   await shot(pg, 'tools-page')
-  await pg.selectOption('.tcard select', 'sh')
-  await pg.click('.tcard .ou-btns button')
+  await pick(pg, '.tcard', '上海')
+  await pg.click('.tcard button:has-text("看这个城市")')
   check(await until(() => pg.evaluate(() => document.querySelector('.tcard').innerText.includes('上海天气')), 30000), 'used in 我的工具: the card changes there too')
   check(await until(() => wp.evaluate(() => document.querySelector('#wbody').innerText.includes('上海天气')), 10000), 'and on the desktop, the same widget', { list: (await widgets()).map((w) => [w.id, w.kind, w.pinned, w.tool, w.ver, w.title]), wp: pinned.id, shown: await wp.evaluate(() => document.querySelector('#wbody').innerText.slice(0, 60)) })
 

@@ -5,6 +5,7 @@
 <title>小天小组件</title>
 <!-- 钉到桌面: one card from the chat in a small window of its own on the desktop (desktop/shell.js opens it).
      The card is drawn by genui.js exactly as in the chat; 小天 keeps it up to date (plugins/widgets.js). -->
+<link rel="stylesheet" href="genui/openui.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="light.css">
 <link rel="stylesheet" href="motion.css">
@@ -21,7 +22,7 @@ body{padding:10px 12px 16px}
 .wbar button{-webkit-app-region:no-drag}
 .wbody{padding:0 16px 14px;max-height:600px;overflow:auto;user-select:text}
 .wbody .ou{border:0;padding:0;background:none;border-radius:0}
-.wbody .ou-fu{display:none}
+.wbody .openui-follow-up-block{display:none}
 .wnote{margin:-4px 16px 12px;font-size:12.5px;color:var(--tx2)}
 .wbar .dot{width:9px;height:9px;border-radius:50%;flex:none;background:radial-gradient(circle at 50% 90%,#b3a6ff,#6a4cf0 55%,#241a7a)}
 /* taken away by 小天: the card folds up, a line says why, with a way to keep it */

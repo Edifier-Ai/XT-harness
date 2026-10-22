@@ -2,11 +2,17 @@
   "name": "tianxi-genui",
   "private": true,
   "type": "module",
-  "description": "Builds 天禧's generative UI: the OpenUI Lang library, its prompt and the browser bundle.",
+  "description": "Builds 小天's generative UI from OpenUI (openui.com, MIT): the prompt, and the browser bundle of OpenUI's chat component library and React renderer.",
   "scripts": { "build": "node build.mjs" },
   "dependencies": {
     "@openuidev/lang-core": "1.0.1",
+    "@openuidev/react-headless": "0.18.1",
+    "@openuidev/react-lang": "1.0.1",
+    "@openuidev/react-ui": "0.18.1",
     "esbuild": "^0.28.2",
-    "zod": "^4.6.7"
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "^4.6.7",
+    "zustand": "4.5.7"
   }
 }
