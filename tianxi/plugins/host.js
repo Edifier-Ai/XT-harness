@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
-import { load, update, save, id, now, localISO, today, flags, bus, onChange, settings, HOME, EVAL, MAIN, STYLES, agentList, agentById, transcriptKey, fileFact, IMG_MIME } from './store.js'
+import { load, update, save, id, now, localISO, today, flags, bus, onChange, settings, HOME, EVAL, MAIN, WORKER, STYLES, agentList, agentById, transcriptKey, fileFact, IMG_MIME } from './store.js'
 import { entries, undoEntry, undoLast, pendingArgs, record } from './ledger.js'
 import { memories, editMemory, forgetMemory, addMemory, reflections, runReflect, applyProposal } from './memory.js'
 import { runBrief } from './ambient.js'
@@ -75,8 +75,8 @@ export const inject = ['agents', 'agentDefaultModel', 'systemPrompt']
 
 // The brief's file cards say what each file is and whether it is still there, read fresh each time.
 const withFacts = (b) => b && { ...b, items: (b.items || []).map((it) => ({ ...it, blocks: (it.blocks || []).map((bl) => bl?.type === 'files' ? { ...bl, items: (bl.items || []).map((f) => { const p = typeof f === 'string' ? f : f?.path; return { ...(typeof f === 'object' ? f : {}), path: p, fact: fileFact(p) } }) } : bl) })) }
-const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事' }
-const INTERNAL = new Set(['brief', 'job', 'reflect', 'act'])   // turns kept out of the chat; their process is still viewable
+const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事', widget: '在处理桌面小组件' }
+const INTERNAL = new Set(['brief', 'job', 'reflect', 'act', 'widget'])   // turns kept out of the chat; their process is still viewable
 const MAX_HOPS = 3                                      // agent-to-agent mail stops waking agents after this many hops
 
 export function apply(ctx) {
@@ -89,13 +89,15 @@ export function apply(ctx) {
 
   // ---------- one transcript per agent ----------
   const transcript = (aid) => load(transcriptKey(aid), [])
+  // the background worker keeps a short transcript of its own that no chat shows
   const addItem = (aid, item) => {
     // said in 隐私模式: kept in the chat, never fed to memory or 反思
     const it = { id: id('t'), at: now(), agent: aid, ...item, ...(flags.privateMode ? { private: true } : {}) }
-    update(transcriptKey(aid), [], (l) => { l.push(it); if (l.length > 600) l.splice(0, l.length - 600) })
-    push({ type: 'item', item: it }); return it
+    update(transcriptKey(aid), [], (l) => { l.push(it); const max = aid === WORKER ? 200 : 600; if (l.length > max) l.splice(0, l.length - max) })
+    if (aid !== WORKER) push({ type: 'item', item: it })
+    return it
   }
-  const patchItem = (aid, tid, patch) => { let it; update(transcriptKey(aid), [], (l) => { it = l.find((x) => x.id === tid); if (it) Object.assign(it, patch) }); if (it) push({ type: 'item', item: it }) }
+  const patchItem = (aid, tid, patch) => { let it; update(transcriptKey(aid), [], (l) => { it = l.find((x) => x.id === tid); if (it) Object.assign(it, patch) }); if (it && aid !== WORKER) push({ type: 'item', item: it }) }
 
   // ---------- the agents: one long-lived DSH agent per 小天 agent ----------
   const R = new Map()          // agentId -> runtime
@@ -135,7 +137,8 @@ export function apply(ctx) {
     if (r.handle) return r.handle.agent
     if (r.starting) return r.starting
     r.starting = (async () => {
-      const { presetId, setup } = agentSetup(ctx, aid)
+      // the worker is 小天 itself (same persona, memory and tools), in a session of its own
+      const { presetId, setup } = agentSetup(ctx, aid === WORKER ? MAIN : aid)
       const meta = load('agentSessions', {})
       const agentOptions = { ...ctx.agentDefaultModel.currentSelection(), ...(asSelection(pickNow()) || {}) }
       const legacy = aid === MAIN ? load('state', {}).sessionId : null
@@ -155,11 +158,21 @@ export function apply(ctx) {
   ctx.effect(() => () => { for (const r of R.values()) r.handle?.dispose(); R.clear() })
   ctx.effect(() => { const t = setTimeout(() => ensure(MAIN).catch((e) => console.error('[tianxi] start', e)), 500); return () => clearTimeout(t) })
 
-  bus.busy = () => [...R.values()].some((r) => r.status !== 'idle')
+  bus.busy = () => [...R.values()].some((r) => r.aid !== WORKER && r.status !== 'idle')
+  /** Start the worker afresh (a new session), so its context stays short. */
+  bus.resetWorker = () => {
+    const r = R.get(WORKER); if (!r || r.status !== 'idle' || r.hidden.size) return false
+    try { r.handle?.dispose() } catch {}
+    try { r.disposeSel?.() } catch {}
+    R.delete(WORKER)
+    update('agentSessions', {}, (m) => { delete m[WORKER] })
+    return true
+  }
 
-  /** Send text to an agent. Internal prompts (brief/job/reflect) stay out of the chat; resolves with the agent's last reply. */
+  /** Send text to an agent. Internal prompts (brief/job/reflect) stay out of the chat; resolves with the agent's last reply.
+   *  opts.worker: to the background worker instead, out of every chat. */
   bus.say = async (text, opts = {}) => {
-    const aid = opts.agent && agentList().some((a) => a.id === opts.agent) ? opts.agent : MAIN
+    const aid = opts.worker ? WORKER : opts.agent && agentList().some((a) => a.id === opts.agent) ? opts.agent : MAIN
     const r = rt(aid)
     const agent = await ensure(aid)
     const msg = createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'user' } })
@@ -185,7 +198,7 @@ export function apply(ctx) {
   ctx.on('agent/status', ({ agent, status: s }) => {
     const r = byAgent(agent); if (!r) return
     r.status = typeof s === 'string' ? s : (s?.kind || 'running')
-    push({ type: 'status', agent: r.aid, status: r.status })
+    if (r.aid !== WORKER) push({ type: 'status', agent: r.aid, status: r.status })
   })
   ctx.on('agent/assistant-stream', ({ agent, frame }) => {
     const r = byAgent(agent); if (!r) return
@@ -193,7 +206,7 @@ export function apply(ctx) {
       r.streamText += frame.chunk.text
       const h = turnOf(r)
       if (!r.streamItem) r.streamItem = addItem(r.aid, { role: 'assistant', text: r.streamText, live: true, internal: h?.internal || false, turn: h?.turn }).id
-      else push({ type: 'delta', agent: r.aid, id: r.streamItem, text: r.streamText })
+      else if (r.aid !== WORKER) push({ type: 'delta', agent: r.aid, id: r.streamItem, text: r.streamText })
     }
   })
   ctx.on('session/event', (session, event) => {
@@ -205,9 +218,12 @@ export function apply(ctx) {
       case 'assistant/message': {
         const text = (d.message?.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('')
         if (h && text) h.last = text
+        let mid = r.streamItem
         if (r.streamItem) patchItem(r.aid, r.streamItem, { text, live: false })
-        else if (text) addItem(r.aid, { role: 'assistant', text, internal: h?.internal || false, turn: h?.turn })
+        else if (text) mid = addItem(r.aid, { role: 'assistant', text, internal: h?.internal || false, turn: h?.turn }).id
         r.streamItem = null; r.streamText = ''
+        // a card in a reply the user reads (钉到桌面 / 我的工具 count it)
+        if (text && mid && r.aid !== WORKER && !h?.internal) try { bus.onCard?.({ aid: r.aid, mid, text }) } catch (e) { console.error('[tianxi] card', e) }
         break
       }
       case 'tool/call': {
@@ -247,6 +263,8 @@ export function apply(ctx) {
   const approvals = new Map()
   ctx.on('approval/request', (req, next) => {
     const r = byAgent(req.agent); if (!r) return next()
+    // the background worker only reads; nobody is there to say yes
+    if (r.aid === WORKER) return Promise.resolve('rejected')
     const aid = id('ask')
     return new Promise((resolve) => {
       const call = transcript(r.aid).find((t) => t.callId === req.callId)
@@ -293,7 +311,7 @@ export function apply(ctx) {
   const state = () => {
     const list = agentList()
     return {
-      status: [...R.values()].some((r) => r.status !== 'idle') ? 'running' : 'idle',
+      status: [...R.values()].some((r) => r.aid !== WORKER && r.status !== 'idle') ? 'running' : 'idle',
       agentStatus: Object.fromEntries(list.map((a) => [a.id, R.get(a.id)?.status || 'idle'])),
       agents: list, styles: STYLES, mainId: MAIN,
       privateMode: flags.privateMode, today: today(), now: localISO(),
@@ -307,6 +325,7 @@ export function apply(ctx) {
       apps: bus.appsState?.() || { apps: [], disabled: [] },
       voice: bus.voice?.state() || { available: false, phase: 'missing' },
       takeover: flags.takeover || null,
+      widgets: bus.widgets?.() || [],
     }
   }
 
@@ -438,7 +457,7 @@ export function apply(ctx) {
         res.writeHead(200, { 'content-type': IMG_MIME[x.ext], 'cache-control': 'no-cache' })
         return fs.createReadStream(x.path).pipe(res)
       }
-      const fn = routes[req.method + ' ' + url.pathname]
+      const fn = routes[req.method + ' ' + url.pathname] || bus.routes[req.method + ' ' + url.pathname]
       if (!fn) return json(res, 404, { error: 'not found' })
       try { json(res, 200, await fn(req.method === 'POST' ? await body(req) : {})) } catch (e) { json(res, 400, { error: e.message }) }
       return

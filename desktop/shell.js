@@ -263,7 +263,7 @@ async function loadMain() {
     const home = /^#|^rgb\(/.test(cfg.homeBg || '') ? cfg.homeBg : '#121212'
     await win.webContents.executeJavaScript(`window.finish ? window.finish(${JSON.stringify(home)}) : 0`).catch(() => {})
     win.setBackgroundColor(home)
-    await win.loadURL(uiURL()); createPill(); updater.started()
+    await win.loadURL(uiURL()); createPill(); updater.started(); syncWidgets()
   }
   else {
     loadingSay(`小天 Bot 没能启动。日志在 ${path.join(LOGS, 'runtime.log')}`)
@@ -329,6 +329,67 @@ ipcMain.on('tianxi:orbMenu', (e) => {
   ]).popup({ window: pill })
 })
 const showMain = () => { if (!win) return; if (win.isMinimized()) win.restore(); win.show(); win.focus() }
+
+// 钉到桌面: a card pinned from the chat sits on the desktop in a small window of its own (web/widget.html), under
+// other windows like a note. The runtime keeps the list (plugins/widgets.js); this keeps one window per pinned card.
+const WIDGET_W = 384
+const widgetWins = new Map()   // widget id -> BrowserWindow
+let syncing = null
+async function syncWidgets() {
+  if (!child || syncing) return syncing
+  syncing = (async () => {
+    const r = await api('widgets'); if (!r?.widgets) return
+    const want = new Set(r.widgets.filter((w) => w.pinned).map((w) => w.id))
+    // a window whose widget was taken away closes itself after saying why; one that was simply removed closes now
+    for (const [wid, w] of widgetWins) {
+      const gone = r.widgets.find((x) => x.id === wid)?.retired
+      if (!want.has(wid) && !w.isDestroyed() && !(gone && Date.now() - Date.parse(gone.at) < 20000)) w.close()
+    }
+    for (const x of r.widgets) if (want.has(x.id) && !widgetWins.has(x.id)) openWidget(x)
+  })().finally(() => { syncing = null })
+  return syncing
+}
+function widgetHome() {
+  // new widgets line up to the left of the floating 小天, top-down
+  const a = screen.getPrimaryDisplay().workArea, n = widgetWins.size
+  return { x: a.x + a.width - WIDGET_W - 24 - Math.floor(n / 3) * (WIDGET_W + 8), y: a.y + 24 + (n % 3) * 220 }
+}
+function openWidget(x) {
+  const p = cfg.widgetPos?.[x.id], d = p && screen.getDisplayNearestPoint(p)
+  const at = p && d && inside(p, d.workArea) ? p : widgetHome()
+  const w = new BrowserWindow({
+    width: WIDGET_W, height: 220, x: Math.round(at.x), y: Math.round(at.y), frame: false, transparent: true, resizable: false,
+    maximizable: false, minimizable: false, fullscreenable: false, skipTaskbar: true, hasShadow: false, show: false,
+    backgroundColor: '#00000000', title: x.title || '小天小组件',
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true },
+  })
+  widgetWins.set(x.id, w)
+  w.loadURL(uiURL('widget.html') + '&id=' + encodeURIComponent(x.id))
+  w.once('ready-to-show', () => w.showInactive())
+  w.on('moved', () => { if (w.isDestroyed()) return; const b = w.getBounds(); (cfg.widgetPos ||= {})[x.id] = { x: b.x, y: b.y }; saveCfg(cfg) })
+  w.on('closed', () => { if (widgetWins.get(x.id) === w) widgetWins.delete(x.id) })
+  w.webContents.setWindowOpenHandler(({ url }) => { if (/^https?:\/\//.test(url)) shell.openExternal(url); return { action: 'deny' } })
+}
+const widgetOf = (e) => { for (const [wid, w] of widgetWins) if (!w.isDestroyed() && w.webContents === e.sender) return [wid, w]; return [] }
+ipcMain.on('tianxi:widgetFit', (e, h) => {
+  const [, w] = widgetOf(e); if (!w) return
+  const height = Math.round(Math.min(Math.max(+h || 0, 80), 760))
+  if (w.getBounds().height !== height) w.setBounds({ ...w.getBounds(), width: WIDGET_W, height })
+})
+ipcMain.on('tianxi:widgetClose', (e) => { const [, w] = widgetOf(e); if (w) w.close() })
+ipcMain.handle('tianxi:widgetsSync', () => syncWidgets())
+ipcMain.on('tianxi:widgetMenu', (e, o = {}) => {
+  const [wid, w] = widgetOf(e); if (!w) return
+  Menu.buildFromTemplate([
+    { label: '现在更新', click: () => api('widgets/refresh', { id: wid }) },
+    { label: '在小天 Bot 里打开', click: () => { showMain(); win?.webContents.executeJavaScript(`typeof setView === 'function' && setView('tools', ${JSON.stringify(wid)})`).catch(() => {}) } },
+    o.tool ? { label: '已在我的工具里', enabled: false } : { label: '收进我的工具', click: () => api('widgets/tool', { id: wid, on: true }) },
+    { type: 'separator' },
+    { label: '从桌面取下', click: async () => { await api('widgets/unpin', { id: wid }); if (!w.isDestroyed()) w.close() } },
+  ]).popup({ window: w })
+})
+// a widget 小天 took away while this was not looking, or one put back from 操作记录
+setInterval(() => { if (child) syncWidgets() }, 30000)
 
 function createTray() {
   // the .ico carries a hand-tuned 16 px picture; a 256 px png shrunk down blurs the eyes

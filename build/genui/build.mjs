@@ -21,6 +21,7 @@ const preamble = `## 生成式界面（OpenUI Lang）
 怎么用：
 - 先用一句话给结论，再给界面；界面之后不要把界面里的内容再用文字说一遍。
 - 一条回复最多一个界面代码块，根节点是 Card。
+- 代码块第一行在 openui-lang 后面空一格，写这张卡片的用途名：2 到 6 个字，说这一类卡片是干什么的，不带具体的人、地点、日期，比如 \`\`\`openui-lang 城市天气、\`\`\`openui-lang 出行方案。同一类事每次都用同一个名字：用户可以把卡片钉到桌面，同一类卡片用过两次会自己收进“我的工具”。
 - 用户点了界面里的按钮或提交了表单，你会收到一条用户消息，里面有按钮的话、表单里填的值和按钮带的 context。照着直接去做，不要再问一遍。
 - 发邮件、删除、花钱这类动作，按钮点了以后系统还会请用户确认；界面里不要假装已经做完。`
 
@@ -37,7 +38,7 @@ const examples = [
 
 周末去杭州有三种玩法，我按你上次说的不想太累排了顺序。
 
-\`\`\`openui-lang
+\`\`\`openui-lang 出行方案
 root = Card([header, plans, form, follow])
 header = CardHeader("周末杭州", "选一个玩法，我来订")
 plans = OptionCards("plan", "single", [p1, p2, p3])
@@ -57,7 +58,7 @@ follow = FollowUpBlock([FollowUpItem("那两天天气怎么样"), FollowUpItem("
 
 这个月花了 4,860 元，比上个月多 12%，主要多在外卖。
 
-\`\`\`openui-lang
+\`\`\`openui-lang 月度花销
 root = Card([header, stats, chart, table])
 header = CardHeader("10 月开销", "截至今天")
 stats = StatBlock([s1, s2, s3])
@@ -72,7 +73,7 @@ table = Table([Col("类别", ["餐饮", "交通", "购物"]), Col("金额（元�
 
 明天上午两个会撞了，我建议把周会挪到下午。
 
-\`\`\`openui-lang
+\`\`\`openui-lang 日程冲突
 root = Card([day, btns])
 day = Timeline([t1, t2, t3])
 t1 = TimelineItem("09:30–10:30", "产品周会", "会议室 3", "", true)
@@ -85,7 +86,7 @@ btns = Buttons([Button("周会挪到 14:00", @ToAssistant("把产品周会挪到
 // every example must parse cleanly against the library
 const schema = library.toJSONSchema()
 for (const ex of examples) {
-  const code = ex.split('```openui-lang\n')[1].split('```')[0]
+  const code = ex.split(/```openui-lang[^\n]*\n/)[1].split('```')[0]
   const r = createStreamingParser(schema, library.root).set(code, true)
   const bad = [...(r.meta?.errors || []), ...(r.meta?.unresolved || []).map((u) => 'unresolved ' + u), ...(r.meta?.orphaned || []).map((u) => 'orphaned ' + u)]
   if (bad.length || !r.root) throw new Error('example does not parse: ' + JSON.stringify(bad) + '\n' + code)

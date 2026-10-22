@@ -1,6 +1,28 @@
 const after = (u, k) => (u.split(k)[1] || u).replace(/^[：:，,\s]+/, '').slice(0, 60)
 const lastToolJSON = (msgs) => { for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i].role === 'tool') { try { const c = msgs[i].content; return JSON.parse(typeof c === 'string' ? c : c.map(p => p.text).join('')) } catch { return null } } return null }
+// 钉到桌面 · 我的工具: a weather card, its updates and a button pressed on it; a meeting countdown that has run out
+const hm = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }
+const weather = (city, now, note) => '```openui-lang 城市天气\n' + [
+  'root = Card([header, stats, form])',
+  `header = CardHeader("${city}天气", "${note}")`,
+  'stats = StatBlock([s1, s2, s3])',
+  `s1 = Stat("现在", "${now}°", "小雨")`,
+  's2 = Stat("最高", "25°")',
+  's3 = Stat("降雨", "60%")',
+  'form = Form("city", btns, [fc])',
+  'fc = FormControl("换个城市", Select("city", [o1, o2, o3], "选城市"))',
+  'o1 = SelectItem("sh", "上海")',
+  'o2 = SelectItem("bj", "北京")',
+  'o3 = SelectItem("sz", "深圳")',
+  'btns = Buttons([Button("看这个城市", @ToAssistant("换成这个城市的天气"), "primary")])',
+].join('\n') + '\n```'
+const cityOf = (u) => /北京|bj/.test(u) ? '北京' : /深圳|sz/.test(u) ? '深圳' : '上海'
 export default [
+  { re: /【桌面小组件·更新】/, final: (u) => /会议倒计时/.test(u) ? '退场：评审会已经开完了'
+    : `刷新：每 30 分钟\n到期：不会到期\n${weather(cityOf(u.split('它现在是这样')[1] || u), 20 + (new Date().getSeconds() % 7), hm() + ' 的天气')}` },
+  { re: /【桌面小组件·用户操作】/, final: (u) => { const c = cityOf(u.split('\n').slice(0, 2).join('\n').replace(/「[^」]*」/, '')); return `已经换成${c}了。\n${weather(c, 18, hm() + ' 的天气')}` } },
+  { re: /天气/, final: (u) => `${cityOf(u)}现在 21°，下午有小雨。\n\n${weather(cityOf(u), 21, hm() + ' 的天气')}` },
+  { re: /倒计时/, final: () => '评审会还有 40 分钟。\n\n```openui-lang 会议倒计时\nroot = Card([h, t])\nh = CardHeader("评审会倒计时", "15:00 开始")\nt = TextContent("还有 40 分钟", "large-heavy")\n```' },
   { re: /天禧反思/, tool: 'reflection_publish', args: (u) => { const ids = [...u.matchAll(/\[(mem_[0-9a-f]+)\]/g)].map((m) => m[1]); return { profile: '你是做交互创新的人，做决定看证据，讨厌空话；最近在忙概念版天禧。', insights: [{ text: '你出差很在意时间成本：不坐红眼航班，但要离客户近。', memIds: ids.slice(0, 2), evidence: ['我出差不坐红眼航班'] }], proposals: [{ op: 'merge', ids: ids.slice(0, 2), text: '出差：不坐红眼航班，酒店离客户近', why: '两条说的是同一件事' }, { op: 'add', text: '汇报材料偏好白底黑字', kind: '偏好', why: '你说过两次' }], lessons: [{ text: '整理文件前先问一句要不要建子文件夹', why: '你撤回过一次整理' }] } }, final: () => '想完了。' },
   { re: /给出差助理/, steps: [
       { tool: 'mail_draft', args: () => ({ to: 'trip@agent.local', subject: '下周深圳出差', body: '下周三去深圳拜访华贸电子，帮忙订机票酒店，用户不坐红眼航班。', reason: '订票是出差助理的分工' }) },

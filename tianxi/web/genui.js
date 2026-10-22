@@ -311,7 +311,8 @@ const GU = (() => {
     const shown = vals.shown ? `${msg}（${vals.shown}）` : msg
     const ctx = talk.map((s) => s.context).filter((x) => x !== undefined)
     const hidden = [msg, vals.n || ctx.length ? '\n[界面回传]' : '', vals.n ? `${fEl ? '表单 ' + fEl.dataset.ouForm : '用户在界面上选的'}：${JSON.stringify(vals.data)}` : '', ctx.length ? `context：${JSON.stringify(ctx.length === 1 ? ctx[0] : ctx)}` : ''].filter(Boolean).join('\n')
-    await GU.send(hidden, shown)
+    // a tool or desktop widget (mid w:<id>:<version>) answers 小天 out of the chat
+    await (GU.route?.(mid) || GU.send)(hidden, shown)
   })
   // the form's values, labelled the way the user saw them; marks fields that break their rules
   function collect(c, name) {
@@ -360,5 +361,14 @@ const GU = (() => {
     if (el) { el.focus({ preventScroll: true }); try { if (k[3] != null) el.setSelectionRange(k[3], k[4]) } catch {} }
   }
 
-  return { split, plain, render, keepFocus, send: async () => {}, ready: !!O }
+  // the kind of card a reply carries: the name after its fence (```openui-lang 城市天气), else its title
+  const kindOf = (text) => {
+    const m = /```[ \t]*(?:openui-lang|openui)([^\n]*)\n/.exec(String(text || ''))
+    const k = (m ? m[1] : '').replace(/[`"'“”‘’《》「」]/g, '').replace(/^\s*(用途|类型|kind|name)\s*[:：]\s*/i, '').trim().slice(0, 16)
+    if (k) return k
+    const t = /CardHeader\(\s*"((?:[^"\\]|\\.)*)"/.exec(String(text || ''))
+    return t ? t[1].replace(/[`"'“”‘’《》「」]/g, '').trim().slice(0, 16) : '卡片'
+  }
+
+  return { split, plain, render, keepFocus, kindOf, send: async () => {}, route: null, ready: !!O }
 })()

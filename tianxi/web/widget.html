@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>小天小组件</title>
+<!-- 钉到桌面: one card from the chat in a small window of its own on the desktop (desktop/shell.js opens it).
+     The card is drawn by genui.js exactly as in the chat; 小天 keeps it up to date (plugins/widgets.js). -->
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="light.css">
+<link rel="stylesheet" href="motion.css">
+<script>try{var t=JSON.parse(localStorage.getItem('tx.theme')||'"dark"');if(t==='system')t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';document.documentElement.dataset.theme=t}catch(e){}</script>
+<style>
+html,body{background:transparent!important;margin:0;height:auto;overflow:hidden;user-select:none}
+body{padding:10px 12px 16px}
+#wg{background:var(--s1);border:1px solid var(--line2);border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.35);overflow:hidden;transition:opacity .35s var(--ease-out),transform .45s var(--ease-out),max-height .45s var(--ease-out)}
+:root[data-theme=light] #wg{box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.wbar{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 14px;-webkit-app-region:drag;cursor:default}
+.wbar b{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wbar .wst{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.wbar .sp{flex:1}
+.wbar button{-webkit-app-region:no-drag}
+.wbody{padding:0 16px 14px;max-height:600px;overflow:auto;user-select:text}
+.wbody .ou{border:0;padding:0;background:none;border-radius:0}
+.wbody .ou-fu{display:none}
+.wnote{margin:-4px 16px 12px;font-size:12.5px;color:var(--tx2)}
+.wbar .dot{width:9px;height:9px;border-radius:50%;flex:none;background:radial-gradient(circle at 50% 90%,#b3a6ff,#6a4cf0 55%,#241a7a)}
+/* taken away by 小天: the card folds up, a line says why, with a way to keep it */
+#wg.leaving .wbody,#wg.leaving .wnote{display:none}
+#bye{display:none;padding:2px 16px 14px;font-size:13px;color:var(--tx2);line-height:20px}
+#wg.leaving #bye{display:block}
+#bye button{margin-top:8px}
+#wg.gone{opacity:0;transform:translateY(8px) scale(.97)}
+#wg.enter{animation:wIn .5s var(--ease-out) both}
+@keyframes wIn{from{opacity:0;transform:translateY(10px) scale(.98)}}
+.wbody.swap{animation:wSwap .45s var(--ease-out)}
+@keyframes wSwap{from{opacity:.35}}
+@media (prefers-reduced-motion: reduce){#wg,#wg.enter,.wbody.swap{animation:none;transition:none}}
+</style>
+</head>
+<body>
+<div id="wg" class="enter">
+  <div class="wbar"><i class="dot"></i><b id="wname"></b><span id="wsub" class="wst"></span><span class="sp"></span>
+    <button class="ib" id="wref" title="现在更新"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/></svg></button>
+    <button class="ib" id="wmore" title="更多"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18" cy="12" r="1.6"/></svg></button>
+  </div>
+  <div class="wbody" id="wbody"></div>
+  <div class="wnote" id="wnote" hidden></div>
+  <div id="bye"><span id="byeWhy"></span><br><button class="btn sm" id="keep">留在桌面上</button></div>
+</div>
+<div id="toasts" hidden></div>
+<script>
+'use strict'
+// what genui.js borrows from the page (app.js has the same)
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+const TOKEN = new URLSearchParams(location.search).get('t') || ''
+const APP = window.tianxiApp || null
+const fileUrl = (p) => '/api/file?path=' + encodeURIComponent(p) + '&t=' + encodeURIComponent(TOKEN)
+const isImg = (p) => /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(String(p || ''))
+function fileTile(p) { const n = String(p || '').split(/[\\/]/).pop(); return `<div class="file" title="${esc(p)}"><div class="th">${isImg(p) ? `<img src="${esc(fileUrl(p))}" alt="">` : esc(n.split('.').pop().toUpperCase().slice(0, 4))}</div><div class="n">${esc(n)}</div></div>` }
+</script>
+<script src="genui/openui.js"></script>
+<script src="genui.js"></script>
+<script src="widget.js"></script>
+</body>
+</html>

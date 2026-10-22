@@ -60,7 +60,8 @@ export const today = () => localISO().slice(0, 10)
 export const flags = { privateMode: false, idleSec: 0, lastSeen: Date.now(), takeover: null }
 
 // Message bus between plugins: host.js installs `say`, ambient.js uses it to wake 小天 on its own.
-export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () => 'tianxi', hopsOf: () => -1, deliver: null }
+// routes: more HTTP routes ('POST /api/x': fn) served by the host; onCard: told of every card 小天 puts in a chat reply.
+export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () => 'tianxi', hopsOf: () => -1, deliver: null, routes: {}, onCard: null }
 
 export function settings() {
   return { briefTime: '08:00', watch: ['~/Downloads', '~/Desktop'], idleMinutes: 10, nightFrom: 23, nightTo: 6, callMe: '', reflectAtNight: true, ...load('settings', {}) }
@@ -68,6 +69,8 @@ export function settings() {
 
 // ---------- 智能体: 小天 is the main personal agent; the user can add more, each with its own persona and mailbox ----------
 export const MAIN = 'tianxi'
+// a second 小天 that works out of sight (keeps desktop widgets up to date), so the chat is never kept waiting
+export const WORKER = '_bg'
 export const STYLES = ['靠谱同事', '温暖贴心', '犀利有梗']
 const MAIN_AGENT = { id: MAIN, name: '小天', role: '你的个人智能体', style: '靠谱同事', intro: '', email: 'xiaotian@agent.local', color: '#e2502e', main: true }
 // the main agent before the product became 小天 Bot

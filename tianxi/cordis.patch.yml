@@ -9,6 +9,8 @@
       name: dsh-tianxi/plugins/ambient.js
     - id: tianxi-apps
       name: dsh-tianxi/plugins/apps.js
+    - id: tianxi-widgets
+      name: dsh-tianxi/plugins/widgets.js
     - id: speech-to-text
       name: '@deepseek-ai/dsh-experimental-speech-to-text'
       config:

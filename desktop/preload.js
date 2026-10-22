@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('tianxiApp', {
   orbHit: (on) => ipcRenderer.send('tianxi:orbHit', !!on),
   orbDrag: (on) => ipcRenderer.send('tianxi:orbDrag', !!on),
   orbMenu: () => ipcRenderer.send('tianxi:orbMenu'),
+  // 钉到桌面: widget windows (web/widget.html)
+  widgetsSync: () => ipcRenderer.invoke('tianxi:widgetsSync'),
+  widgetFit: (h) => ipcRenderer.send('tianxi:widgetFit', h),
+  widgetClose: () => ipcRenderer.send('tianxi:widgetClose'),
+  widgetMenu: (o) => ipcRenderer.send('tianxi:widgetMenu', o),
   getConfig: () => ipcRenderer.invoke('tianxi:getConfig'),
   listModels: (c) => ipcRenderer.invoke('tianxi:listModels', c),
   updateStatus: () => ipcRenderer.invoke('tianxi:updateStatus'),

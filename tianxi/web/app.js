@@ -201,7 +201,7 @@ function setCount(el, n) {
 }
 
 // ---------- rail: the roster, grouped by each bot's tag ----------
-const MINE = ['brief', 'memory', 'reflect', 'ledger', 'later']
+const MINE = ['brief', 'memory', 'reflect', 'ledger', 'later', 'tools']
 let query = ''
 function nowDoing(aid) {
   const t = turnsOf(aid).filter((x) => x.running).pop(); if (!t) return ''
@@ -379,10 +379,64 @@ function replyHtml(it) {
   const last = parts.length - 1
   const h = parts.map((p, i) => p.md != null
     ? `<div class="bub ${it.live && i === last ? 'live' : ''}" data-mid="${it.id}">${md(p.md)}</div>`
-    : `<div class="uiw">${GU.render(it.id, p.ui, it.live && p.open)}</div>`).join('')
+    : `<div class="uiw">${GU.render(it.id, p.ui, it.live && p.open)}${it.live ? '' : cardBar(it)}</div>`).join('')
   return `<div class="bw">${h || `<div class="bub ${it.live ? 'live' : ''}" data-mid="${it.id}"></div>`}${it.live ? '' : MACTS}${reacts[it.id] ? '<span class="rx">👍</span>' : ''}</div>`
 }
 GU.send = (hidden, shown) => say(hidden, shown)
+
+// ---------- 钉到桌面 · 我的工具: a card from the chat lives on (plugins/widgets.js; the desktop window is widget.html) ----------
+// Under each card: pin it to the desktop (in the desktop app), or keep it in 我的工具. A tool or widget is the same card,
+// drawn by genui.js under the id w:<widget>:<version>; its buttons go to /api/widgets/act instead of the chat.
+const wOf = (mid) => (S.widgets || []).find((w) => w.mid === mid)
+const wById = (wid) => (S.widgets || []).find((w) => w.id === wid)
+const myTools = () => (S.widgets || []).filter((w) => w.tool).sort((a, b) => Date.parse(b.lastUsed || b.toolAt || b.at) - Date.parse(a.lastUsed || a.toolAt || a.at))
+function cardBar(it) {
+  if (!GU.ready || !/```[ \t]*openui|^\s*root\s*=/.test(it.text || '')) return ''
+  const w = wOf(it.id), same = !w && myTools().find((x) => x.kind === GU.kindOf(it.text))
+  const pin = APP && !window.MOB ? `<button data-act="w-pin" data-mid="${it.id}" class="${w?.pinned ? 'on' : ''}">${ico('pin', 14)}<span>${w?.pinned ? '在桌面上' : '钉到桌面'}</span></button>` : ''
+  const tool = w?.tool || same ? `<button data-act="tool-open" data-id="${(w || same).id}" class="on">${ico('tools', 14)}<span>在我的工具里</span></button>`
+    : `<button data-act="w-tool" data-mid="${it.id}">${ico('tools', 14)}<span>收进我的工具</span></button>`
+  return `<div class="oubar">${pin}${tool}</div>`
+}
+GU.route = (mid) => {
+  const m = /^w:([\w-]+):/.exec(mid)
+  return m ? (hidden, shown) => api('widgets/act', { id: m[1], hidden, shown, where: '“我的工具”里' }) : null
+}
+function wStatus(w) {
+  if (w.status === 'updating') return '<span class="wst busy"><i class="spin"></i>正在更新</span>'
+  if (w.status === 'acting') return `<span class="wst busy"><i class="spin"></i>${esc(w.note || '正在做')}</span>`
+  if (w.status === 'error') return `<span class="wst bad">${esc(w.note || '没更新成')}</span>`
+  const t = w.refreshedAt || w.at
+  return `<span class="wst">${dayOf(t) === todayStr() ? hhmm(t) : dayLabel(t)} 更新${w.every ? ` · 每 ${w.every >= 60 && w.every % 60 === 0 ? w.every / 60 + ' 小时' : w.every + ' 分钟'}` : ''}</span>`
+}
+let toolsOpened = new Set()
+// 我的工具: every tool open and usable on the page; below, what sits on the desktop and what 小天 put away
+function pageTools() {
+  const tools = myTools(), pinned = (S.widgets || []).filter((w) => w.pinned && !w.tool), gone = (S.widgets || []).filter((w) => w.retired && !w.pinned && !w.tool)
+  // opening the page opens its tools: stale ones are brought up to date in the background
+  for (const w of tools) if (!toolsOpened.has(w.id)) { toolsOpened.add(w.id); api('widgets/open', { id: w.id }).catch(() => {}) }
+  let h = phead('我的工具', tools.length ? `${tools.length} 个 · 用过两次的卡片会自己收进来，下次直接打开，不用再问` : '')
+  if (!tools.length) h += `<div class="bempty">还没有工具。和${esc(agentOf(S.mainId).name)}聊天时，同一类卡片用过两次，它就会自己收进来；也可以点卡片下面的“收进我的工具”。</div>`
+  h += '<div class="tgrid">'
+  for (const w of tools) {
+    const note = w.note && w.status === 'ok' ? `<div class="wnote">${esc(w.note)}</div>` : ''
+    h += `<div class="tcard ${viewArg === w.id ? 'hl' : ''}" id="tool_${w.id}" data-k="${w.id}:${w.ver}"><div class="thd"><b>${esc(w.kind)}</b>${wStatus(w)}<span class="sp"></span>`
+      + `<button class="ib" data-act="w-refresh" data-id="${w.id}" title="现在更新" ${w.status === 'updating' || w.status === 'acting' ? 'disabled' : ''}>${ico('refresh', 15)}</button>`
+      + (APP && !window.MOB ? `<button class="ib ${w.pinned ? 'on' : ''}" data-act="w-pin" data-id="${w.id}" title="${w.pinned ? '从桌面取下' : '钉到桌面'}">${ico('pin', 15)}</button>` : '')
+      + `<button class="ib" data-act="w-untool" data-id="${w.id}" title="移出我的工具">${ico('x', 15)}</button></div>`
+      + `<div class="uiw">${GU.render(`w:${w.id}:${w.ver}`, w.code, false)}</div>${note}${w.ask ? `<div class="wask">最初是你说的“${esc(w.ask.slice(0, 60))}”</div>` : ''}</div>`
+  }
+  h += '</div>'
+  if (pinned.length) h += `<div class="sec">钉在桌面上</div><div class="wrows">${pinned.map((w) => `<div class="wrow"><span class="m"><b>${esc(w.title)}</b>${wStatus(w)}</span><button class="btn sm" data-act="w-tool" data-id="${w.id}">收进我的工具</button><button class="btn sm" data-act="w-pin" data-id="${w.id}">取下</button></div>`).join('')}</div>`
+  if (gone.length) h += `<div class="sec">${esc(agentOf(S.mainId).name)}收起来的</div><div class="wrows">${gone.slice(-8).reverse().map((w) => `<div class="wrow"><span class="m"><b>${esc(w.title)}</b><span class="wst">${esc(w.retired.why)} · ${when(w.retired.at)}</span></span>${APP && !window.MOB ? `<button class="btn sm" data-act="w-restore" data-id="${w.id}">放回桌面</button>` : ''}<button class="btn sm" data-act="w-remove" data-id="${w.id}">删掉</button></div>`).join('')}</div>`
+  return h
+}
+const syncDesk = () => { try { APP?.widgetsSync?.() } catch {} }
+function plusTools() {
+  const el = $('#plusTools'); if (!el) return
+  const l = myTools().slice(0, 6)
+  el.innerHTML = l.length ? `<div class="ptl">我的工具</div>${l.map((w) => `<button data-act="tool-open" data-id="${w.id}">${ico('tools', 16)}<span>${esc(w.kind)}</span><small>${esc(w.title !== w.kind ? w.title : '')}</small></button>`).join('')}` : ''
+}
 
 function askCard(x) {
   const yes = `data-act="ask" data-id="${x.id}" data-allow="1"`, no = `data-act="ask" data-id="${x.id}"`
@@ -653,13 +707,14 @@ function renderPage() {
   if (view === 'chat') return
   const P = $('#pg')
   const keep = $('#vPage').scrollTop
-  const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, agent: pageAgent }[view]
-  if (fn) P.innerHTML = fn()
-  const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap), #pg .bgrid > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent'
+  const fn = { brief: pageBrief, memory: pageMemory, reflect: pageReflect, ledger: pageLedger, later: pageLater, agent: pageAgent, tools: pageTools }[view]
+  if (fn) GU.keepFocus(() => { P.innerHTML = fn() })
+  const CARDS = '#pg > *:not(.two):not(.bgrid):not(.stats):not(.mapwrap):not(.tgrid):not(.wrows), #pg .bgrid > *, #pg .tgrid > *, #pg .wrows > *, #pg .stats > *, #pg .two > div > *, #pg .mapwrap > *, #pg .panel > .ent'
   const keyOf = (el) => view + ':' + (el.dataset.k || el.className.split(' ')[0] + ':' + hashText(el.textContent.slice(0, 600)))
   if (entering) {
     entering = false
     $('#vPage').scrollTop = 0
+    if (view === 'tools' && viewArg) setTimeout(() => $('#tool_' + viewArg)?.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }), 60)
     if (!REDUCED) reveal(P, CARDS, keyOf, { cls: 'rise', step: 35, max: 14 })
     else reveal(P, CARDS, keyOf, { quiet: true })
     if (view === 'memory' && !REDUCED) P.querySelectorAll('.map .mnode').forEach((n, i) => { n.style.setProperty('--d', 200 + Math.min(i, 30) * 22 + 'ms'); n.classList.add('pop') })
@@ -1092,6 +1147,9 @@ const MI = {
   ext: '<path d="M8 16L16 8M9 8h7v7"/>',
   phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M10.5 18.5h3"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5.5A1.5 1.5 0 0 0 14.5 4h-9A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8"/>',
+  pin: '<path d="M9 4h6l-1 6 3 3v1.5H7V13l3-3z"/><path d="M12 14.5V20"/>',
+  tools: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><path d="M16.5 13.5v6M13.5 16.5h6"/>',
+  refresh: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3"/><path d="M19.5 4.5v4h-4"/>',
 }
 const ico = (k, w = 18, sw = 1.8) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round">${MI[k]}</svg>`
 function renderMenu() {
@@ -1105,6 +1163,7 @@ function renderMenu() {
     ${it('menu-go', 'brief', '每日简报', open ? `${open} 件等你定` : '', 'data-v="brief"')}
     ${it('menu-go', 'memory', '我的记忆', `${S.memories.length} 条`, 'data-v="memory"')}
     ${it('menu-go', 'reflect', '反思', nr ? `${nr} 条建议` : '', 'data-v="reflect"')}
+    ${it('menu-go', 'tools', '我的工具', myTools().length ? `${myTools().length} 个` : '', 'data-v="tools"')}
     ${it('menu-go', 'ledger', '操作记录', '', 'data-v="ledger"')}
     ${it('menu-go', 'sense', '系统感知', later ? `${later} 件排着` : '', 'data-v="later"')}
     ${it('tour', 'guide', '功能介绍')}
@@ -1293,7 +1352,7 @@ function dismiss(el) { if (!el.isConnected) return; if (REDUCED) return el.remov
 function toast(entry) {
   const el = document.createElement('div'); el.className = 'toast'
   el.innerHTML = `<span>${esc(entry.title)}</span>${entry.undo ? `<button class="btn sm">${esc(entry.undo.label || '撤回')}</button>` : ''}`
-  const b = el.querySelector('button'); if (b) b.onclick = async () => { b.disabled = true; await api('undo', { id: entry.id }); dismiss(el) }
+  const b = el.querySelector('button'); if (b) b.onclick = async () => { b.disabled = true; await api('undo', { id: entry.id }); syncDesk(); dismiss(el) }
   $('#toasts').appendChild(el); setTimeout(() => dismiss(el), 7000)
 }
 function toastText(t, act) {
@@ -1312,7 +1371,7 @@ async function refresh() {
   S = await api('state')
   if (!agents().some((a) => a.id === cur)) cur = S.mainId
   for (const e of S.ledger) {
-    if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done') toast(e) }
+    if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done' && e.tool !== 'tool_collect') toast(e) }
   }
   if (!firstLoad && S.brief?.at && S.brief.at !== prevBrief) { notify('每日简报', S.brief.summary || '今天的简报准备好了'); if (view !== 'brief') toastText('今天的简报准备好了', ['去看', () => setView('brief')]) }
   if (!firstLoad && S.reflections[0] && S.reflections[0].id !== prevRef && view !== 'reflect') toastText(`${agentOf(S.mainId).name}反思完了`, ['去看', () => setView('reflect')])
@@ -1367,6 +1426,18 @@ function connect() {
     else if (m.type === 'mail') soon()
     else if (m.type === 'voice') voiceChanged(m.state)
     else if (m.type === 'model') { S.pick = m.pick; renderPicks() }
+    else if (m.type === 'widget') {
+      const l = (S.widgets ||= []), i = l.findIndex((w) => w.id === m.widget.id)
+      if (i >= 0) l[i] = m.widget; else l.push(m.widget)
+      if (view === 'tools') renderPage(); else if (view === 'chat') renderMsgs(true)
+      plusTools()
+    }
+    else if (m.type === 'widgets') soon()
+    else if (m.type === 'tool-added') {
+      const w = m.widget
+      toastText(`「${w.kind}」用了两次，收进我的工具了`, ['去看', () => setView('tools', w.id)])
+      soon()
+    }
     else if (m.type === 'turn-end' || m.type === 'store') soon()
   }
   es.onerror = () => { const el = $('#cSub'); if (el) el.textContent = '正在重新连接…' }
@@ -1425,7 +1496,7 @@ document.addEventListener('click', (e) => {
 })
 
 const plusMenu = $('#plusMenu')
-$('#bPlus').onclick = (e) => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; if (!plusMenu.hidden) replay(plusMenu, 'in') }
+$('#bPlus').onclick = (e) => { e.stopPropagation(); plusMenu.hidden = !plusMenu.hidden; if (!plusMenu.hidden) { plusTools(); replay(plusMenu, 'in') } }
 document.addEventListener('click', (e) => {
   if (!plusMenu.hidden && !e.target.closest('#plusMenu')) plusMenu.hidden = true
   if (!$('#umenu').hidden && !e.target.closest('#umenu, #meBtn, #bUpd')) toggleMenu(false)
@@ -1565,7 +1636,25 @@ document.addEventListener('click', async (e) => {
     const s = el.dataset.say
     if (s) say(s, el.dataset.label); else { inp.value = el.dataset.label === '记住一件事' ? '记住：' : el.dataset.label === '帮我排个行程' ? '帮我排一下行程：' : `请给${agentOf(S.mainId).name}发邮件，`; grow(); inp.focus() }
   }
-  else if (act === 'undo') { el.disabled = true; await api('undo', { id: el.dataset.id }) }
+  else if (act === 'undo') { el.disabled = true; await api('undo', { id: el.dataset.id }); syncDesk() }
+  else if (act === 'w-pin') {
+    const w = el.dataset.id ? wById(el.dataset.id) : wOf(el.dataset.mid)
+    el.disabled = true
+    const r = w?.pinned ? await api('widgets/unpin', { id: w.id }) : await api('widgets/pin', w ? { id: w.id } : { agent: cur, mid: el.dataset.mid })
+    if (r.error) toastText(r.error); else if (!w?.pinned) toastText(`钉到桌面了，${agentOf(S.mainId).name}会让它一直是最新的，用不上了会自己收起来`)
+    syncDesk(); soon()
+  }
+  else if (act === 'w-tool') {
+    el.disabled = true
+    const r = await api('widgets/tool', el.dataset.id ? { id: el.dataset.id, on: true } : { agent: cur, mid: el.dataset.mid, on: true })
+    if (r.error) toastText(r.error); else toastText(`收进我的工具了：${r.widget.kind}`, ['去看', () => setView('tools', r.widget.id)])
+    soon()
+  }
+  else if (act === 'w-untool') { el.disabled = true; await api('widgets/tool', { id: el.dataset.id, on: false }); toastText('移出我的工具了，这类卡片不会再自己收进来'); soon() }
+  else if (act === 'w-refresh') { el.disabled = true; await api('widgets/refresh', { id: el.dataset.id }) }
+  else if (act === 'w-restore') { el.disabled = true; await api('widgets/restore', { id: el.dataset.id }); syncDesk(); soon() }
+  else if (act === 'w-remove') { el.disabled = true; await api('widgets/remove', { id: el.dataset.id }); soon() }
+  else if (act === 'tool-open') { plusMenu.hidden = true; toggleMenu(false); setView('tools', el.dataset.id) }
   else if (act === 'undo-many') { el.disabled = true; for (const i of el.dataset.ids.split(',').reverse()) { try { await api('undo', { id: i }) } catch {} } }
   else if (act === 'undo-last') { await api('undo-last', {}) }
   else if (act === 'mem-tab') { memTab = el.dataset.t; renderPage() }
