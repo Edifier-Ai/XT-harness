@@ -5,10 +5,11 @@
 <title>桌面小天</title>
 <style>
 /* 桌面小天: a blue-violet ball with 小天's two dash eyes. It sits anywhere on the desktop, watches the mouse,
-   and its face shows what 小天 is doing. The window is transparent; only the ball and its bubble catch the mouse. */
+   and its face shows what 小天 is doing. The window is transparent; only the ball, its bubble and its petals
+   catch the mouse (the page says when the pointer is over them). */
 html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Microsoft YaHei UI","Microsoft YaHei","PingFang SC",system-ui,sans-serif;user-select:none}
 :root{--ball:72px}
-#w{position:absolute;left:50%;top:50%;width:var(--ball);height:var(--ball);margin:calc(var(--ball) / -2) 0 0 calc(var(--ball) / -2)}
+#w{position:absolute;left:50%;top:50%;width:var(--ball);height:var(--ball);margin:calc(var(--ball) / -2) 0 0 calc(var(--ball) / -2);transition:opacity .6s,transform .6s cubic-bezier(.3,1.2,.5,1)}
 /* the shadow stays on the "floor" while the ball hops */
 .shadow{position:absolute;left:14%;right:14%;bottom:-9px;height:8px;border-radius:50%;background:rgba(0,0,0,.28);filter:blur(3px);transition:transform .4s,opacity .4s}
 #ball{position:absolute;inset:0;cursor:grab;transform-origin:50% 90%;transition:transform .35s cubic-bezier(.3,1.5,.5,1)}
@@ -17,15 +18,16 @@ html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-famil
 .lean{transition:transform .18s ease-out}
 .eye{transform-box:fill-box;transform-origin:50% 50%}
 .eye > *{transition:opacity .16s, transform .22s cubic-bezier(.3,1.4,.5,1);transform-box:fill-box;transform-origin:50% 50%}
-.eye .arc,.eye .shut,.eye .x,.eye .o{opacity:0}
+.eye .arc,.eye .shut,.eye .x,.eye .o,.eye .hold{opacity:0}
 .eyes{transition:transform .12s ease-out}
+.cheek,.mouth{opacity:0;transition:opacity .25s}
 /* eyes follow the app's theme: black when the app is dark, white when it is light */
 html.dark .eye .open,html.dark .eye .o{fill:#141414}
-html.dark .eye path{stroke:#141414}
+html.dark .eye path,html.dark .mouth{stroke:#141414}
 
 /* ---- faces ---- */
 .blink .eye .open{transform:scaleY(.08)}
-.f-happy .eye .open,.f-sleep .eye .open,.f-oops .eye .open,.f-drag .eye .open{opacity:0}
+.f-happy .eye .open,.f-sleep .eye .open,.f-oops .eye .open,.f-drag .eye .open,.f-hold .eye .open{opacity:0}
 .f-happy .eye .arc{opacity:1}
 .f-sleep .eye .shut{opacity:1}
 .f-oops .eye .x{opacity:1}
@@ -34,6 +36,15 @@ html.dark .eye path{stroke:#141414}
 .f-ask .eye .open{transform:scale(1.18)}
 .f-ask .eye.r .open{transform:scale(1.32) translateY(-1px)}
 .f-hover .eye .open{transform:scaleY(.88)}
+/* 憋着: something to tell you, held until you pause. Eyes squeezed shut (> <), cheeks puffed, lips pressed */
+.f-hold .eye .hold{opacity:1}
+.f-hold .cheek{opacity:.34}
+.f-hold .mouth{opacity:1}
+/* something dragged over it: eyes wide, ready to take it */
+.f-catch .eye .open{transform:scale(1.2)}
+/* dragged onto a window and holding still: squinting at it */
+.f-peek .eye .open{transform:scaleY(.6)}
+.f-offer .eye .open{transform:scaleY(.92)}
 
 /* ---- body motion ---- */
 #ball{animation:breathe 4.2s ease-in-out infinite}
@@ -49,8 +60,24 @@ html.dark .eye path{stroke:#141414}
 .f-oops #ball{animation:shake .5s ease-in-out 2}
 @keyframes shake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 .f-sleep #ball{animation:breathe 5.5s ease-in-out infinite;filter:saturate(.75) brightness(.92)}
-.f-drag #ball{animation:none}
+.f-drag #ball,.f-peek #ball{animation:none}
 .f-hover #ball{transform:scale(1.07)}
+/* holding it in: puffed up, now and then a little tremble */
+.f-hold #ball{animation:puff 2.6s ease-in-out infinite}
+@keyframes puff{0%,100%{transform:scale(1.04,.98)}40%{transform:scale(1.09,.95)}46%{transform:scale(1.09,.95) translateX(.9px)}52%{transform:scale(1.09,.95) translateX(-.9px)}58%{transform:scale(1.09,.95) translateX(.6px)}64%{transform:scale(1.08,.96)}}
+.f-catch #ball{animation:none;transform:scale(1.12)}
+.f-offer #ball{animation:breathe 3s ease-in-out infinite}
+/* it lets it out: a quick exhale when it starts to speak */
+.pop #ball{animation:pop .62s cubic-bezier(.3,0,.4,1) 1 !important}
+@keyframes pop{0%{transform:scale(1.09,.95)}30%{transform:scale(.9,1.08)}60%{transform:scale(1.04,.97)}100%{transform:scale(1)}}
+.puffs{position:absolute;left:50%;top:62%;width:0;height:0;pointer-events:none}
+.puffs i{position:absolute;width:7px;height:7px;margin:-3.5px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 0 0 1px rgba(0,0,0,.08);opacity:0}
+.pop .puffs i{animation:puffout .7s ease-out 1}
+.pop .puffs i:nth-child(1){--px:-30px;--py:6px}.pop .puffs i:nth-child(2){--px:-24px;--py:-12px;animation-delay:.05s}.pop .puffs i:nth-child(3){--px:28px;--py:2px;animation-delay:.08s}
+@keyframes puffout{0%{opacity:.9;transform:translate(0,0) scale(.6)}100%{opacity:0;transform:translate(var(--px),var(--py)) scale(1.3)}}
+
+/* full screen or in a meeting: it steps back, faded and smaller, until you come near */
+body.tucked #w{opacity:.32;transform:scale(.8)}
 
 /* ---- little marks around the ball ---- */
 .mk{position:absolute;pointer-events:none;opacity:0;transition:opacity .25s}
@@ -58,7 +85,7 @@ html.dark .eye path{stroke:#141414}
 .dots i{width:4px;height:4px;border-radius:50%;background:#555;animation:dot 1.2s infinite}
 .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 @keyframes dot{0%,60%,100%{opacity:.3}30%{opacity:1}}
-.f-think .dots{opacity:1}
+.f-think .dots,.f-look.dropping-look .dots{opacity:1}
 .sweat{left:-3px;top:6px;width:9px;height:12px;border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;background:#bfe3ff;transform:rotate(-20deg)}
 .f-focus.tool-run .sweat{opacity:.9;animation:drip 1.6s ease-in infinite}
 @keyframes drip{0%{transform:translateY(0) rotate(-20deg);opacity:0}20%{opacity:.9}100%{transform:translateY(10px) rotate(-20deg);opacity:0}}
@@ -70,14 +97,43 @@ html.dark .eye path{stroke:#141414}
 .f-sleep .zz{opacity:1}
 .badge{right:-4px;bottom:2px;min-width:18px;height:18px;padding:0 5px;box-sizing:border-box;border-radius:9px;background:#141414;color:#fff;border:2px solid #fff;font:700 11px/14px system-ui;text-align:center}
 .has-dec .badge{opacity:1}
+/* how long it has held still over a window: the ring fills, then the window is framed */
+#aim{position:absolute;left:50%;top:50%;width:calc(var(--ball) + 26px);height:calc(var(--ball) + 26px);margin:calc((var(--ball) + 26px) / -2) 0 0 calc((var(--ball) + 26px) / -2);pointer-events:none;opacity:0;transition:opacity .2s;transform:rotate(-90deg)}
+#aim.on{opacity:1}
+#aim circle{fill:none;stroke-linecap:round}
+#aim .bg{stroke:rgba(0,0,0,.22);stroke-width:5}
+#aim .fg{stroke:#fff;stroke-width:3;transition:stroke-dashoffset .1s linear}
 
 /* ---- the speech bubble ---- */
-#bub{position:absolute;left:50%;max-width:250px;padding:7px 12px;border-radius:14px;background:rgba(24,24,24,.95);color:#eee;font-size:12.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.3);border:1px solid #3a3a3a;opacity:0;transform:translate(-50%,6px) scale(.96);transition:opacity .22s,transform .3s cubic-bezier(.3,1.4,.5,1);pointer-events:none;cursor:pointer;box-sizing:border-box}
+#bub{position:absolute;left:calc(50% + var(--dx, 0px));max-width:250px;padding:7px 12px;border-radius:14px;background:rgba(24,24,24,.95);color:#eee;font-size:12.5px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 6px 18px rgba(0,0,0,.3);border:1px solid #3a3a3a;opacity:0;transform:translate(-50%,6px) scale(.96);transition:opacity .22s,transform .3s cubic-bezier(.3,1.4,.5,1);pointer-events:none;cursor:pointer;box-sizing:border-box}
 #bub.on{opacity:1;transform:translate(-50%,0) scale(1);pointer-events:auto}
 #bub.up{bottom:calc(50% + var(--ball) / 2 + 12px)}
 #bub.down{top:calc(50% + var(--ball) / 2 + 16px)}
+#bub.far.up{bottom:calc(50% + var(--ball) / 2 + 46px)}
+#bub.far.down{top:calc(50% + var(--ball) / 2 + 50px)}
 #bub.ask{background:rgba(48,36,16,.97);border-color:#8a6420;color:#ffd7a1}
 #bub b{font-weight:700}
+/* when it speaks: a few lines and what you can do about it */
+#bub.say{white-space:normal;width:max-content;max-width:260px;min-width:150px;padding:9px 12px 10px;cursor:default}
+#bub .who{font-size:11px;color:#9a9a9a;margin-bottom:2px}
+#bub .tx{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#bub .bt{display:flex;gap:6px;margin-top:8px}
+#bub button,.pet{font:inherit;font-size:12px;line-height:1;border-radius:13px;cursor:pointer;white-space:nowrap}
+#bub button{padding:6px 11px;border:1px solid #474747;background:#2c2c2c;color:#eee}
+#bub button:hover{background:#383838;border-color:#5a5a5a}
+#bub button.main{background:#f2f2f2;color:#141414;border-color:#f2f2f2}
+#bub button.main:hover{background:#fff}
+
+/* ---- 拖给小天: the Bots that could take it, and what it offers to do ---- */
+#sats,#pets{position:absolute;left:50%;top:50%;width:0;height:0}
+.sat{position:absolute;width:30px;height:30px;margin:-15px;border-radius:50%;border:2px solid rgba(255,255,255,.92);box-shadow:0 3px 10px rgba(0,0,0,.3);color:#fff;font:700 13px/26px "Microsoft YaHei UI","PingFang SC",system-ui;text-align:center;box-sizing:border-box;opacity:0;transform:translate(0,0) scale(.3);transition:transform .32s cubic-bezier(.3,1.5,.5,1),opacity .2s;pointer-events:none}
+.sat.on{opacity:1;transform:translate(var(--x),var(--y)) scale(1)}
+.sat.over{transform:translate(var(--x),var(--y)) scale(1.28)}
+.pet{position:absolute;left:0;top:0;padding:8px 13px;border:1px solid #474747;background:rgba(28,28,28,.96);color:#eee;box-shadow:0 4px 14px rgba(0,0,0,.32);opacity:0;transform:translate(-50%,-50%) scale(.3);transition:transform .38s cubic-bezier(.3,1.4,.5,1),opacity .2s,background .15s;pointer-events:none}
+.pet.on{opacity:1;pointer-events:auto;transform:translate(calc(var(--x) - var(--ax)),calc(var(--y) - 50%)) scale(1)}
+.pet:hover{background:#383838;border-color:#5a5a5a}
+.pet.chat{color:#b8b8b8}
+.pet.x{width:26px;height:26px;padding:0;border-radius:50%;font-size:14px;color:#aaa}
 </style>
 </head>
 <body>
@@ -90,12 +146,14 @@ html.dark .eye path{stroke:#141414}
       </defs>
       <g class="lean" id="lean">
         <circle cx="50" cy="50" r="46" fill="url(#ob)"/><circle cx="50" cy="50" r="46" fill="url(#ol)"/><circle cx="50" cy="50" r="46" fill="url(#or)"/><ellipse cx="34" cy="22" rx="13" ry="6" fill="#fff" opacity=".18" transform="rotate(-28 34 22)"/>
+        <ellipse class="cheek" cx="29" cy="60" rx="8" ry="5" fill="#ffd4e6"/><ellipse class="cheek" cx="72" cy="58" rx="8" ry="5" fill="#ffd4e6"/>
         <g class="eyes" id="eyes">
           <g class="eye l" transform="translate(40 47)">
             <rect class="open" x="-4.4" y="-9" width="8.8" height="18" rx="4.4" transform="rotate(-16)" fill="#fff"/>
             <path class="arc" d="M-6 3 Q0 -7 6 3" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
             <path class="shut" d="M-6 1 Q0 5 6 1" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
             <path class="x" d="M-5 -5 L5 5 M5 -5 L-5 5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+            <path class="hold" d="M-5 -5.5 L4 0 L-5 5.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
             <circle class="o" r="6" fill="#fff"/>
           </g>
           <g class="eye r" transform="translate(61 45)">
@@ -103,18 +161,24 @@ html.dark .eye path{stroke:#141414}
             <path class="arc" d="M-6 3 Q0 -7 6 3" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
             <path class="shut" d="M-6 1 Q0 5 6 1" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
             <path class="x" d="M-5 -5 L5 5 M5 -5 L-5 5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"/>
+            <path class="hold" d="M5 -5.5 L-4 0 L5 5.5" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>
             <circle class="o" r="6" fill="#fff"/>
           </g>
+          <path class="mouth" d="M44 64 Q47 61.5 50 64 Q53 66.5 56 64" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
         </g>
       </g>
     </svg>
   </div>
+  <div class="puffs"><i></i><i></i><i></i></div>
   <div class="mk dots"><i></i><i></i><i></i></div>
   <div class="mk sweat"></div>
   <div class="mk bang">!</div>
   <div class="mk zz"><b>z</b><b>z</b></div>
   <div class="mk badge" id="badge"></div>
 </div>
+<svg id="aim" viewBox="0 0 100 100" aria-hidden="true"><circle class="bg" cx="50" cy="50" r="46"/><circle class="fg" id="aimFg" cx="50" cy="50" r="46" stroke-dasharray="289" stroke-dashoffset="289"/></svg>
+<div id="sats"></div>
+<div id="pets"></div>
 <div id="bub" class="up"></div>
 <script>
 const TOKEN = new URLSearchParams(location.search).get('t') || ''
@@ -126,17 +190,31 @@ function theme() {
 }
 theme(); addEventListener('storage', (e) => { if (e.key === 'tx.theme') theme() }); matchMedia('(prefers-color-scheme: light)').addEventListener('change', theme)
 const host = window.tianxiApp || null
-const L = { calendar_add: '添加日程', calendar_update: '修改日程', calendar_list: '查看日程', todo_add: '添加待办', todo_list: '查看待办', mail_draft: '起草邮件', mail_send: '发送邮件', folder_list: '查看文件夹', file_move: '整理文件', brief_publish: '整理今天', memory_save: '记下来', memory_search: '翻记忆', mail_read: '看邮件', brief_resolve: '处理简报', show_ui: '生成界面', later_add: '记下稍后做', web_search: '搜索网页', web_fetch: '打开网页', read: '读文件', write: '写文件', edit: '改文件', bash: '运行命令' }
+const L = { calendar_add: '添加日程', calendar_update: '修改日程', calendar_list: '查看日程', todo_add: '添加待办', todo_list: '查看待办', mail_draft: '起草邮件', mail_send: '发送邮件', folder_list: '查看文件夹', file_move: '整理文件', brief_publish: '整理今天', memory_save: '记下来', memory_search: '翻记忆', mail_read: '看邮件', brief_resolve: '处理简报', show_ui: '生成界面', later_add: '记下稍后做', web_search: '搜索网页', web_fetch: '打开网页', read: '读文件', read_image: '看图', write: '写文件', edit: '改文件', bash: '运行命令' }
 // tools where 小天 looks around (finding things) rather than heads down (making things)
 const LOOK = /search|fetch|list|read|grep|glob|find/
 const $ = (id) => document.getElementById(id)
-const body = document.body, ball = $('ball'), eyes = $('eyes'), lean = $('lean'), bub = $('bub'), badge = $('badge')
+const body = document.body, ball = $('ball'), eyes = $('eyes'), lean = $('lean'), bub = $('bub'), badge = $('badge'), aim = $('aim'), aimFg = $('aimFg'), sats = $('sats'), pets = $('pets')
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+const short = (s, n = 14) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s }
+const api = (p, b) => fetch('/api/' + p, { method: b ? 'POST' : 'GET', headers: { 'content-type': 'application/json', 'x-tianxi-token': TOKEN }, body: b ? JSON.stringify(b) : undefined }).then((r) => r.json()).catch(() => null)
 
-let st = { status: 'idle', approvals: [], brief: null, tool: '', toolKind: '' }
+let st = { status: 'idle', approvals: [], brief: null, tool: '', toolKind: '', manner: null, agents: [], mainId: 'tianxi' }
 const busyAgents = {}                    // every agent counts: 小天 is busy while any of its agents is
 let flash = null, flashUntil = 0          // a short face after an event: happy when done, oops on an error
-let hover = false, dragging = false, still = 0, lastMouse = null, ptr = null, edge = { top: 999 }
+let hover = false, dragging = false, still = 0, lastMouse = null, ptr = null, edge = { top: 999, left: 999, right: 999 }
 let sleepy = false
+let saying = null      // { nudge, until }: what it is saying now, on its own or because you asked
+let dropping = null    // { over, last }: something is being dragged over it; over = the Bot under the pointer
+let drop = null        // what it was given: { id, state: looking|ready|failed, to, toName, title, say, actions, err }
+let peek = null        // dragged over a window and held still there: { aim 0..1, armed, title, app } from the main process
+const early = new Map()   // drop results that came before the drop's own id did
+let popping = false, dropOff = null
+
+const agentName = (aid) => (st.agents.find((a) => a.id === aid) || st.agents.find((a) => a.id === st.mainId) || { name: '小天' }).name
+const held = () => st.manner?.held || []
+// a step waiting for your OK is held like the rest; the face asks only once it has been said
+const heldApproval = () => held().some((n) => n.what === 'approval')
 
 // ---------- what face to show ----------
 function decisions() {
@@ -144,38 +222,79 @@ function decisions() {
   return st.brief && st.brief.date === today ? (st.brief.items || []).filter((i) => i.kind === 'decide' && i.status !== 'resolved').length : 0
 }
 function face() {
-  if (dragging) return 'drag'
+  if (dragging) return peek?.armed ? 'peek' : 'drag'
+  if (dropping) return 'catch'
+  if (drop) return drop.state === 'looking' ? 'look' : drop.state === 'ready' ? 'offer' : drop.help ? 'say' : 'oops'
   if (st.takeover && st.takeover.how === 'full') return 'yield'
-  if (st.approvals.length) return 'ask'
+  if (saying) return saying.nudge.what === 'approval' && st.approvals.length ? 'ask' : 'say'
+  // a step waits for your OK: it holds that in too, until you pause
+  if (st.approvals.length) return heldApproval() ? 'hold' : 'ask'
   if (st.tool) return st.toolKind === 'look' ? 'look' : 'focus'
   if (flash && Date.now() < flashUntil) return flash
   if (st.status !== 'idle') return 'think'
+  if (held().length) return 'hold'
   if (sleepy) return 'sleep'
   if (hover) return 'hover'
   return 'idle'
 }
 function text(f) {
   const n = decisions()
+  if (f === 'drag') return null
+  if (f === 'peek') return { t: `松手看看「${short(peek.title || peek.app, 16)}」` }
+  if (f === 'catch') return { t: dropping.over ? `交给${agentName(dropping.over)}` : `松手交给${agentName(st.mainId)}` }
+  if (drop) {
+    if (drop.state === 'looking') return { t: `${drop.toName}在看${drop.title ? '「' + short(drop.title, 12) + '」' : ''}…` }
+    if (drop.state === 'ready') return { say: { who: drop.toName, text: drop.say || '你想让我做什么？' }, far: true }
+    return { say: { who: drop.toName || '', text: drop.err }, buttons: drop.help ? [['help', drop.help, 'main'], ['close', '知道了']] : [['close', '知道了']] }
+  }
+  if (saying) {
+    const x = saying.nudge
+    return { say: { who: agentName(x.agent), text: x.text }, buttons: x.go ? [['go', '去看', 'main'], ['later', '等会儿']] : [['ok', '知道了', 'main']], cls: f === 'ask' ? 'ask' : '' }
+  }
   if (f === 'ask') return { t: '需要你确认：' + (L[st.approvals[0].tool] || st.approvals[0].tool), cls: 'ask' }
   if (f === 'yield') return { t: '你在用手机操作，小天先停下' }
   if (f === 'happy') return { t: '做好了' }
   if (f === 'oops') return { t: '出了点问题，点我看看' }
   if (f === 'think') return { t: '小天在想…' }
   if (f === 'focus' || f === 'look') return { t: '小天在' + (L[st.tool] || '做事') }
+  // held: nothing is said; coming close tells you it is holding something in
+  if (f === 'hold') return hover ? { h: `憋着 <b>${held().length}</b> 件事没说 · 点我听` } : null
   // decisions waiting show as the badge; the words only when you come close
   if (f === 'hover') return n ? { h: '今天有 <b>' + n + '</b> 件事等你定，点我看看' } : { t: '点我打开 · 拖我换个地方' }
   return null
 }
-let lastFace = ''
+const side = () => ((edge.right ?? 999) >= (edge.left ?? 999) ? 1 : -1)   // the side with more room: petals and Bots go there
+let lastFace = '', bubKey = ''
 function render() {
   const f = face()
-  body.className = 'f-' + (f === 'look' ? 'focus' : f === 'yield' ? 'hover' : f) + (st.tool ? ' tool-run' : '') + (decisions() ? ' has-dec' : '')
-  badge.textContent = decisions() || ''
+  const cls = f === 'look' ? 'focus' : f === 'yield' ? 'hover' : f
+  const count = held().length || decisions()
+  body.className = 'f-' + cls + (st.tool ? ' tool-run' : '') + (count ? ' has-dec' : '') + (tucked() ? ' tucked' : '') + (popping ? ' pop' : '') + (drop?.state === 'looking' ? ' dropping-look' : '')
+  badge.textContent = count || ''
   const m = text(f)
-  if (m) { if (m.h) bub.innerHTML = m.h; else bub.textContent = m.t; bub.className = 'on ' + (edge.top < 130 ? 'down' : 'up') + (m.cls ? ' ' + m.cls : '') }
-  else bub.className = edge.top < 130 ? 'down' : 'up'
+  const down = edge.top < 150
+  // keep the bubble on the screen when the ball sits near its left or right edge
+  const half = m?.say ? 135 : 130
+  const dx = Math.max(0, half + 8 - (edge.left ?? 999)) - Math.max(0, half + 8 - (edge.right ?? 999))
+  bub.style.setProperty('--dx', dx + 'px')
+  if (m) {
+    // rebuilt only when it says something else, so a button under the mouse stays the same button
+    const key = JSON.stringify(m)
+    if (key !== bubKey) {
+      bubKey = key
+      if (m.say) bub.innerHTML = (m.say.who ? `<div class="who">${esc(m.say.who)}</div>` : '') + `<div class="tx">${esc(m.say.text)}</div>` + (m.buttons ? `<div class="bt">${m.buttons.map(([a, t, c]) => `<button data-a="${a}" class="${c || ''}">${esc(t)}</button>`).join('')}</div>` : '')
+      else if (m.h) bub.innerHTML = m.h
+      else bub.textContent = m.t
+    }
+    bub.className = 'on ' + (down ? 'down' : 'up') + (m.say ? ' say' : '') + (m.far ? ' far' : '') + (m.cls ? ' ' + m.cls : '')
+  } else { bubKey = ''; bub.className = down ? 'down' : 'up' }
   lastFace = f
   look()
+}
+// full screen or a meeting: step back, unless it is busy with you right now
+function tucked() {
+  const r = st.manner?.room
+  return !!(r && r.known && (r.full || r.meeting)) && !hover && !dragging && !dropping && !drop && !saying
 }
 
 // ---------- the eyes follow the mouse anywhere on the screen ----------
@@ -185,8 +304,10 @@ function look() {
   let dx = 0, dy = 0
   if (f === 'think') { dx = -4 + roam.x; dy = -6 }                       // looking up, thinking
   else if (f === 'look') { dx = roam.x * 1.6; dy = 1 }                    // scanning side to side
-  else if (f === 'focus') { dx = 1; dy = 4 }                              // head down, working
-  else if (f === 'sleep' || f === 'happy' || f === 'oops') { dx = 0; dy = 0 }
+  else if (f === 'focus' || f === 'peek') { dx = 1; dy = 4 }              // head down, working (or looking at the window under it)
+  else if (f === 'say') { dx = 0; dy = edge.top < 150 ? 5 : -5 }         // toward its bubble
+  else if (f === 'offer') { dx = side() * 6; dy = 0 }                     // toward what it offers
+  else if (f === 'sleep' || f === 'happy' || f === 'oops' || f === 'hold') { dx = 0; dy = 0 }
   else if (ptr) {
     // vector from the ball's centre to the pointer, eased so far away still reads as "looking there"
     const vx = ptr.x - innerWidth / 2, vy = ptr.y - innerHeight / 2, d = Math.hypot(vx, vy) || 1
@@ -202,7 +323,7 @@ setInterval(() => { roam.x = lastFace === 'look' ? (roam.x > 0 ? -5 : 5) : (Math
 
 // blink now and then while awake
 function blink() {
-  if (['idle', 'hover', 'focus', 'look', 'think', 'ask'].includes(lastFace)) { body.classList.add('blink'); setTimeout(() => body.classList.remove('blink'), 130) }
+  if (['idle', 'hover', 'focus', 'look', 'think', 'ask', 'say', 'offer'].includes(lastFace)) { body.classList.add('blink'); setTimeout(() => body.classList.remove('blink'), 130) }
   setTimeout(blink, 2200 + Math.random() * 3800)
 }
 setTimeout(blink, 1800)
@@ -210,22 +331,32 @@ setTimeout(blink, 1800)
 // ---------- mouse: hit test, drag, click ----------
 let hit = false
 const overBall = (x, y) => Math.hypot(x - innerWidth / 2, y - innerHeight / 2) <= ball.offsetWidth / 2 + 4
-const overBub = (x, y) => { if (!bub.classList.contains('on')) return false; const r = bub.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom }
+const inRect = (el, x, y) => { const r = el.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom }
+const overBub = (x, y) => bub.classList.contains('on') && inRect(bub, x, y)
+const overPets = (x, y) => [...pets.querySelectorAll('.pet.on')].some((p) => inRect(p, x, y))
 function setHit(on) { if (on !== hit) { hit = on; host?.orbHit(on) } }
 function onPointer(x, y) {
   ptr = { x, y }
   const moved = !lastMouse || Math.abs(lastMouse.x - x) + Math.abs(lastMouse.y - y) > 2
   if (moved) { lastMouse = { x, y }; still = Date.now(); if (sleepy) { sleepy = false; render() } }
   if (!dragging) {
-    setHit(overBall(x, y) || overBub(x, y))
     const h = overBall(x, y)
+    // while something is dragged over it, the whole window takes the drop (the Bots around it are targets too)
+    setHit(!!dropping || h || overBub(x, y) || overPets(x, y))
     if (h !== hover) { hover = h; render() }
   }
   look()
 }
 // in the client the main process sends where the mouse is; in a plain browser use the page's own events
-if (host?.onOrb) host.onOrb((m) => { edge = m; onPointer(m.x, m.y) })
-else { addEventListener('pointermove', (e) => onPointer(e.clientX, e.clientY)); edge = { top: 500 } }
+if (host?.onOrb) host.onOrb((m) => {
+  edge = m
+  const p = m.peek || null
+  if (JSON.stringify(p) !== JSON.stringify(peek)) { peek = p; render() }
+  aim.classList.toggle('on', !!(dragging && p && p.aim > 0))
+  aimFg.style.strokeDashoffset = String(289 * (1 - Math.min(1, p?.aim || 0)))
+  onPointer(m.x, m.y)
+})
+else { addEventListener('pointermove', (e) => onPointer(e.clientX, e.clientY)); edge = { top: 500, left: 500, right: 500 } }
 
 let down = null
 ball.addEventListener('pointerdown', (e) => {
@@ -235,7 +366,7 @@ ball.addEventListener('pointerdown', (e) => {
 })
 ball.addEventListener('pointermove', (e) => {
   if (!down || dragging) return
-  if (Math.hypot(e.screenX - down.x, e.screenY - down.y) > 4) { dragging = true; host?.orbDrag(true); render() }
+  if (Math.hypot(e.screenX - down.x, e.screenY - down.y) > 4) { dragging = true; closeDrop(); host?.orbDrag(true); render() }
 })
 let lastX = null
 addEventListener('pointermove', (e) => {
@@ -247,25 +378,174 @@ addEventListener('pointermove', (e) => {
 ball.addEventListener('pointerup', (e) => {
   const wasDrag = dragging
   down = null; lastX = null
-  if (wasDrag) { dragging = false; host?.orbDrag(false); ball.style.transform = ''; still = Date.now(); render(); return }
+  if (wasDrag) { dragging = false; peek = null; aim.classList.remove('on'); host?.orbDrag(false); ball.style.transform = ''; still = Date.now(); render(); return }
+  // a click: what it was saying, what it is holding in, or the app
+  if (saying) return act(saying.nudge.go ? 'go' : 'ok')
+  if (drop) return
+  if (held().length) { api('nudge/ask', {}); return }
   host?.show()
 })
 ball.addEventListener('contextmenu', (e) => { e.preventDefault(); host?.orbMenu() })
-bub.addEventListener('click', () => host?.show())
+bub.addEventListener('click', (e) => {
+  const b = e.target.closest('button')
+  if (b) return act(b.dataset.a)
+  if (saying || drop) return
+  host?.show()
+})
+function act(a) {
+  const x = saying?.nudge
+  if (a === 'go' && x) { api('nudge/done', { id: x.id }); go(x.go) }
+  else if (a === 'later' && x) api('nudge/later', { id: x.id })
+  else if (a === 'ok' && x) api('nudge/done', { id: x.id })
+  else if (a === 'help') host?.peekHelp?.()
+  if (a === 'close' || a === 'help') { closeDrop(); render(); return }
+  saying = null; render()
+}
+function go(g) { if (host?.goto) host.goto(g); else host?.show() }
 
 // doze off when nothing happens for a while and 小天 has nothing to do
 setInterval(() => {
-  const s = st.status === 'idle' && !st.approvals.length && !hover && !dragging && Date.now() - still > 90000
+  const s = st.status === 'idle' && !st.approvals.length && !hover && !dragging && !drop && !saying && Date.now() - still > 90000
   if (s !== sleepy) { sleepy = s; render() }
 }, 3000)
 still = Date.now()
+
+// ---------- 会察言观色: it speaks when the runtime says now is a good moment ----------
+const waiting = []   // said while it was still saying something else: next, one at a time
+function speak(n, asked) {
+  // what you are reading is not pushed away by the next thing, unless you asked for this one
+  if (saying && saying.nudge.id !== n.id && !asked) { if (!waiting.some((x) => x.id === n.id)) waiting.push(n); return }
+  saying = { nudge: n, until: Date.now() + 12000 }
+  popping = true; render()
+  setTimeout(() => { popping = false; render() }, 700)
+}
+function next() {
+  while (waiting.length) {
+    const n = waiting.shift()
+    if ((st.manner?.said || []).some((x) => x.id === n.id && x.state === 'said')) return speak(n)
+  }
+}
+// it stays up while you read it (the pointer on the bubble), then goes; what it said stays on the 系统感知 page
+setInterval(() => {
+  if (saying && Date.now() > saying.until && !(ptr && overBub(ptr.x, ptr.y))) { saying = null; render() }
+  if (!saying && waiting.length) next()
+}, 500)
+
+// ---------- 拖给小天 ----------
+// Bots around it while something is dragged over it: drop on one to give it to that Bot
+function showSats() {
+  const others = st.agents.filter((a) => a.id !== st.mainId).slice(0, 5)
+  const n = others.length, s = side()
+  sats.innerHTML = others.map((a, i) => {
+    const t = (i - (n - 1) / 2) * 40 * Math.PI / 180
+    return `<div class="sat" data-id="${esc(a.id)}" style="--x:${(s * Math.cos(t) * 64).toFixed(1)}px;--y:${(Math.sin(t) * 64).toFixed(1)}px;background:${esc(a.color || '#555')}">${esc([...a.name][0] || '·')}</div>`
+  }).join('')
+  requestAnimationFrame(() => sats.querySelectorAll('.sat').forEach((x) => x.classList.add('on')))
+}
+function satAt(x, y) { const el = [...sats.querySelectorAll('.sat.on')].find((s) => Math.hypot(x - (s.getBoundingClientRect().left + 15), y - (s.getBoundingClientRect().top + 15)) < 22); return el ? el.dataset.id : '' }
+function startCatch() { if (dropping) return; dropping = { over: '', last: Date.now() }; closeDrop(); setHit(true); showSats(); render() }
+function endCatch() { dropping = null; sats.querySelectorAll('.sat').forEach((x) => x.classList.remove('on', 'over')); if (ptr) setHit(overBall(ptr.x, ptr.y)); render() }
+addEventListener('dragenter', (e) => { e.preventDefault(); startCatch() })
+addEventListener('dragover', (e) => {
+  e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+  startCatch(); dropping.last = Date.now()
+  const over = satAt(e.clientX, e.clientY)
+  if (over !== dropping.over) { dropping.over = over; sats.querySelectorAll('.sat').forEach((x) => x.classList.toggle('over', x.dataset.id === over)); render() }
+})
+// no dragover for a moment: the drag went somewhere else
+setInterval(() => { if (dropping && Date.now() - dropping.last > 400) endCatch() }, 150)
+addEventListener('drop', async (e) => {
+  e.preventDefault()
+  const to = dropping?.over || satAt(e.clientX, e.clientY) || st.mainId
+  const what = grab(e.dataTransfer)
+  endCatch()
+  give(to, await what)
+})
+// what was dropped: files by their path; pictures with no file behind them (from a web page) as bytes; else text or a link
+function grab(dt) {
+  const files = [...(dt?.files || [])]
+  const uri = dt?.getData('text/uri-list') || '', txt = dt?.getData('text/plain') || '', html = dt?.getData('text/html') || ''
+  return (async () => {
+    const out = { files: [], uploads: [], text: '', url: '' }
+    for (const f of files) {
+      let p = ''; try { p = host?.pathOf ? host.pathOf(f) : '' } catch {}
+      if (p) out.files.push(p)
+      else if (f.size > 0 && f.size < 15e6) out.uploads.push({ name: f.name || 'drop', b64: await b64(f) })
+    }
+    if (!out.files.length && !out.uploads.length) {
+      out.url = uri.split(/\r?\n/).find((l) => l && !l.startsWith('#')) || ''
+      out.text = txt.trim()
+      if (out.url && out.text === out.url.trim()) out.text = ''
+      if (!out.url && !out.text && html) { const m = /<img[^>]+src="(https?:[^"]+)"/i.exec(html); if (m) out.url = m[1] }
+    }
+    return out
+  })()
+}
+async function b64(f) {
+  const a = new Uint8Array(await f.arrayBuffer()); let s = ''
+  for (let i = 0; i < a.length; i += 0x8000) s += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000))
+  return btoa(s)
+}
+async function give(to, what, extra = {}) {
+  if (!what.files.length && !what.uploads.length && !what.text && !what.url && !extra.shot) { drop = { state: 'failed', to, toName: '', err: '这个拖不进来，换成文件、文字或图片试试' }; render(); closeLater(5000); return }
+  saying = null
+  drop = { state: 'looking', to, toName: agentName(to), title: extra.window?.title || extra.window?.app || '' }
+  render()
+  const r = await api('drop', { to, ...what, ...extra })
+  if (!drop || drop.state !== 'looking' || drop.to !== to) return
+  if (!r?.id) { drop = { ...drop, state: 'failed', err: r?.error || '没交过去，再拖一次试试' }; render(); closeLater(6000); return }
+  drop.id = r.id
+  if (early.has(r.id)) { got(early.get(r.id)); early.delete(r.id) }
+}
+// it looked: what it saw, and two or three things it could do with it
+function got(d) {
+  if (!drop || drop.id !== d.id) return
+  if (d.state === 'failed') { drop = { ...drop, state: 'failed', err: d.err || '没看明白，换个方式再给我一次' }; render(); closeLater(8000); return }
+  if (d.state !== 'ready') return
+  drop = { ...drop, state: 'ready', say: d.say, actions: d.actions || [] }
+  showPets(); render(); closeLater(45000)
+}
+function showPets() {
+  const items = [...drop.actions.map((a, i) => ({ i, t: a.label })), { i: 'chat', t: '打开对话', cls: 'chat' }, { i: 'close', t: '×', cls: 'x' }]
+  const n = items.length, s = side()
+  pets.innerHTML = items.map((p, k) => {
+    const t = (k - (n - 1) / 2) * (n > 4 ? 30 : 36) * Math.PI / 180, R = 72
+    return `<button class="pet ${p.cls || ''}" data-i="${p.i}" title="${esc(p.t)}" style="--x:${(s * Math.cos(t) * R).toFixed(1)}px;--y:${(Math.sin(t) * R).toFixed(1)}px;--ax:${s > 0 ? '0%' : '100%'};transition-delay:${k * 55}ms">${esc(p.t)}</button>`
+  }).join('')
+  requestAnimationFrame(() => requestAnimationFrame(() => pets.querySelectorAll('.pet').forEach((x) => x.classList.add('on'))))
+}
+pets.addEventListener('click', (e) => {
+  const b = e.target.closest('.pet'); if (!b || !drop) return
+  const d = drop, i = b.dataset.i
+  closeDrop(); render()
+  if (d.id) api('drop/do', { id: d.id, i: /^\d+$/.test(i) ? +i : i }).then((r) => { if (r?.go) go(r.go) })
+})
+function closeDrop() {
+  clearTimeout(dropOff)
+  pets.querySelectorAll('.pet').forEach((x) => { x.style.transitionDelay = '0ms'; x.classList.remove('on') })
+  if (drop?.id && drop.state === 'ready') api('drop/do', { id: drop.id, i: 'close' })
+  drop = null
+  if (ptr) setHit(overBall(ptr.x, ptr.y))
+}
+// what it offers goes away by itself if you leave it (not while the pointer is on it)
+function closeLater(ms) {
+  clearTimeout(dropOff)
+  dropOff = setTimeout(function again() { if (ptr && (overPets(ptr.x, ptr.y) || overBub(ptr.x, ptr.y) || overBall(ptr.x, ptr.y))) { dropOff = setTimeout(again, 3000); return } closeDrop(); render() }, ms)
+}
+// dragged onto a window and let go there: the main process took a picture of that window
+host?.onLook?.((m) => {
+  if (m.error) { drop = { state: 'failed', to: st.mainId, toName: agentName(st.mainId), err: m.error, help: m.help || '' }; render(); closeLater(15000); return }
+  give(st.mainId, { files: [], uploads: [], text: '', url: '' }, { shot: m.shot, window: m.window })
+})
 
 // ---------- what 小天 is doing ----------
 function show(f, ms) { flash = f; flashUntil = Date.now() + ms; render(); setTimeout(render, ms + 30) }
 async function load() {
   try {
     const s = await (await fetch('/api/state', { headers: { 'x-tianxi-token': TOKEN } })).json()
-    Object.assign(busyAgents, s.agentStatus || {}); st.status = s.status; st.approvals = s.approvals || []; st.brief = s.brief; st.takeover = s.takeover || null; render()
+    Object.assign(busyAgents, s.agentStatus || {}); st.status = s.status; st.approvals = s.approvals || []; st.brief = s.brief; st.takeover = s.takeover || null
+    st.manner = s.manner || null; st.agents = s.agents || []; st.mainId = s.mainId || 'tianxi'
+    render()
   } catch {}
 }
 const es = new EventSource('/api/events?t=' + encodeURIComponent(TOKEN))
@@ -283,9 +563,16 @@ es.onmessage = (e) => {
     // a quick tool still shows its face for a moment, so you can see what 小天 just did
     if (it.role === 'tool' && it.state === 'running') { clearTimeout(toolOff); st.tool = it.name; st.toolKind = LOOK.test(it.name) ? 'look' : 'make'; toolAt = Date.now(); render() }
     else if (it.role === 'tool' && it.state) { clearTimeout(toolOff); toolOff = setTimeout(() => { st.tool = ''; render() }, Math.max(0, 900 - (Date.now() - toolAt))) }
-    else if (it.role === 'error') errored = true
+    else if (it.role === 'error' && !it.internal) errored = true
   } else if (m.type === 'takeover') { st.takeover = m.takeover || null; render()
-  } else if (m.type === 'hello' || m.type === 'approval' || m.type === 'approval-gone' || m.type === 'turn-end' || (m.type === 'store' && m.name === 'brief')) load()
+  } else if (m.type === 'manner') {
+    st.manner = m.manner
+    // answered somewhere else (you opened the page it was about): stop saying it
+    if (saying && !(m.manner.said || []).some((x) => x.id === saying.nudge.id && x.state === 'said')) saying = null
+    render()
+  } else if (m.type === 'nudge-say' && m.nudge) { speak(m.nudge, m.asked)
+  } else if (m.type === 'drop' && m.drop) { if (drop && drop.id === m.drop.id) got(m.drop); else early.set(m.drop.id, m.drop)
+  } else if (m.type === 'hello' || m.type === 'approval' || m.type === 'approval-gone' || m.type === 'turn-end' || m.type === 'agents' || (m.type === 'store' && (m.name === 'brief' || m.name === 'agents'))) load()
 }
 // let a preview drive the face: orb.html?face=happy
 const q = new URLSearchParams(location.search).get('face')

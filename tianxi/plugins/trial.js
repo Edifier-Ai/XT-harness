@@ -34,6 +34,7 @@ function askToBeRegular(aid) {
   const ok = mine.filter((p) => p.status === 'approved' || p.status === 'done')
   patchAgent(aid, (x) => { x.trial.applied = now() })
   note(aid, { type: 'apply', ok: ok.length, total: mine.filter((p) => p.status !== 'open').length, titles: ok.slice(-5).map((p) => p.title), at: now() })
+  bus.nudge({ what: 'trial', ref: aid, agent: aid, text: `${a.name}申请转正：试用期里你同意了它 ${ok.length} 个方案`, go: { view: 'chat', arg: aid } })
   bus.push({ type: 'trial', agent: aid })
 }
 
@@ -54,6 +55,7 @@ export function apply(ctx) {
       const p = { id: id('plan'), agent: aid, callId: exec?.callId, title: String(a.title || '').slice(0, 120), steps: (a.steps || []).map((x) => String(x).slice(0, 200)).slice(0, 8), why: String(a.why || '').slice(0, 300), at: now(), status: 'open' }
       update('proposals', [], (l) => { l.push(p); if (l.length > 300) l.splice(0, l.length - 300) })
       bus.push({ type: 'trial', agent: aid })
+      bus.nudge({ what: 'plan', ref: p.id, agent: aid, text: `${agentById(aid).name}交了个方案，等你点头：${p.title}`, go: { view: 'chat', arg: aid } })
       return { ok: true, id: p.id, note: '方案已经交给用户了。现在停下，用一句话告诉用户你交了什么方案，等用户点头再做。' }
     },
   }))
@@ -78,6 +80,7 @@ export function apply(ctx) {
     'POST /api/trial/decide': async (b) => {
       const p = proposals().find((x) => x.id === b.id); if (!p) throw new Error('找不到这个方案')
       if (p.status !== 'open') return { ok: true, proposal: p }
+      bus.unnudge('plan', p.id)
       const a = agentById(p.agent)
       if (b.ok) {
         patchProposal(p.id, { status: 'approved', decidedAt: now() })
@@ -100,6 +103,7 @@ export function apply(ctx) {
       const a = agentById(b.id); if (!a || a.id !== b.id || !a.trial) throw new Error('它不在试用期')
       const was = a.trial
       patchAgent(a.id, (x) => { delete x.trial; x.promotedAt = now() })
+      bus.unnudge('trial', a.id)
       record({ tool: 'trial_promote', agent: '', title: `让「${a.name}」转正了`, why: `试用期里你同意了它 ${was.ok || 0} 个方案`, undo: { kind: 'trial-restore', data: { aid: a.id, trial: was }, label: '回到试用期' } })
       note(a.id, { type: 'promoted', ok: was.ok || 0, at: now() })
       bus.push({ type: 'trial', agent: a.id })
@@ -109,6 +113,7 @@ export function apply(ctx) {
     'POST /api/trial/later': async (b) => {
       const a = agentById(b.id); if (!a || a.id !== b.id || !a.trial) throw new Error('它不在试用期')
       patchAgent(a.id, (x) => { x.trial.need = Math.max(x.trial.need || NEED, x.trial.ok || 0) + 2; delete x.trial.applied })
+      bus.unnudge('trial', a.id)
       note(a.id, { type: 'later', need: agentById(a.id).trial.need, at: now() })
       bus.push({ type: 'trial', agent: a.id })
       return { ok: true }

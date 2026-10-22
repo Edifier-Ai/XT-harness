@@ -1,13 +1,13 @@
 {
- "version": "0.22.0",
- "notes": "一群 Bot 能一起干活了：Bot 圆桌（几个 Bot 按性格讨论，整理成分歧卡，你拍板，结论进记忆）；试用期 Bot（新 Bot 先只交方案，你点头才做，做对几次申请转正，一键转正）；Bot 动态（Bot 自己做的事像朋友圈一样发出来，点赞=以后这样做，评论=纠正）。另外修了：手机发来的长中文偶尔乱码、排队的回复不显示、一次做好几件事时提示条堆满屏幕。",
+ "version": "0.23.0",
+ "notes": "会察言观色的小天：有事先憋着，全屏、开会、打字时不打扰，你停下来才说，每天主动开口有上限；拖给小天：把文件、文字、图片拖到桌面小天身上，它先看一眼，再长出两三个能直接点的动作，拖到旁边的 Bot 上就交给那个 Bot；把小天拖到一个窗口上停一下，松手它就看这个窗口",
  "minBase": "0.4.0",
- "at": "2026-10-22T10:49:30.310Z",
+ "at": "2026-10-22T11:37:10.281Z",
  "files": {
   "app/shell.js": {
    "path": "desktop/shell.js",
-   "sha256": "ccb8287f873534360472b71ad9aaec9489d594c9fffe0b2c2a85f9098c201b35",
-   "size": 42777
+   "sha256": "17f2d9662a4bce3b670d64af0ee2178be0aaf3a406c8744779c45acc2829aa8b",
+   "size": 49089
   },
   "app/updater.js": {
    "path": "desktop/updater.js",
@@ -16,8 +16,8 @@
   },
   "app/preload.js": {
    "path": "desktop/preload.js",
-   "sha256": "c2a3a40ec685c41627d4cfdcbc1f6def9af0ac9e17422a0cb9de11ffbc695111",
-   "size": 2388
+   "sha256": "c024a03c8a1baed57253fb4adb6059b421551d9fc7ba906de6885520d6f80ef6",
+   "size": 2880
   },
   "app/freegate.js": {
    "path": "desktop/freegate.js",
@@ -28,6 +28,16 @@
    "path": "desktop/phone.js",
    "sha256": "de158996a2244c7ed8cbb8dde48caf3a1a081f9228e813ac0e7d1fe8332b20dd",
    "size": 12758
+  },
+  "app/room.js": {
+   "path": "desktop/room.js",
+   "sha256": "52dbbed2669b9ce0038aee85e678a3bd8e82482f4ba8f02d862b2954b0fd078f",
+   "size": 12275
+  },
+  "app/look.js": {
+   "path": "desktop/look.js",
+   "sha256": "367a5de0e0857f8bac1d6efbe76c445f1554d84d3545c5cc0e3007b2f7d30285",
+   "size": 3888
   },
   "app/loading.html": {
    "path": "desktop/loading.html",
@@ -51,8 +61,8 @@
   },
   "bundle/cordis.patch.yml": {
    "path": "tianxi/cordis.patch.yml",
-   "sha256": "fc8c38e613a1b00f4ef40d1352e52a886ee82ffb31a5063ac395b2e7e4c4140a",
-   "size": 2796
+   "sha256": "5710526caf482adda13919fb9101af58481a07d9b5f547bfb8ca80d4b2ecc645",
+   "size": 2924
   },
   "bundle/eval/fixtures/01/下载/IMG_0012.jpg": {
    "path": "tianxi/eval/fixtures/01/下载/IMG_0012.jpg",
@@ -414,6 +424,11 @@
    "sha256": "ba2930d0bfff05fa94701b712b1fad1a24d8e71282c177f9aa3a31e6949c0411",
    "size": 10541
   },
+  "bundle/plugins/drop.js": {
+   "path": "tianxi/plugins/drop.js",
+   "sha256": "a654b77d013d0c523df41c8a9795d35dd0705ac37c2ce642be90a8207df064cb",
+   "size": 7229
+  },
   "bundle/plugins/eval.js": {
    "path": "tianxi/plugins/eval.js",
    "sha256": "1ad063cb88b78e4c0b2d52ce1dbb9e405c973bf51af8e98ac2eca2628172d03a",
@@ -421,8 +436,8 @@
   },
   "bundle/plugins/feed.js": {
    "path": "tianxi/plugins/feed.js",
-   "sha256": "3e910ba6f858cad82b198fcb463a8a725c41a9e2f0005867e4295295ea6518cb",
-   "size": 6968
+   "sha256": "616e6b2f65c682b58131db6230f349a3d315addfd634f193810f1b80b0ad5613",
+   "size": 7212
   },
   "bundle/plugins/genui-prompt.md": {
    "path": "tianxi/plugins/genui-prompt.md",
@@ -431,13 +446,18 @@
   },
   "bundle/plugins/host.js": {
    "path": "tianxi/plugins/host.js",
-   "sha256": "5c2c66ff4a2c2ff5a9b9fe1b0a9c317c9ab4a7a95910ba9da43fb268608b20de",
-   "size": 36924
+   "sha256": "68cdd2bcd4e09253358cd5f22ae5c3d873d6675daf268f1b76a9da9575b54ade",
+   "size": 37403
   },
   "bundle/plugins/ledger.js": {
    "path": "tianxi/plugins/ledger.js",
    "sha256": "6f12e8833ca69f99a9943fd1c5375cc6f9dbd9ecdf2c586ef2c5a1b66e5440ad",
    "size": 8442
+  },
+  "bundle/plugins/manners.js": {
+   "path": "tianxi/plugins/manners.js",
+   "sha256": "8e2dcb4ef51d8e6057d8cfcab81486fa7dff634f1c22d373f8ff0e0661381815",
+   "size": 8041
   },
   "bundle/plugins/memory.js": {
    "path": "tianxi/plugins/memory.js",
@@ -446,18 +466,18 @@
   },
   "bundle/plugins/store.js": {
    "path": "tianxi/plugins/store.js",
-   "sha256": "e8f7f0a95400559c8075f5c2d5478cfabc1d520390ab91dce67b68060fff2a78",
-   "size": 8755
+   "sha256": "204a2cb036dee807d3da2ba16ac92e6aa8483c92af5142f74f05a864783bd1da",
+   "size": 9007
   },
   "bundle/plugins/table.js": {
    "path": "tianxi/plugins/table.js",
-   "sha256": "5b467ac57df852d47b8a4b8ad0ec5bd8df22d0ec788adda4eed7eb7e84f4725f",
-   "size": 9396
+   "sha256": "64e49c38afc2aae62373b0b3c4d6095110c08d99280b8656e9d44ba93d5d131d",
+   "size": 9434
   },
   "bundle/plugins/trial.js": {
    "path": "tianxi/plugins/trial.js",
-   "sha256": "e926280a00e6a6c1d581c3a188227c248a84dfe805e36dc0d4a15be5c7fe43ef",
-   "size": 8080
+   "sha256": "ae4b89d84b6e2b68ec2bb24fc43a6f67d6c872f25dbb57a45d4a0b20d32abef9",
+   "size": 8511
   },
   "bundle/plugins/voice.js": {
    "path": "tianxi/plugins/voice.js",
@@ -491,13 +511,13 @@
   },
   "bundle/web/app.js": {
    "path": "tianxi/web/app.js",
-   "sha256": "d1fbf16a3fa833fb632e7b67a3119defd722ffa02bd56def8ae925471985a66f",
-   "size": 166131
+   "sha256": "651995acb490b3273c9c06d7548893c83c510832c90e1c87070c6386f3cf3796",
+   "size": 169612
   },
   "bundle/web/bots.js": {
    "path": "tianxi/web/bots.js",
-   "sha256": "ae0951a3fb9b6a8268bb37b6f98839ab50d316a074da407060fdc711adb893ce",
-   "size": 22924
+   "sha256": "7e9b05e1887506d44e86b2a8abd32164d7d32bf2feacf2bbb2cf3d80451d152b",
+   "size": 22937
   },
   "bundle/web/free-models.json": {
    "path": "tianxi/web/free-models.json",
@@ -571,8 +591,8 @@
   },
   "bundle/web/orb.html": {
    "path": "tianxi/web/orb.html",
-   "sha256": "59916e36f442ea25413dd17253ff0a3f12c78d8c9f54a4825c728e33ce24b79b",
-   "size": 18657
+   "sha256": "a501cfdfc9d19e58806245fc95eb29ade19ab989e92aca52b3555151a9793f34",
+   "size": 38612
   },
   "bundle/web/qrcode.js": {
    "path": "tianxi/web/qrcode.js",
@@ -581,8 +601,8 @@
   },
   "bundle/web/style.css": {
    "path": "tianxi/web/style.css",
-   "sha256": "c5371f6845c7c3fe7b5251d046133aacf16726f191aadf9d0cfe02ad58fa3030",
-   "size": 96244
+   "sha256": "32567d59a62499d90bdfb8013fa3c5bf3733a78505a9f506fc953a85aa201f1a",
+   "size": 96774
   },
   "bundle/web/theme.js": {
    "path": "tianxi/web/theme.js",

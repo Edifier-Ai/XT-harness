@@ -2,7 +2,7 @@
 // Runs the DeepSeek Harness runtime (with the dsh-tianxi plugins) as a hidden child process,
 // shows the 小天 window, the floating 小天 orb, a tray icon, and reports idle time for background work.
 'use strict'
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, safeStorage, powerMonitor, shell, screen, globalShortcut, dialog, net: enet } = require('electron')
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, safeStorage, powerMonitor, shell, screen, globalShortcut, dialog, desktopCapturer, systemPreferences, net: enet } = require('electron')
 const { spawn } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
@@ -12,6 +12,8 @@ const crypto = require('node:crypto')
 const { pathToFileURL } = require('node:url')
 const { createUpdater } = require('./updater.js')
 const { createPhone } = require('./phone.js')
+const { createRoom } = require('./room.js')
+const { capture, makeFrame } = require('./look.js')
 
 const APP_ID = 'com.lenovo.tianxi.concept'
 app.setAppUserModelId(APP_ID)
@@ -271,9 +273,9 @@ async function loadMain() {
     if (await waitReady(600000)) loadMain()
   }
 }
-// The floating 小天: a red ball that sits anywhere on the desktop. The window is bigger than the ball so its
-// speech bubble fits; only the ball and the bubble catch the mouse (the page says when the pointer is over them).
-const ORB_W = 280, ORB_H = 240, BALL_X = ORB_W / 2, BALL_Y = ORB_H / 2
+// The floating 小天: a ball that sits anywhere on the desktop. The window is bigger than the ball so its speech
+// bubble, the Bots around it and what it offers fit; only those catch the mouse (the page says when the pointer is over them).
+const ORB_W = 520, ORB_H = 380, BALL_X = ORB_W / 2, BALL_Y = ORB_H / 2
 let orbTimer = null, orbDrag = null, orbLast = ''
 function orbHome() {
   const { workArea: a } = screen.getPrimaryDisplay()
@@ -292,6 +294,7 @@ function createPill() {
   pill.setAlwaysOnTop(true, 'screen-saver')
   if (MAC) pill.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true })
   pill.setIgnoreMouseEvents(true, { forward: true })
+  pill.webContents.on('will-navigate', (e) => e.preventDefault())
   pill.loadURL(uiURL('orb.html'))
   pill.once('ready-to-show', () => { pill.showInactive(); orbTick() })
   pill.on('closed', () => { pill = null; clearInterval(orbTimer); orbTimer = null })
@@ -301,9 +304,10 @@ function createPill() {
 function orbTick() {
   if (!pill || pill.isDestroyed()) return
   const c = screen.getCursorScreenPoint()
+  if (!cursorAt || c.x !== cursorAt.x || c.y !== cursorAt.y) { cursorAt = c; movedAt = Date.now() }
   if (orbDrag) pill.setPosition(Math.round(c.x - orbDrag.dx), Math.round(c.y - orbDrag.dy))
-  const b = pill.getBounds(), a = screen.getDisplayNearestPoint({ x: b.x + BALL_X, y: b.y + BALL_Y }).workArea
-  const m = { x: c.x - b.x, y: c.y - b.y, top: b.y + BALL_Y - a.y, left: b.x + BALL_X - a.x, right: a.x + a.width - b.x - BALL_X }
+  const b = pill.getBounds(), ballAt = { x: b.x + BALL_X, y: b.y + BALL_Y }, a = screen.getDisplayNearestPoint(ballAt).workArea
+  const m = { x: c.x - b.x, y: c.y - b.y, top: ballAt.y - a.y, left: ballAt.x - a.x, right: a.x + a.width - ballAt.x, peek: peekTick(ballAt) }
   const k = JSON.stringify(m)
   if (k !== orbLast) { orbLast = k; pill.webContents.send('tianxi:orb', m) }
 }
@@ -311,14 +315,65 @@ ipcMain.on('tianxi:orbHit', (e, on) => { if (pill && !pill.isDestroyed() && e.se
 ipcMain.on('tianxi:orbDrag', (e, on) => {
   if (!pill || pill.isDestroyed() || e.sender !== pill.webContents) return
   const c = screen.getCursorScreenPoint(), b = pill.getBounds()
-  if (on) { orbDrag = { dx: c.x - b.x, dy: c.y - b.y }; return }
+  if (on) { orbDrag = { dx: c.x - b.x, dy: c.y - b.y }; aimAt = null; return }
   orbDrag = null
+  const target = peekWin
+  unpeek(); aimAt = null
   // keep the ball itself on a screen, then remember where it was left
   const ball = { x: b.x + BALL_X, y: b.y + BALL_Y }, a = screen.getDisplayNearestPoint(ball).workArea
   const x = Math.min(Math.max(ball.x, a.x + 36), a.x + a.width - 36), y = Math.min(Math.max(ball.y, a.y + 36), a.y + a.height - 36)
   pill.setPosition(Math.round(x - BALL_X), Math.round(y - BALL_Y))
   cfg.orbPos = { x: Math.round(x), y: Math.round(y) }; saveCfg(cfg)
+  if (target) lookAt(target)
 })
+
+// 拖到窗口上看: dragged over a window and held still there, 小天 frames that window; let go and it looks at it.
+// Moving on before letting go just moves it, as before.
+const AIM_FROM = 400, AIM_FULL = 1200
+let aimAt = null     // where the ball came to rest while being dragged: { x, y, t }
+let peekWin = null   // the window it is aimed at, with its rect in DIP
+let peekAsking = false
+function peekTick(ball) {
+  if (!orbDrag || !room.supported) return null
+  const d = aimAt ? Math.hypot(ball.x - aimAt.x, ball.y - aimAt.y) : Infinity
+  if (d > (peekWin ? 24 : 6)) { aimAt = { x: ball.x, y: ball.y, t: Date.now() }; if (peekWin) unpeek(); return null }
+  if (peekWin) return { aim: 1, armed: true, title: peekWin.title || '', app: peekWin.app || '' }
+  const held = Date.now() - aimAt.t
+  if (held < AIM_FROM) return null
+  const aim = Math.min(1, (held - AIM_FROM) / (AIM_FULL - AIM_FROM))
+  if (aim >= 1 && !peekAsking) armPeek(ball)
+  return { aim, armed: false }
+}
+async function armPeek(ball) {
+  peekAsking = true
+  const p = MAC ? ball : screen.dipToScreenPoint(ball)
+  // 小天's own windows (the ball is under the pointer) are left out
+  const w = await room.at(p.x, p.y, [String(process.pid)]).catch(() => null)
+  peekAsking = false
+  if (!orbDrag || !aimAt) return
+  // nothing there to look at: wait until it is moved somewhere else
+  if (!w || w.desktop || !(w.w > 40 && w.h > 40)) { aimAt.t = Infinity; return }
+  const r = { x: w.x, y: w.y, width: w.w, height: w.h }
+  peekWin = { ...w, rect: MAC ? r : screen.screenToDipRect(null, r) }
+  frame.show(peekWin.rect)
+  if (pill && !pill.isDestroyed()) pill.moveTop()
+}
+const frame = makeFrame(BrowserWindow)
+function unpeek() { peekWin = null; frame.hide() }
+const SCREEN_PREFS = 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture'
+async function lookAt(w) {
+  const say = (m) => { if (pill && !pill.isDestroyed()) pill.webContents.send('tianxi:orbLook', m) }
+  // the Mac asks you once whether 小天 Bot may see other windows; asking for the sources is what puts it in that list
+  if (MAC && systemPreferences.getMediaAccessStatus('screen') !== 'granted') {
+    try { await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 1, height: 1 } }) } catch {}
+    if (systemPreferences.getMediaAccessStatus('screen') !== 'granted') return say({ error: '要看别的窗口，得先在「系统设置 › 隐私与安全性 › 录屏与系统录音」里打开小天 Bot，再重开小天 Bot。', help: '去打开' })
+  }
+  try {
+    const shot = await capture(w, { desktopCapturer, screen, dir: path.join(TIANXI_HOME, 'looks') })
+    say(shot ? { shot: shot.file, window: { app: w.app || '', title: w.title || '' } } : { error: '没截到这个窗口，再拖过去试一次' })
+  } catch (e) { say({ error: '没截到这个窗口：' + e.message }) }
+}
+ipcMain.on('tianxi:peekHelp', () => { if (MAC) shell.openExternal(SCREEN_PREFS) })
 ipcMain.on('tianxi:orbMenu', (e) => {
   if (!pill || e.sender !== pill.webContents) return
   Menu.buildFromTemplate([
@@ -329,6 +384,11 @@ ipcMain.on('tianxi:orbMenu', (e) => {
   ]).popup({ window: pill })
 })
 const showMain = () => { if (!win) return; if (win.isMinimized()) win.restore(); win.show(); win.focus() }
+// the desktop 小天 sends you somewhere in the app: { view, arg, draft }
+ipcMain.on('tianxi:goto', (e, g) => {
+  showMain()
+  if (win && /^http/.test(win.webContents.getURL())) win.webContents.executeJavaScript(`window.goTo && window.goTo(${JSON.stringify(g || {})})`).catch(() => {})
+})
 
 // 钉到桌面: a card pinned from the chat sits on the desktop in a small window of its own (web/widget.html), under
 // other windows like a note. The runtime keeps the list (plugins/widgets.js); this keeps one window per pinned card.
@@ -629,6 +689,41 @@ ipcMain.handle('tianxi:phoneOn', (e, on) => phone.setOn(!!on))
 ipcMain.handle('tianxi:phoneRenew', () => phone.renew())
 ipcMain.handle('tianxi:phoneForget', (e, id) => phone.forget(String(id || '')))
 
+// ---------- 察言观色: what is in front, so 小天 holds what it wants to say until you pause (plugins/manners.js) ----------
+const room = createRoom({ log: (m) => { try { fs.appendFileSync(path.join(LOGS, 'room.log'), `${new Date().toISOString()} ${m}\n`) } catch {} }, self: path.basename(process.execPath).replace(/\.exe$/i, '') })
+// meeting apps in front, or a meeting in a window's title
+const MEET_APP = /zoom|wemeet|voov|腾讯会议|webex|facetime/i
+const MEET_TITLE = /meet\.google|google meet|zoom (meeting|会议)|会议中|视频会议|飞书会议|lark meetings?|钉钉会议|腾讯会议|teams.*(会议|meeting|通话|call)|(会议|meeting|通话|call).*teams/i
+let cursorAt = null, movedAt = Date.now(), typingUntil = 0, roomKey = '', roomSent = 0, roomBusy = false
+async function roomTick() {
+  if (!child || roomBusy) return
+  roomBusy = true
+  try {
+    const idle = powerMonitor.getSystemIdleTime()
+    const c = screen.getCursorScreenPoint()
+    if (!cursorAt || c.x !== cursorAt.x || c.y !== cursorAt.y) { cursorAt = c; movedAt = Date.now() }
+    // keys touched within the last second while the mouse stayed where it was: typing
+    if (idle === 0 && Date.now() - movedAt > 1100) typingUntil = Date.now() + 2500
+    const f = room.supported ? await room.front() : null
+    const w = f?.front && !f.front.desktop && f.front.w > 0 ? f.front : null
+    const mine = !!w && w.pid === process.pid
+    let full = false
+    if (w && !mine) {
+      const r = { x: w.x, y: w.y, width: w.w, height: w.h }, rr = MAC ? r : screen.screenToDipRect(null, r)
+      const d = screen.getDisplayMatching(rr).bounds
+      full = rr.x <= d.x + 2 && rr.y <= d.y + 2 && rr.x + rr.width >= d.x + d.width - 2 && rr.y + rr.height >= d.y + d.height - 2
+    }
+    const app = mine ? '小天 Bot' : w?.app || '', title = mine ? '' : w?.title || ''
+    const mic = (f?.mic || []).map((n) => String(n).replace(/\.exe$/i, '')).filter(Boolean)
+    const meeting = !mine && (MEET_APP.test(app) || MEET_TITLE.test(title)) ? `开会（${app || title}）` : mic.length ? `通话（${mic[0]} 在用麦克风）` : ''
+    const m = { typing: Date.now() < typingUntil, full, meeting, app, title, orb: !!(pill && !pill.isDestroyed()) }
+    // only when something changed (or every half minute), idle time counted in coarse steps
+    const key = JSON.stringify({ ...m, idle: idle < 3 ? 0 : idle < 120 ? 1 : 2 })
+    if (key !== roomKey || Date.now() - roomSent > 30000) { roomKey = key; roomSent = Date.now(); await api('room', { ...m, idleSec: idle }) }
+  } catch {} finally { roomBusy = false }
+}
+setInterval(roomTick, 1000)
+
 // ---------- presence: lets 小天 do queued work while you are away ----------
 setInterval(() => { if (child) api('presence', { idleSec: powerMonitor.getSystemIdleTime() }) }, 30000)
 powerMonitor.on('lock-screen', () => { if (child) api('presence', { idleSec: 3600 }) })
@@ -640,7 +735,7 @@ app.on('second-instance', showMain)
 app.on('activate', showMain)
 app.on('before-quit', () => { quitting = true })
 app.on('will-quit', () => { globalShortcut.unregisterAll() })
-app.on('quit', () => { phone.stop(); if (evalChild) killTree(evalChild); if (child) { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(child.pid), '/t', '/f']) : child.kill() } catch {} } })
+app.on('quit', () => { phone.stop(); room.stop(); if (evalChild) killTree(evalChild); if (child) { try { process.platform === 'win32' ? spawn('taskkill', ['/pid', String(child.pid), '/t', '/f']) : child.kill() } catch {} } })
 app.on('window-all-closed', () => {})
 
 app.whenReady().then(async () => {

@@ -48,7 +48,7 @@ if ls "$F" | grep -q '^Electron Helper'; then echo 'a helper was not renamed'; e
 rm -f "$RES/default_app.asar"
 plutil -remove ElectronAsarIntegrity "$PL" 2>/dev/null || true   # no asar: nothing to check
 mkdir -p "$RES/app" "$RES/runtime"
-cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,phone.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} "$RES/app/"
+cp $ROOT/desktop/{main.js,shell.js,updater.js,freegate.js,phone.js,room.js,look.js,update.json,preload.js,loading.html,package.json,icon.png,icon.ico} "$RES/app/"
 node -e "const f=require('path').resolve(process.argv[1]),p=require(f);p.version='$VER';require('fs').writeFileSync(f,JSON.stringify(p,null,2))" "$RES/app/package.json"
 cp -R runtime-mac/node_modules "$RES/runtime/node_modules"
 cp runtime-mac/package.json "$RES/runtime/"

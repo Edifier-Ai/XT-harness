@@ -276,7 +276,7 @@ window.onBots = (m) => {
     const l = (S.feed ||= []), i = l.findIndex((p) => p.id === m.post.id)
     if (i >= 0) l[i] = m.post; else l.push(m.post)
   } else if (m.type === 'nudge') {
-    if (m.what === 'table' && view !== 'table') { const t = (S.tables || []).find((x) => x.id === m.id); toastText(`圆桌讨论完了，等你拍板${t ? '：' + t.q.slice(0, 20) : ''}`, ['去看', () => setView('table')]) }
+    if (m.what === 'table' && view !== 'table' && looking()) { const t = (S.tables || []).find((x) => x.id === m.id); toastText(`圆桌讨论完了，等你拍板${t ? '：' + t.q.slice(0, 20) : ''}`, ['去看', () => setView('table')]) }
     return
   } else { soon(); return }
   renderRail()

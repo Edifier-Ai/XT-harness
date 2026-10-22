@@ -67,7 +67,11 @@ export const bus = { say: null, busy: () => false, push: () => {}, agentOf: () =
   // told when an agent finishes a turn: ({ aid, kind, turn, text, at })
   turnEnd: new Set(),
   // more of the client's state, from other plugins: name -> () => value
-  state: new Map() }
+  state: new Map(),
+  // something to tell you, held until a good moment (manners.js); unnudge: it no longer needs saying
+  nudge: () => null, unnudge: () => {},
+  // what kind of turn an agent is in now ('user', 'table', 'drop'…), '' between turns
+  kindNow: () => '' }
 
 // ---------- one plain question to the model picked now, outside any agent (a JSON answer, a sentence) ----------
 // The client gives the runtime its model routes (TIANXI_ROUTES); without one, the background 小天 answers instead.

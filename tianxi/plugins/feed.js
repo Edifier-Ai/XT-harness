@@ -41,6 +41,7 @@ function onTurnEnd({ aid, kind, turn, text, at }) {
   update('feed', [], (l) => { l.push(p); if (l.length > 300) l.splice(0, l.length - 300) })
   bus.push({ type: 'post', post: p })
   bus.push({ type: 'nudge', what: 'post', id: p.id })
+  if (p.away) bus.nudge({ what: 'post', ref: 'feed', agent: aid, text: (k) => k > 1 ? `你不在时 Bot 们发了 ${k} 条动态` : `${agentById(aid).name}在你不在时：${(words || '做了几件事').slice(0, 60)}`, go: { view: 'feed' } })
 }
 
 /** 点赞 = 以后这样做: the Bot's way of doing it, in one sentence, becomes a 做事经验. */

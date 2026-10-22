@@ -1,4 +1,5 @@
 const after = (u, k) => (u.split(k)[1] || u).replace(/^[：:，,\s]+/, '').slice(0, 60)
+const lastToolText = (msgs) => { for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i].role === 'tool') { const c = msgs[i].content; return typeof c === 'string' ? c : (c || []).map((p) => p.text || '').join('') } return '' }
 const lastToolJSON = (msgs) => { for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i].role === 'tool') { try { const c = msgs[i].content; return JSON.parse(typeof c === 'string' ? c : c.map(p => p.text).join('')) } catch { return null } } return null }
 // 钉到桌面 · 我的工具: a weather card, its updates and a button pressed on it; a meeting countdown that has run out
 const hm = () => { const d = new Date(); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') }
@@ -20,6 +21,14 @@ const cityOf = (u) => /北京|bj/.test(u) ? '北京' : /深圳|sz/.test(u) ? '�
 // 圆桌: who is speaking comes from the Bot's own system prompt
 const said = (u) => [...u.split('发言：')[1]?.split('\n\n')[0].matchAll(/^(?:（回应）)?([^：\n]+)：/gm) || []].map((m) => m[1])
 export default [
+  // 拖给小天: a file is read first; what it says and offers comes from what was read
+  { re: /【拖给你】[\s\S]*- (表格|文档|文件)：/, steps: [{ tool: 'read', args: (u) => ({ file_path: /- (?:表格|文档|文件)：(.+?)（/.exec(u)[1] }) }],
+    final: (u, msgs) => { const t = lastToolText(msgs); const n = new Set(t.match(/供应商[A-Z]/g) || []).size
+      return n ? JSON.stringify({ say: `一份报价单，列了 ${n} 家供应商`, actions: [{ label: '比一比报价', ask: '把这份报价单里各家的报价比一比' }, { label: '写成一段话', ask: '把这份报价单写成一段话' }] }) : JSON.stringify({ say: '没读出内容', actions: [] }) } },
+  { re: /【拖给你】[\s\S]*- 一段文字：/, final: (u) => /评审/.test(u) ? JSON.stringify({ say: '一段会议安排：周五下午三点方案评审', actions: [{ label: '加进日程', ask: '把这段文字里的会议加进日程' }, { label: '记下来', ask: '把这段文字记到记忆里' }] }) : JSON.stringify({ say: '一段文字', actions: [] }) },
+  { re: /【拖给你】[\s\S]*- (图片|窗口截图)：/, final: (u) => JSON.stringify({ say: /窗口截图/.test(u) ? `这是「${(/「(.+?)」，刚截的/.exec(u) || [, '一个窗口'])[1]}」的窗口` : '一张图片', actions: [{ label: '说说内容', ask: '说说这张图里有什么' }] }) },
+  { re: /^把这份报价单里各家的报价比一比/, final: () => '比过了：供应商B 最便宜。' },
+  { re: /^把这段文字里的会议加进日程/, tool: 'calendar_add', args: () => ({ title: '方案评审', start: '2026-10-23T15:00', end: '2026-10-23T16:00', reason: '你拖给我的那段文字里写的' }), final: () => '已经加进日程：周五 15:00 方案评审。' },
   { sys: /你是“小天”/, re: /【圆桌·第一轮】/, final: () => '我倾向坐高铁：深圳北站离华贸近，路上还能改材料，晚点也不怕。' },
   { re: /【圆桌·第一轮】/, final: () => '我建议坐飞机：北京到深圳高铁要 8 小时，飞机 3 个多小时，能省下半天。' },
   { sys: /你是“小天”/, re: /【圆桌·第二轮】/, final: () => '飞机确实省时间，但要避开红眼航班；我还是偏高铁。' },
@@ -42,7 +51,7 @@ export default [
   { re: /【桌面小组件·用户操作】/, final: (u) => { const c = cityOf(u.split('当初用户说的是')[0].split('它现在是这样')[0].replace(/「[^」]*」/, '')); return `已经换成${c}了。\n${weather(c, 18, hm() + ' 的天气')}` } },
   { re: /天气/, final: (u) => `${cityOf(u)}现在 21°，下午有小雨。\n\n${weather(cityOf(u), 21, hm() + ' 的天气')}` },
   { re: /倒计时/, final: () => '评审会还有 40 分钟。\n\n```openui-lang 会议倒计时\nroot = Card([h, t])\nh = CardHeader("评审会倒计时", "15:00 开始")\nt = TextContent("还有 40 分钟", "large-heavy")\n```' },
-  { re: /天禧反思/, tool: 'reflection_publish', args: (u) => { const ids = [...u.matchAll(/\[(mem_[0-9a-f]+)\]/g)].map((m) => m[1]); return { profile: '你是做交互创新的人，做决定看证据，讨厌空话；最近在忙概念版天禧。', insights: [{ text: '你出差很在意时间成本：不坐红眼航班，但要离客户近。', memIds: ids.slice(0, 2), evidence: ['我出差不坐红眼航班'] }], proposals: [{ op: 'merge', ids: ids.slice(0, 2), text: '出差：不坐红眼航班，酒店离客户近', why: '两条说的是同一件事' }, { op: 'add', text: '汇报材料偏好白底黑字', kind: '偏好', why: '你说过两次' }], lessons: [{ text: '整理文件前先问一句要不要建子文件夹', why: '你撤回过一次整理' }] } }, final: () => '想完了。' },
+  { re: /【小天反思】|天禧反思/, tool: 'reflection_publish', args: (u) => { const ids = [...u.matchAll(/\[(mem_[0-9a-f]+)\]/g)].map((m) => m[1]); return { profile: '你是做交互创新的人，做决定看证据，讨厌空话；最近在忙概念版天禧。', insights: [{ text: '你出差很在意时间成本：不坐红眼航班，但要离客户近。', memIds: ids.slice(0, 2), evidence: ['我出差不坐红眼航班'] }], proposals: [{ op: 'merge', ids: ids.slice(0, 2), text: '出差：不坐红眼航班，酒店离客户近', why: '两条说的是同一件事' }, { op: 'add', text: '汇报材料偏好白底黑字', kind: '偏好', why: '你说过两次' }], lessons: [{ text: '整理文件前先问一句要不要建子文件夹', why: '你撤回过一次整理' }] } }, final: () => '想完了。' },
   { re: /给出差助理/, steps: [
       { tool: 'mail_draft', args: () => ({ to: 'trip@agent.local', subject: '下周深圳出差', body: '下周三去深圳拜访华贸电子，帮忙订机票酒店，用户不坐红眼航班。', reason: '订票是出差助理的分工' }) },
       { tool: 'mail_send', args: (u, msgs) => ({ id: lastToolJSON(msgs)?.draft?.id || 'x', reason: '交给出差助理' }) } ],

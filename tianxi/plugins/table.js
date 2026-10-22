@@ -16,7 +16,6 @@ function patch(tid, fn) {
   return out
 }
 
-const speaking = new Set()   // agents talking at a table now: they only look things up
 const who = (aid) => { const a = agentById(aid); return `${a.name}（${a.main ? '主 Bot，' : ''}${a.role || '助手'}）` }
 
 function seat(q, aids) {
@@ -39,10 +38,8 @@ export function startTable(question, aids, by = 'user') {
 }
 
 async function speak(tid, round, aid, text) {
-  speaking.add(aid)
   patch(tid, (t) => { t.rounds[round] = t.rounds[round].filter((x) => x.agent !== aid).concat({ agent: aid, text: '', live: true }) })
-  let reply = ''
-  try { reply = await bus.say(text, { agent: aid, kind: 'table' }) } finally { speaking.delete(aid) }
+  const reply = await bus.say(text, { agent: aid, kind: 'table' })
   const said = plainOf(reply).slice(0, 400) || '（没有说话）'
   patch(tid, (t) => { const x = t.rounds[round].find((y) => y.agent === aid); if (x) { x.text = said; x.live = false; x.at = now() } })
   return said
@@ -91,6 +88,7 @@ async function run(tid) {
   }
   patch(tid, (x) => { x.card = clean; x.status = 'open'; x.readyAt = now() })
   bus.push({ type: 'nudge', what: 'table', id: tid })
+  bus.nudge({ what: 'table', ref: tid, text: `圆桌讨论完了，等你拍板：${cur.q.slice(0, 40)}`, go: { view: 'table' } })
 }
 
 /** You decide: an option of the card (k) or your own words (text). It goes into memory, shared by every Bot. */
@@ -107,6 +105,7 @@ function decide(tid, { k, text }) {
     memId = m.id
     entry = record({ tool: 'table_decide', agent: '', title: `圆桌拍板：${mem}`, why: `你在圆桌上对「${t.q.slice(0, 40)}」的决定`, undo: { kind: 'memory-forget', data: { id: m.id }, label: '不记这条' } })
   }
+  bus.unnudge('table', tid)
   return patch(tid, (x) => { x.status = 'decided'; x.decision = { label, memory: mem, memId, ledger: entry?.id || '', own: !opt, at: now() } })
 }
 
@@ -114,7 +113,7 @@ export const name = 'tianxi-table'
 export const inject = ['tools']
 
 export function apply(ctx) {
-  ctx.effect(() => keepLooking((aid) => speaking.has(aid) ? '你在圆桌上发言，这时只能查，不能改任何东西。' : ''))
+  ctx.effect(() => keepLooking((aid) => bus.kindNow(aid) === 'table' ? '你在圆桌上发言，这时只能查，不能改任何东西。' : ''))
   // a table still talking when 小天 restarted: its talk was lost
   update('tables', [], (l) => { for (const t of l) if (t.status === 'talking' || t.status === 'summing') { t.status = 'error'; t.error = '小天 Bot 重启了，这次没讨论完' } })
 
@@ -137,6 +136,6 @@ export function apply(ctx) {
   Object.assign(bus.routes, {
     'POST /api/table/start': async (b) => ({ ok: true, table: startTable(b.q, b.agents || []) }),
     'POST /api/table/decide': async (b) => ({ ok: true, table: decide(b.id, b) }),
-    'POST /api/table/remove': async (b) => { update('tables', [], (l) => l.filter((t) => t.id !== b.id || t.status === 'talking' || t.status === 'summing')); bus.push({ type: 'table' }); return { ok: true } },
+    'POST /api/table/remove': async (b) => { bus.unnudge('table', b.id); update('tables', [], (l) => l.filter((t) => t.id !== b.id || t.status === 'talking' || t.status === 'summing')); bus.push({ type: 'table' }); return { ok: true } },
   })
 }

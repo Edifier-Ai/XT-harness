@@ -1,5 +1,5 @@
 'use strict'
-const { contextBridge, ipcRenderer } = require('electron')
+const { contextBridge, ipcRenderer, webUtils } = require('electron')
 
 contextBridge.exposeInMainWorld('tianxiApp', {
   platform: process.platform,
@@ -10,6 +10,13 @@ contextBridge.exposeInMainWorld('tianxiApp', {
   orbHit: (on) => ipcRenderer.send('tianxi:orbHit', !!on),
   orbDrag: (on) => ipcRenderer.send('tianxi:orbDrag', !!on),
   orbMenu: () => ipcRenderer.send('tianxi:orbMenu'),
+  // go somewhere in the app: { view, arg, draft }
+  goto: (g) => ipcRenderer.send('tianxi:goto', g),
+  // 拖给小天: where a dropped file lives on disk ('' for a picture from a web page)
+  pathOf: (f) => { try { return webUtils.getPathForFile(f) || '' } catch { return '' } },
+  // dragged onto a window and let go: a picture of it, or why there is none
+  onLook: (cb) => ipcRenderer.on('tianxi:orbLook', (e, m) => cb(m)),
+  peekHelp: () => ipcRenderer.send('tianxi:peekHelp'),
   // 钉到桌面: widget windows (web/widget.html)
   widgetsSync: () => ipcRenderer.invoke('tianxi:widgetsSync'),
   widgetFit: (h) => ipcRenderer.send('tianxi:widgetFit', h),

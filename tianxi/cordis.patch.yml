@@ -17,6 +17,10 @@
       name: dsh-tianxi/plugins/table.js
     - id: tianxi-feed
       name: dsh-tianxi/plugins/feed.js
+    - id: tianxi-manners
+      name: dsh-tianxi/plugins/manners.js
+    - id: tianxi-drop
+      name: dsh-tianxi/plugins/drop.js
     - id: speech-to-text
       name: '@deepseek-ai/dsh-experimental-speech-to-text'
       config:

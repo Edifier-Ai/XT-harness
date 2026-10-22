@@ -707,6 +707,7 @@ function setView(v, arg) {
   // the right panel belongs to the chat; pages take the whole width
   procSel = null; tagEdit = false
   renderAll(false)
+  seenHere()
 }
 const phead = (title, sub = '', right = '') => `<div class="phead"><h2>${title}</h2><span class="s">${sub}</span><div class="r">${right}</div></div>`
 
@@ -901,7 +902,7 @@ function pageLedger() {
 
 function pageLater() {
   const st = { queued: '排队中', running: '正在做', done: '做完了', error: '没做成' }
-  let h = phead('系统感知') + '<div class="intro">交给 Bot“晚点做”的事会排在这里。你离开电脑或到了夜里，它会自己做，结果写进第二天的简报。</div>'
+  let h = phead('系统感知') + '<div class="intro">交给 Bot“晚点做”的事会排在这里。你离开电脑或到了夜里，它会自己做，结果写进第二天的简报。</div>' + mannerPanel()
   const jobs = [...S.later].reverse()
   const jt = turnsOf(S.mainId).filter((t) => t.kind === 'job')
   h += '<div class="sec">队列</div><div class="panel">' + (jobs.length ? jobs.map((j) => { const t = j.startedAt ? jt.find((x) => x.at >= j.startedAt) : null; return `<div class="ent"><div class="tm">${hhmm(j.createdAt)}</div><div class="m"><div class="t">${esc(j.title)}</div><div class="w">${st[j.status] || j.status} · ${j.when === 'night' ? '夜里做' : '你离开时做'}${t ? ` · <button class="lk" data-act="proc-open" data-agent="${S.mainId}" data-turn="${t.id}">过程</button>` : ''}</div>${j.result ? `<div class="w" style="color:#cfcfd4;margin-top:6px;white-space:pre-wrap">${esc(j.result.slice(0, 400))}</div>` : ''}
@@ -909,6 +910,20 @@ function pageLater() {
   const obs = [...S.observations].reverse().slice(0, 30)
   h += '<div class="sec">注意到的新文件</div><div class="panel">' + (obs.length ? obs.map((o) => `<div class="ent"><div class="tm">${hhmm(o.at)}</div><div class="m"><div class="t">${esc(o.text || o.name || o.path)}</div>${o.seen ? '<div class="w">已写进简报</div>' : ''}</div></div>`).join('') : `<div class="intro" style="margin:0">正在留意 ${esc((S.settings?.watch || []).join('、'))} 里的新文件。</div>`) + '</div>'
   return h
+}
+
+// 察言观色: what Bots hold back until you pause, why they are waiting now, and how often they may speak up in a day
+const NSTATE = { held: '憋着', said: '说过了', done: '看过了' }
+function mannerPanel() {
+  const m = S.manner; if (!m) return ''
+  const caps = [[0, '不主动说'], [2, '2 次'], [4, '4 次'], [8, '8 次'], [99, '不限']]
+  let h = '<div class="sec">察言观色</div><div class="panel manner">'
+  h += `<div class="mnow"><i class="${m.why ? 'q' : 'ok'}"></i><div><b>${m.why ? '先不开口：' + esc(m.why) : '你停下来了，有事现在会说'}</b><small>${m.held.length ? `憋着 ${m.held.length} 件事` : '没有憋着的事'} · 今天主动说了 ${m.used} 次</small></div></div>`
+  h += `<div class="setrow"><label>每天主动开口</label><div class="ctl"><label class="sel"><select id="nudgeCap" data-set="nudgeCap">${caps.map(([v, t]) => `<option value="${v}" ${+m.cap === v ? 'selected' : ''}>${t}</option>`).join('')}</select>${ico('chev', 13)}</label></div></div>`
+  h += '<div class="hint">全屏、开会或通话、打字时不打扰，你停下来才说，有事不弹通知，桌面小天会换成憋着的表情。等你确认的事不算次数，但也等你停下来。</div>'
+  const rows = [...m.held, ...m.said.filter((n) => n.state !== 'held')]
+  if (rows.length) h += rows.map((n) => `<div class="ent"><div class="tm">${hhmm(n.saidAt || n.at)}</div><div class="m"><div class="t">${esc(n.text)}${n.urgent ? '<span class="tagx risk">等你确认</span>' : ''}${n.asked ? '<span class="tagx">你点它问的</span>' : ''}</div><div class="w">${NSTATE[n.state] || ''}</div>${n.state !== 'done' && n.go ? `<div class="a"><button class="btn sm" data-act="nudge-go" data-id="${n.id}">去看</button></div>` : ''}</div></div>`).join('')
+  return h + '</div>'
 }
 
 // 智能体: identity, persona and its own mailbox
@@ -1352,10 +1367,10 @@ async function renderPhone(el, st) {
 async function saveSetting(key, raw) {
   if (key === 'meBubble') { store.set('meBubble', raw); if (view === 'chat') renderMsgs(true); return }
   let v = raw
-  if (['idleMinutes', 'nightFrom', 'nightTo'].includes(key)) { v = +raw; if (!Number.isFinite(v)) return }
+  if (['idleMinutes', 'nightFrom', 'nightTo', 'nudgeCap'].includes(key)) { v = +raw; if (!Number.isFinite(v)) return }
   if (key === 'watch') v = String(raw).split(/[;；,，\n]/).map((x) => x.trim()).filter(Boolean)
   if (key === 'briefTime' && !/^\d{1,2}:\d{2}$/.test(raw)) { toastText('时间写成 08:00 这样'); return }
-  if (!['callMe', 'briefTime', 'idleMinutes', 'nightFrom', 'nightTo', 'watch', 'briefOn', 'reflectAtNight', 'watchOn'].includes(key)) return
+  if (!['callMe', 'briefTime', 'idleMinutes', 'nightFrom', 'nightTo', 'watch', 'briefOn', 'reflectAtNight', 'watchOn', 'nudgeCap'].includes(key)) return
   await api('settings', { [key]: v }); soon()
 }
 
@@ -1387,9 +1402,32 @@ function putToast(el, ms) {
   const live = [...box.children].filter((x) => !x.classList.contains('out'))
   for (const x of live.slice(0, Math.max(0, live.length - 3))) dismiss(x)
 }
-function notify(title, body) {
-  try { if (document.hidden && 'Notification' in window && Notification.permission !== 'denied') new Notification(title, { body, silent: false }).onclick = () => APP?.show() } catch {}
+// you are looking at this window right now
+const looking = () => !document.hidden && document.hasFocus()
+// 会察言观色: what a Bot wants to tell you is held by the runtime (manners.js) and said when you pause. The desktop 小天
+// says it; without one (it is hidden), it comes as a system notification at that moment.
+function notify(title, body, go, nid) {
+  try {
+    if (!document.hidden || !('Notification' in window) || Notification.permission === 'denied') return
+    new Notification(title, { body, silent: false }).onclick = () => { APP?.show(); if (go) goTo(go); if (nid) api('nudge/done', { id: nid }) }
+  } catch {}
 }
+function goTo(g) {
+  if (!g) return
+  if (g.view === 'chat') { cur = agentOf(g.arg || S.mainId).id; store.set('agent', cur); setView('chat') }
+  else setView(g.view, g.arg)
+  // something to say about (拖给小天 → 打开对话): it waits in the chat box for you to finish the sentence
+  if (g.draft) { inp.value = String(g.draft); grow(); inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length) }
+}
+window.goTo = goTo
+// what it wanted to tell you is right here on the screen you are looking at: nothing left to say
+function seenHere() {
+  if (!looking() || !S.manner) return
+  const arg = view === 'chat' ? cur : viewArg
+  const hit = [...(S.manner.held || []), ...(S.manner.said || []).filter((n) => n.state === 'said')].some((n) => n.go && n.go.view === view && (!n.go.arg || n.go.arg === arg))
+  if (hit) api('nudge/seen', { view, arg })
+}
+addEventListener('focus', () => setTimeout(seenHere, 300))
 
 // ---------- state + events ----------
 let refreshT = null
@@ -1402,8 +1440,8 @@ async function refresh() {
     if (!seenLedger.has(e.id)) { seenLedger.add(e.id); if (!firstLoad && e.status === 'done' && e.tool !== 'tool_collect') fresh.push(e) }
   }
   if (fresh.length > 1) toastMany(fresh); else if (fresh.length) toast(fresh[0])
-  if (!firstLoad && S.brief?.at && S.brief.at !== prevBrief) { notify('每日简报', S.brief.summary || '今天的简报准备好了'); if (view !== 'brief') toastText('今天的简报准备好了', ['去看', () => setView('brief')]) }
-  if (!firstLoad && S.reflections[0] && S.reflections[0].id !== prevRef && view !== 'reflect') toastText(`${agentOf(S.mainId).name}反思完了`, ['去看', () => setView('reflect')])
+  if (!firstLoad && S.brief?.at && S.brief.at !== prevBrief && looking() && view !== 'brief') toastText('今天的简报准备好了', ['去看', () => setView('brief')])
+  if (!firstLoad && S.reflections[0] && S.reflections[0].id !== prevRef && looking() && view !== 'reflect') toastText(`${agentOf(S.mainId).name}反思完了`, ['去看', () => setView('reflect')])
   if (firstLoad && !REDUCED) { $('#app').classList.add('boot'); setTimeout(() => $('#app').classList.remove('boot'), 1500) }
   firstLoad = false
   renderAll(true)
@@ -1445,9 +1483,7 @@ function connect() {
     else if (m.type === 'approval') {
       S.approvals.push(m.approval); soon()
       const a = agentOf(m.approval.agent)
-      notify(`${a.name}需要你确认`, m.approval.reason || toolLabel(m.approval.tool))
-      if (APP && document.hidden) APP.show()
-      if (view !== 'chat' || cur !== a.id) toastText(`${a.name}需要你确认一件事`, ['去看', () => { cur = a.id; store.set('agent', cur); setView('chat') }])
+      if (looking() && (view !== 'chat' || cur !== a.id)) toastText(`${a.name}需要你确认一件事`, ['去看', () => { cur = a.id; store.set('agent', cur); setView('chat') }])
     }
     else if (m.type === 'approval-gone') { S.approvals = S.approvals.filter((a) => a.id !== m.id); renderAll(true) }
     else if (m.type === 'private') { S.privateMode = m.on; renderAll(true) }
@@ -1463,6 +1499,8 @@ function connect() {
     }
     else if (m.type === 'widgets') soon()
     else if (m.type === 'table' || m.type === 'post' || m.type === 'trial' || m.type === 'nudge') window.onBots?.(m)
+    else if (m.type === 'manner') { S.manner = m.manner; seenHere(); if (view === 'later') renderPage() }
+    else if (m.type === 'nudge-say' && !S.manner?.room?.orb) notify(agentOf(m.nudge.agent).name, m.nudge.text, m.nudge.go, m.nudge.id)
     else if (m.type === 'tool-added') {
       const w = m.widget
       toastText(`「${w.kind}」用了两次，收进我的工具了`, ['去看', () => setView('tools', w.id)])
@@ -1698,6 +1736,7 @@ document.addEventListener('click', async (e) => {
     else { t.contentEditable = 'true'; t.focus(); document.getSelection().selectAllChildren(t); el.textContent = '保存' }
   }
   else if (act === 'later-rm') { await api('later/remove', { id: el.dataset.id }); soon() }
+  else if (act === 'nudge-go') { const n = [...(S.manner?.held || []), ...(S.manner?.said || [])].find((x) => x.id === el.dataset.id); await api('nudge/done', { id: el.dataset.id }); if (n) goTo(n.go) }
   else if (act === 'priv') { await api('private', { on: !S.privateMode }) }
   else if (act === 'clear') { if (confirm(`清空和${agentOf(cur).name}的对话记录？记忆和操作记录不受影响。`)) { await api('transcript/clear', { agent: cur }); soon() } }
   else if (act === 'eval-run') { const r = await APP.runEval({ runs: +$('#evalRuns').value }); if (!r.ok) $('#evalMsg').textContent = r.error; setTimeout(() => renderEval($('#evalBox')), 800) }

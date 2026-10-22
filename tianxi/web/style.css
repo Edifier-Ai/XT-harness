@@ -1288,3 +1288,10 @@ button:focus:not(:focus-visible){outline:none}
 .trialp .tbar i{display:block;height:100%;border-radius:3px;background:#e8b866;transition:width .5s var(--ease)}
 .trialp .t{font-size:14.5px;font-weight:600;margin-top:10px}
 .trialp .a{margin-top:10px;display:flex;gap:8px}
+/* 察言观色: why 小天 is holding back now, what it held and said today */
+.manner .mnow{display:flex;gap:12px;align-items:flex-start;padding:2px 0 12px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.manner .mnow i{width:9px;height:9px;border-radius:50%;margin-top:7px;flex:none;background:#57c16f}
+.manner .mnow i.q{background:#e89b3a}
+.manner .mnow b{display:block;font-weight:600;color:var(--tx)}
+.manner .mnow small{display:block;color:var(--tx3);font-size:12.5px;margin-top:3px}
+.manner .hint{margin:4px 0 8px}

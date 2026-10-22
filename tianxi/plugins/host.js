@@ -76,8 +76,8 @@ export const inject = ['agents', 'agentDefaultModel', 'systemPrompt']
 
 // The brief's file cards say what each file is and whether it is still there, read fresh each time.
 const withFacts = (b) => b && { ...b, items: (b.items || []).map((it) => ({ ...it, blocks: (it.blocks || []).map((bl) => bl?.type === 'files' ? { ...bl, items: (bl.items || []).map((f) => { const p = typeof f === 'string' ? f : f?.path; return { ...(typeof f === 'object' ? f : {}), path: p, fact: fileFact(p) } }) } : bl) })) }
-const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事', widget: '在处理桌面小组件', table: '在圆桌上发言', feedfix: '在看你的评论', quick: '在想', trial: '申请转正' }
-const INTERNAL = new Set(['brief', 'job', 'reflect', 'act', 'widget', 'table', 'feedfix', 'quick'])   // turns kept out of the chat; their process is still viewable
+const SYS_TEXT = { brief: '在准备每日简报', job: '在后台做事', reflect: '在反思', mail: '收到一封邮件', act: '在处理简报里的事', widget: '在处理桌面小组件', table: '在圆桌上发言', feedfix: '在看你的评论', quick: '在想', trial: '申请转正', drop: '在看你拖给它的东西' }
+const INTERNAL = new Set(['brief', 'job', 'reflect', 'act', 'widget', 'table', 'feedfix', 'quick', 'drop'])   // turns kept out of the chat; their process is still viewable
 const MAX_HOPS = 3                                      // agent-to-agent mail stops waking agents after this many hops
 
 export function apply(ctx) {
@@ -114,6 +114,8 @@ export function apply(ctx) {
   bus.patchItem = patchItem
   const bySession = (sid) => { for (const r of R.values()) if (r.handle && r.handle.agent.id === sid) return r; return null }
   bus.hopsOf = (aid) => rt(aid || MAIN).hops
+  // what kind of turn an agent is in now ('user', 'table', 'drop'…), '' between turns
+  bus.kindNow = (aid) => { const r = R.get(aid); return (r && r.hidden.get(r.currentMsg)?.kind) || '' }
 
   // ---------- model picked in the chat ----------
   // The client lists every model it set up (its own key, Magpie, 智谱) in TIANXI_MODELS; the chat switches
@@ -280,7 +282,8 @@ export function apply(ctx) {
       const a = { id: aid, agent: r.aid, tool: req.toolName, reason: req.displayReason?.zh || req.reason || '', args: pendingArgs.get(req.callId) || call?.args || {}, at: now(), turn: call?.turn }
       approvals.set(aid, { ...a, resolve })
       push({ type: 'approval', approval: a })
-      req.signal?.addEventListener('abort', () => { approvals.delete(aid); push({ type: 'approval-gone', id: aid }); resolve('cancelled') }, { once: true })
+      bus.nudge({ what: 'approval', ref: aid, agent: r.aid, urgent: true, text: `${agentById(r.aid).name}要你确认：${a.reason || a.tool}`, go: { view: 'chat', arg: r.aid } })
+      req.signal?.addEventListener('abort', () => { approvals.delete(aid); bus.unnudge('approval', aid); push({ type: 'approval-gone', id: aid }); resolve('cancelled') }, { once: true })
     })
   }, true)   // first in line: DSH's own web remote would otherwise hold the request waiting for a page nobody has open
 
@@ -356,7 +359,7 @@ export function apply(ctx) {
     'POST /api/cancel': async (b) => { R.get(b.agent || MAIN)?.handle?.agent.cancel({ kind: 'user' }); return { ok: true } },
     'POST /api/undo': async (b) => ({ ok: true, entry: await undoEntry(b.id) }),
     'POST /api/undo-last': async () => ({ ok: true, entry: await undoLast() }),
-    'POST /api/approval': async (b) => { const a = approvals.get(b.id); if (!a) return { ok: false }; approvals.delete(b.id); a.resolve(b.allow ? 'allowed-once' : 'rejected'); push({ type: 'approval-gone', id: b.id }); return { ok: true } },
+    'POST /api/approval': async (b) => { const a = approvals.get(b.id); if (!a) return { ok: false }; approvals.delete(b.id); bus.unnudge('approval', b.id); a.resolve(b.allow ? 'allowed-once' : 'rejected'); push({ type: 'approval-gone', id: b.id }); return { ok: true } },
     'POST /api/memory/edit': async (b) => ({ ok: true, memory: editMemory(b.id, String(b.text)) }),
     'POST /api/memory/forget': async (b) => ({ ok: true, memory: forgetMemory(b.id) }),
     'POST /api/memory/add': async (b) => ({ ok: true, memory: addMemory({ text: String(b.text), kind: b.kind || '事实', source: '你手动添加' }) }),
